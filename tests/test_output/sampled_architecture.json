@@ -1,16 +1,17 @@
 {
   "id": null,
-  "name": "Sampled_Hierarchical Architecture_9283",
-  "description": "A hierarchical architecture with multiple levels",
+  "name": "Sampled_Hybrid Architecture_5836",
+  "description": "A hybrid architecture combining hierarchical and specialist patterns",
   "agents": [
     {
       "id": "agent_0",
-      "name": "Coordinator 0.0",
+      "name": "Project Coordinator",
       "role": "coordinator",
       "capabilities": [
         "planning",
         "delegation",
-        "decision_making"
+        "decision_making",
+        "coordination"
       ],
       "model_name": "gpt-4",
       "parameters": {
@@ -21,12 +22,11 @@
     },
     {
       "id": "agent_1",
-      "name": "Manager 1.0",
+      "name": "Research Manager",
       "role": "manager",
       "capabilities": [
-        "coordination",
-        "monitoring",
-        "reporting"
+        "research",
+        "coordination"
       ],
       "model_name": "gpt-4",
       "parameters": {
@@ -37,12 +37,11 @@
     },
     {
       "id": "agent_2",
-      "name": "Manager 1.1",
+      "name": "Development Manager",
       "role": "manager",
       "capabilities": [
-        "coordination",
-        "monitoring",
-        "reporting"
+        "code_generation",
+        "coordination"
       ],
       "model_name": "gpt-4",
       "parameters": {
@@ -53,12 +52,12 @@
     },
     {
       "id": "agent_3",
-      "name": "Manager 1.2",
+      "name": "Quality Manager",
       "role": "manager",
       "capabilities": [
+        "quality_assessment",
         "coordination",
-        "monitoring",
-        "reporting"
+        "code_execution"
       ],
       "model_name": "gpt-4",
       "parameters": {
@@ -69,12 +68,10 @@
     },
     {
       "id": "agent_4",
-      "name": "Worker 2.0",
-      "role": "worker",
+      "name": "Information Retrieval",
+      "role": "researcher",
       "capabilities": [
-        "code_execution",
-        "information_retrieval",
-        "quality_assessment"
+        "information_retrieval"
       ],
       "model_name": "gpt-4",
       "parameters": {
@@ -85,11 +82,10 @@
     },
     {
       "id": "agent_5",
-      "name": "Worker 2.1",
-      "role": "worker",
+      "name": "Domain Expert",
+      "role": "specialist",
       "capabilities": [
-        "code_execution",
-        "information_retrieval"
+        "domain_expertise"
       ],
       "model_name": "gpt-4",
       "parameters": {
@@ -100,11 +96,10 @@
     },
     {
       "id": "agent_6",
-      "name": "Worker 2.2",
-      "role": "worker",
+      "name": "Code Generator",
+      "role": "coder",
       "capabilities": [
-        "code_execution",
-        "information_retrieval"
+        "code_generation"
       ],
       "model_name": "gpt-4",
       "parameters": {
@@ -115,11 +110,10 @@
     },
     {
       "id": "agent_7",
-      "name": "Worker 2.3",
-      "role": "worker",
+      "name": "Debugger",
+      "role": "coder",
       "capabilities": [
-        "code_execution",
-        "information_retrieval"
+        "debugging"
       ],
       "model_name": "gpt-4",
       "parameters": {
@@ -130,11 +124,10 @@
     },
     {
       "id": "agent_8",
-      "name": "Worker 2.4",
-      "role": "worker",
+      "name": "Tester",
+      "role": "critic",
       "capabilities": [
-        "code_execution",
-        "information_retrieval"
+        "testing"
       ],
       "model_name": "gpt-4",
       "parameters": {
@@ -145,11 +138,10 @@
     },
     {
       "id": "agent_9",
-      "name": "Worker 2.5",
-      "role": "worker",
+      "name": "Reviewer",
+      "role": "critic",
       "capabilities": [
-        "code_execution",
-        "information_retrieval"
+        "feedback"
       ],
       "model_name": "gpt-4",
       "parameters": {
@@ -162,6 +154,6 @@
   "connections": [],
   "communication_pattern": "hierarchical",
   "parameters": {},
-  "created_at": "2025-04-15T02:27:16.203937",
-  "updated_at": "2025-04-15T02:27:16.203938"
+  "created_at": "2025-04-15T03:25:24.990470",
+  "updated_at": "2025-04-15T03:25:24.990472"
 }

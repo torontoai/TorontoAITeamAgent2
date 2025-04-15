@@ -2,7 +2,7 @@
   "agents": [
     {
       "id": "agent_0",
-      "name": "Central Coordinator",
+      "name": "Coordinator 0.0",
       "type": "assistant",
       "model": "gpt-4",
       "role": "coordinator",
@@ -10,12 +10,13 @@
         "planning",
         "delegation",
         "decision_making",
-        "coordination"
+        "quality_assessment"
       ],
       "config": {
         "allow_planning": true,
         "allow_delegation": true,
         "allow_decision_making": true,
+        "allow_assessment": true,
         "temperature": 0.7,
         "max_tokens": 1000,
         "task_description": "A test task for MaAS integration testing",
@@ -24,16 +25,17 @@
     },
     {
       "id": "agent_1",
-      "name": "Researcher Specialist",
-      "type": "retriever",
+      "name": "Manager 1.0",
+      "type": "assistant",
       "model": "gpt-4",
-      "role": "researcher",
+      "role": "manager",
       "capabilities": [
-        "information_retrieval",
-        "research"
+        "coordination",
+        "monitoring",
+        "reporting"
       ],
       "config": {
-        "allow_retrieval": true,
+        "allow_monitoring": true,
         "temperature": 0.7,
         "max_tokens": 1000,
         "task_description": "A test task for MaAS integration testing",
@@ -42,15 +44,17 @@
     },
     {
       "id": "agent_2",
-      "name": "Coder Specialist",
+      "name": "Manager 1.1",
       "type": "assistant",
       "model": "gpt-4",
-      "role": "coder",
+      "role": "manager",
       "capabilities": [
-        "code_generation",
-        "debugging"
+        "coordination",
+        "monitoring",
+        "reporting"
       ],
       "config": {
+        "allow_monitoring": true,
         "temperature": 0.7,
         "max_tokens": 1000,
         "task_description": "A test task for MaAS integration testing",
@@ -59,19 +63,17 @@
     },
     {
       "id": "agent_3",
-      "name": "Critic Specialist",
-      "type": "critic",
+      "name": "Manager 1.2",
+      "type": "assistant",
       "model": "gpt-4",
-      "role": "critic",
+      "role": "manager",
       "capabilities": [
-        "quality_assessment",
-        "feedback",
-        "code_execution"
+        "coordination",
+        "monitoring",
+        "reporting"
       ],
       "config": {
-        "allow_assessment": true,
-        "allow_feedback": true,
-        "allow_code_execution": true,
+        "allow_monitoring": true,
         "temperature": 0.7,
         "max_tokens": 1000,
         "task_description": "A test task for MaAS integration testing",
@@ -80,17 +82,17 @@
     },
     {
       "id": "agent_4",
-      "name": "Writer Specialist",
+      "name": "Worker 2.0",
       "type": "assistant",
       "model": "gpt-4",
-      "role": "writer",
+      "role": "worker",
       "capabilities": [
-        "content_generation",
-        "summarization"
+        "code_execution",
+        "information_retrieval"
       ],
       "config": {
-        "allow_generation": true,
-        "allow_summarization": true,
+        "allow_code_execution": true,
+        "allow_retrieval": true,
         "temperature": 0.7,
         "max_tokens": 1000,
         "task_description": "A test task for MaAS integration testing",
@@ -99,16 +101,93 @@
     },
     {
       "id": "agent_5",
-      "name": "Reasoner Specialist",
-      "type": "reasoner",
+      "name": "Worker 2.1",
+      "type": "assistant",
       "model": "gpt-4",
-      "role": "reasoner",
+      "role": "worker",
       "capabilities": [
-        "reasoning",
-        "problem_solving"
+        "code_execution",
+        "information_retrieval"
       ],
       "config": {
-        "allow_problem_solving": true,
+        "allow_code_execution": true,
+        "allow_retrieval": true,
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    },
+    {
+      "id": "agent_6",
+      "name": "Worker 2.2",
+      "type": "assistant",
+      "model": "gpt-4",
+      "role": "worker",
+      "capabilities": [
+        "code_execution",
+        "information_retrieval"
+      ],
+      "config": {
+        "allow_code_execution": true,
+        "allow_retrieval": true,
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    },
+    {
+      "id": "agent_7",
+      "name": "Worker 2.3",
+      "type": "assistant",
+      "model": "gpt-4",
+      "role": "worker",
+      "capabilities": [
+        "code_execution",
+        "information_retrieval"
+      ],
+      "config": {
+        "allow_code_execution": true,
+        "allow_retrieval": true,
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    },
+    {
+      "id": "agent_8",
+      "name": "Worker 2.4",
+      "type": "assistant",
+      "model": "gpt-4",
+      "role": "worker",
+      "capabilities": [
+        "code_execution",
+        "information_retrieval"
+      ],
+      "config": {
+        "allow_code_execution": true,
+        "allow_retrieval": true,
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    },
+    {
+      "id": "agent_9",
+      "name": "Worker 2.5",
+      "type": "assistant",
+      "model": "gpt-4",
+      "role": "worker",
+      "capabilities": [
+        "code_execution",
+        "information_retrieval"
+      ],
+      "config": {
+        "allow_code_execution": true,
+        "allow_retrieval": true,
         "temperature": 0.7,
         "max_tokens": 1000,
         "task_description": "A test task for MaAS integration testing",

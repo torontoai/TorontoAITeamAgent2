@@ -2,15 +2,14 @@
   "agents": [
     {
       "id": "agent_0",
-      "name": "Project Coordinator",
+      "name": "Coordinator 0.0",
       "type": "coordinator",
       "model": "gpt-4",
       "role": "coordinator",
       "capabilities": [
         "planning",
         "delegation",
-        "decision_making",
-        "coordination"
+        "decision_making"
       ],
       "parameters": {
         "temperature": 0.7,
@@ -21,13 +20,14 @@
     },
     {
       "id": "agent_1",
-      "name": "Research Manager",
+      "name": "Manager 1.0",
       "type": "assistant",
       "model": "gpt-4",
       "role": "manager",
       "capabilities": [
-        "research",
-        "coordination"
+        "coordination",
+        "monitoring",
+        "reporting"
       ],
       "parameters": {
         "temperature": 0.7,
@@ -38,13 +38,14 @@
     },
     {
       "id": "agent_2",
-      "name": "Development Manager",
+      "name": "Manager 1.1",
       "type": "assistant",
       "model": "gpt-4",
       "role": "manager",
       "capabilities": [
-        "code_generation",
-        "coordination"
+        "coordination",
+        "monitoring",
+        "reporting"
       ],
       "parameters": {
         "temperature": 0.7,
@@ -55,13 +56,14 @@
     },
     {
       "id": "agent_3",
-      "name": "Quality Manager",
+      "name": "Manager 1.2",
       "type": "assistant",
       "model": "gpt-4",
       "role": "manager",
       "capabilities": [
-        "quality_assessment",
-        "coordination"
+        "coordination",
+        "monitoring",
+        "reporting"
       ],
       "parameters": {
         "temperature": 0.7,
@@ -72,13 +74,13 @@
     },
     {
       "id": "agent_4",
-      "name": "Information Retrieval",
-      "type": "researcher",
+      "name": "Worker 2.0",
+      "type": "assistant",
       "model": "gpt-4",
-      "role": "researcher",
+      "role": "worker",
       "capabilities": [
-        "information_retrieval",
-        "code_execution"
+        "code_execution",
+        "information_retrieval"
       ],
       "parameters": {
         "temperature": 0.7,
@@ -89,12 +91,13 @@
     },
     {
       "id": "agent_5",
-      "name": "Domain Expert",
-      "type": "specialist",
+      "name": "Worker 2.1",
+      "type": "assistant",
       "model": "gpt-4",
-      "role": "specialist",
+      "role": "worker",
       "capabilities": [
-        "domain_expertise"
+        "code_execution",
+        "information_retrieval"
       ],
       "parameters": {
         "temperature": 0.7,
@@ -105,12 +108,13 @@
     },
     {
       "id": "agent_6",
-      "name": "Code Generator",
+      "name": "Worker 2.2",
       "type": "assistant",
       "model": "gpt-4",
-      "role": "coder",
+      "role": "worker",
       "capabilities": [
-        "code_generation"
+        "code_execution",
+        "information_retrieval"
       ],
       "parameters": {
         "temperature": 0.7,
@@ -121,12 +125,13 @@
     },
     {
       "id": "agent_7",
-      "name": "Debugger",
+      "name": "Worker 2.3",
       "type": "assistant",
       "model": "gpt-4",
-      "role": "coder",
+      "role": "worker",
       "capabilities": [
-        "debugging"
+        "code_execution",
+        "information_retrieval"
       ],
       "parameters": {
         "temperature": 0.7,
@@ -137,12 +142,13 @@
     },
     {
       "id": "agent_8",
-      "name": "Tester",
-      "type": "critic",
+      "name": "Worker 2.4",
+      "type": "assistant",
       "model": "gpt-4",
-      "role": "critic",
+      "role": "worker",
       "capabilities": [
-        "testing"
+        "code_execution",
+        "information_retrieval"
       ],
       "parameters": {
         "temperature": 0.7,
@@ -153,12 +159,14 @@
     },
     {
       "id": "agent_9",
-      "name": "Reviewer",
-      "type": "critic",
+      "name": "Worker 2.5",
+      "type": "assistant",
       "model": "gpt-4",
-      "role": "critic",
+      "role": "worker",
       "capabilities": [
-        "feedback"
+        "code_execution",
+        "information_retrieval",
+        "quality_assessment"
       ],
       "parameters": {
         "temperature": 0.7,
@@ -188,27 +196,27 @@
       },
       {
         "id": "agent_4",
-        "type": "researcher"
+        "type": "worker"
       },
       {
         "id": "agent_5",
-        "type": "specialist"
+        "type": "worker"
       },
       {
         "id": "agent_6",
-        "type": "coder"
+        "type": "worker"
       },
       {
         "id": "agent_7",
-        "type": "coder"
+        "type": "worker"
       },
       {
         "id": "agent_8",
-        "type": "critic"
+        "type": "worker"
       },
       {
         "id": "agent_9",
-        "type": "critic"
+        "type": "worker"
       }
     ],
     "edges": []

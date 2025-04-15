@@ -8,11 +8,11 @@
   "message_count": 25.0,
   "coordinator_messages_sent": 10.0,
   "coordinator_processing_time": 45.2,
-  "researcher_messages_sent": 15.0,
-  "researcher_processing_time": 60.8,
+  "manager_messages_sent": 15.0,
+  "manager_processing_time": 60.8,
   "efficiency": 0.2857142857142857,
   "speed": 0.008298755186721992,
   "cost_effectiveness": 1.3333333333333333,
-  "architecture_complexity": 0.48809523809523814,
-  "complexity_efficiency": 2.048780487804878
+  "architecture_complexity": 0.46777777777777774,
+  "complexity_efficiency": 2.137767220902613
 }
