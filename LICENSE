@@ -1,0 +1,86 @@
+TORONTO AI TEAM AGENT - PROPRIETARY LICENSE
+
+Copyright (c) 2025 TORONTO AI
+Creator: David Tadeusz Chudak
+
+All Rights Reserved
+
+PROPRIETARY SOFTWARE LICENSE AGREEMENT
+
+This Proprietary Software License Agreement (the "Agreement") is a legal agreement between you (either an individual or a single entity) and TORONTO AI (the "Company") for the software product identified above, which includes computer software and may include associated media, printed materials, and "online" or electronic documentation (the "Software").
+
+BY INSTALLING, COPYING, OR OTHERWISE USING THE SOFTWARE, YOU AGREE TO BE BOUND BY THE TERMS OF THIS AGREEMENT. IF YOU DO NOT AGREE TO THE TERMS OF THIS AGREEMENT, DO NOT INSTALL OR USE THE SOFTWARE.
+
+1. GRANT OF LICENSE
+
+   Subject to the terms and conditions of this Agreement, the Company grants you a non-exclusive, non-transferable license to use the Software solely for your internal business purposes.
+
+2. RESTRICTIONS
+
+   You may not:
+   a. Copy, modify, or create derivative works of the Software;
+   b. Reverse engineer, decompile, or disassemble the Software;
+   c. Rent, lease, lend, sell, redistribute, sublicense, or transfer the Software;
+   d. Remove or alter any trademark, logo, copyright or other proprietary notices, legends, symbols or labels in the Software;
+   e. Use the Software for any purpose that is illegal or prohibited by this Agreement.
+
+3. OWNERSHIP
+
+   The Software is licensed, not sold. The Company retains all rights, title, and interest in and to the Software, including all intellectual property rights. This Agreement does not grant you any rights to trademarks or service marks of the Company.
+
+4. THIRD-PARTY COMPONENTS
+
+   The Software may include certain open-source components that are subject to open-source licenses. To the extent required by the licenses covering open-source components, the terms of such licenses will apply in lieu of the terms of this Agreement. A list of included open-source components and corresponding license terms is available upon request.
+
+5. DISCLAIMER OF WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
+
+6. LIMITATION OF LIABILITY
+
+   IN NO EVENT SHALL THE COMPANY BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF THE COMPANY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+7. TERM AND TERMINATION
+
+   This Agreement is effective until terminated. The Company may terminate this Agreement at any time if you fail to comply with any term of this Agreement. Upon termination, you must cease all use of the Software and destroy all copies.
+
+8. GOVERNING LAW
+
+   This Agreement shall be governed by the laws of the jurisdiction in which the Company is located, without regard to its conflict of law provisions.
+
+9. ENTIRE AGREEMENT
+
+   This Agreement constitutes the entire agreement between you and the Company relating to the Software and supersedes all prior or contemporaneous understandings regarding such subject matter.
+
+10. ACKNOWLEDGMENT
+
+    By using the Software, you acknowledge that you have read this Agreement, understand it, and agree to be bound by its terms and conditions.
+
+11. ORIGINAL LICENSE ACKNOWLEDGMENT
+
+    This software is based on OpenManus, which is licensed under the MIT License:
+
+    MIT License
+
+    Copyright (c) 2025 manna_and_poem
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+    The TORONTO AI TEAM AGENT has been substantially modified with proprietary enhancements, 
+    including but not limited to the sophisticated vector-based knowledge integration system.

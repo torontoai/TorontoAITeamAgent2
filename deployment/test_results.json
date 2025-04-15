@@ -1,0 +1,160 @@
+{
+  "basic_communication": {
+    "success": true,
+    "message": "Basic communication test completed successfully",
+    "results": {
+      "pm_to_dev": {
+        "success": true,
+        "message": "Message sent successfully",
+        "message_id": "msg_435c4d802052439da2dd6dc213383b39",
+        "result": {
+          "pattern": "request_response",
+          "status": "delivered",
+          "response_expected": true,
+          "message_id": "msg_435c4d802052439da2dd6dc213383b39"
+        }
+      },
+      "dev_to_pm": {
+        "success": true,
+        "message": "Message sent successfully",
+        "message_id": "msg_489bd055d7fd46129ecc09687567e956",
+        "result": {
+          "pattern": "request_response",
+          "status": "delivered",
+          "response_expected": true,
+          "message_id": "msg_489bd055d7fd46129ecc09687567e956"
+        }
+      },
+      "history": {
+        "success": true,
+        "message": "Message history retrieved",
+        "history": [
+          {
+            "from": "pm_agent",
+            "to": "dev_agent",
+            "content": {
+              "type": "task_assignment",
+              "task": "Implement login functionality",
+              "priority": "high"
+            },
+            "metadata": {
+              "category": "task"
+            },
+            "id": "msg_435c4d802052439da2dd6dc213383b39",
+            "timestamp": "2025-04-01T06:31:58.324144"
+          },
+          {
+            "from": "dev_agent",
+            "to": "pm_agent",
+            "content": {
+              "type": "task_update",
+              "task": "Implement login functionality",
+              "status": "in_progress",
+              "notes": "Started working on authentication flow"
+            },
+            "metadata": {
+              "category": "update"
+            },
+            "id": "msg_489bd055d7fd46129ecc09687567e956",
+            "timestamp": "2025-04-01T06:31:58.324366"
+          }
+        ],
+        "count": 2
+      }
+    }
+  },
+  "collaboration_session": {
+    "success": true,
+    "message": "Collaboration session test completed successfully",
+    "results": {
+      "session_creation": {
+        "success": true,
+        "message": "Collaboration session created successfully",
+        "session_id": "collab_0397716407904e41a7136170cb2e69b2",
+        "name": "Test Feature Implementation",
+        "participants": [
+          "pm_agent",
+          "product_agent",
+          "dev_agent",
+          "arch_agent",
+          "qa_agent"
+        ]
+      },
+      "message_sending": {
+        "success": true,
+        "message": "Collaboration message sent successfully",
+        "message_id": "msg_7fa22687d3b34a968219472578df659e",
+        "session_id": "collab_0397716407904e41a7136170cb2e69b2"
+      },
+      "state_update": {
+        "success": true,
+        "message": "Shared state updated successfully",
+        "session_id": "collab_0397716407904e41a7136170cb2e69b2",
+        "new_state": {
+          "requirements": {
+            "auth_methods": [
+              "email",
+              "google",
+              "github"
+            ],
+            "security_level": "high",
+            "user_experience": "streamlined"
+          }
+        }
+      },
+      "session_info": {
+        "success": true,
+        "session": {
+          "id": "collab_0397716407904e41a7136170cb2e69b2",
+          "name": "Test Feature Implementation",
+          "description": "Collaborative session to design and implement a test feature",
+          "participants": [
+            "pm_agent",
+            "product_agent",
+            "dev_agent",
+            "arch_agent",
+            "qa_agent"
+          ],
+          "initiator": "pm_agent",
+          "session_type": "general",
+          "status": "active",
+          "created_at": "2025-04-01T06:31:58.324652",
+          "updated_at": "2025-04-01T06:31:58.327543",
+          "messages": [
+            {
+              "id": "msg_7fa22687d3b34a968219472578df659e",
+              "session_id": "collab_0397716407904e41a7136170cb2e69b2",
+              "from": "arch_agent",
+              "content": {
+                "type": "architecture_proposal",
+                "auth_flow": "OAuth2 with JWT tokens",
+                "components": [
+                  "AuthService",
+                  "UserRepository",
+                  "TokenManager"
+                ]
+              },
+              "type": "architecture",
+              "timestamp": "2025-04-01T06:31:58.326328",
+              "metadata": {
+                "importance": "high"
+              }
+            }
+          ],
+          "artifacts": [],
+          "shared_state": {
+            "requirements": {
+              "auth_methods": [
+                "email",
+                "google",
+                "github"
+              ],
+              "security_level": "high",
+              "user_experience": "streamlined"
+            }
+          }
+        }
+      }
+    }
+  }
+}

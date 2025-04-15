@@ -1,0 +1,634 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""
+Enhanced communication framework for real-time agent conversation monitoring.
+
+This module extends the base communication framework to provide comprehensive
+monitoring of all agent conversations in real-time.
+"""
+
+from typing import Dict, Any, List, Optional
+import logging
+import json
+import asyncio
+import datetime
+from uuid import uuid4
+
+from ..collaboration.communication_framework import AgentCommunicationFramework
+
+logger = logging.getLogger(__name__)
+
+class EnhancedCommunicationFramework(AgentCommunicationFramework):
+    """
+    Enhanced communication framework with real-time monitoring capabilities.
+    
+    This class extends the base AgentCommunicationFramework to add comprehensive
+    monitoring of all agent conversations, message history tracking, and
+    real-time event broadcasting.
+    """
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        Initialize the enhanced communication framework.
+        
+        Args:
+            config: Configuration settings
+        """
+        super().__init__(config)
+        
+        # Initialize conversation tracking
+        self.conversations = {}
+        self.message_history = []
+        self.subscribers = []
+        
+        # Maximum history size
+        self.max_history_size = (config or {}).get("max_history_size", 1000)
+        
+        logger.info("Enhanced communication framework initialized")
+    
+    async def send_message(self, sender: str, recipient: str, message: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Send a message from one agent to another with enhanced tracking.
+        
+        Args:
+            sender: Sender agent ID
+            recipient: Recipient agent ID
+            message: Message content
+            
+        Returns:
+            Message delivery result
+        """
+        # Add message metadata
+        message_id = str(uuid4())
+        timestamp = datetime.datetime.now().isoformat()
+        
+        enhanced_message = {
+            "message_id": message_id,
+            "sender": sender,
+            "recipient": recipient,
+            "content": message,
+            "timestamp": timestamp,
+            "conversation_id": self._get_conversation_id(sender, recipient)
+        }
+        
+        # Track the message
+        self._track_message(enhanced_message)
+        
+        # Broadcast to subscribers
+        await self._broadcast_message_event(enhanced_message, "sent")
+        
+        # Call parent implementation to handle actual delivery
+        result = await super().send_message(sender, recipient, message)
+        
+        # Update tracking with delivery status
+        enhanced_message["delivery_status"] = "delivered" if result.get("success", False) else "failed"
+        enhanced_message["delivery_time"] = datetime.datetime.now().isoformat()
+        
+        # Broadcast delivery status
+        await self._broadcast_message_event(enhanced_message, "delivered")
+        
+        # Return the result with the message ID
+        result["message_id"] = message_id
+        
+        return result
+    
+    async def broadcast_message(self, sender: str, recipients: List[str], message: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Broadcast a message to multiple recipients with enhanced tracking.
+        
+        Args:
+            sender: Sender agent ID
+            recipients: List of recipient agent IDs
+            message: Message content
+            
+        Returns:
+            Message broadcast result
+        """
+        # Generate a broadcast ID
+        broadcast_id = str(uuid4())
+        timestamp = datetime.datetime.now().isoformat()
+        
+        # Track individual messages for each recipient
+        delivery_results = {}
+        
+        for recipient in recipients:
+            # Create individual message with broadcast reference
+            message_id = str(uuid4())
+            
+            enhanced_message = {
+                "message_id": message_id,
+                "broadcast_id": broadcast_id,
+                "sender": sender,
+                "recipient": recipient,
+                "content": message,
+                "timestamp": timestamp,
+                "conversation_id": self._get_conversation_id(sender, recipient)
+            }
+            
+            # Track the message
+            self._track_message(enhanced_message)
+            
+            # Broadcast to subscribers
+            await self._broadcast_message_event(enhanced_message, "sent")
+            
+            # Call parent implementation for this recipient
+            result = await super().send_message(sender, recipient, message)
+            
+            # Update tracking with delivery status
+            enhanced_message["delivery_status"] = "delivered" if result.get("success", False) else "failed"
+            enhanced_message["delivery_time"] = datetime.datetime.now().isoformat()
+            
+            # Broadcast delivery status
+            await self._broadcast_message_event(enhanced_message, "delivered")
+            
+            # Store result
+            delivery_results[recipient] = {
+                "success": result.get("success", False),
+                "message": result.get("message", ""),
+                "message_id": message_id
+            }
+        
+        # Prepare overall result
+        successful_deliveries = sum(1 for result in delivery_results.values() if result.get("success", False))
+        
+        return {
+            "success": successful_deliveries > 0,
+            "message": f"Broadcast delivered to {successful_deliveries}/{len(recipients)} recipients",
+            "broadcast_id": broadcast_id,
+            "delivery_results": delivery_results
+        }
+    
+    async def subscribe_to_conversations(self, subscriber_id: str, filters: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Subscribe to conversation events.
+        
+        Args:
+            subscriber_id: Unique identifier for the subscriber
+            filters: Optional filters for the subscription
+            
+        Returns:
+            Subscription result
+        """
+        subscription = {
+            "subscriber_id": subscriber_id,
+            "filters": filters or {},
+            "subscribed_at": datetime.datetime.now().isoformat(),
+            "queue": asyncio.Queue()
+        }
+        
+        self.subscribers.append(subscription)
+        
+        logger.info(f"New subscriber: {subscriber_id}")
+        
+        return {
+            "success": True,
+            "message": "Successfully subscribed to conversations",
+            "subscriber_id": subscriber_id
+        }
+    
+    async def unsubscribe_from_conversations(self, subscriber_id: str) -> Dict[str, Any]:
+        """
+        Unsubscribe from conversation events.
+        
+        Args:
+            subscriber_id: Subscriber ID to unsubscribe
+            
+        Returns:
+            Unsubscription result
+        """
+        initial_count = len(self.subscribers)
+        
+        self.subscribers = [s for s in self.subscribers if s["subscriber_id"] != subscriber_id]
+        
+        if len(self.subscribers) < initial_count:
+            logger.info(f"Subscriber removed: {subscriber_id}")
+            return {
+                "success": True,
+                "message": "Successfully unsubscribed from conversations"
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"Subscriber {subscriber_id} not found"
+            }
+    
+    async def get_conversation_events(self, subscriber_id: str, timeout: float = 0.1) -> List[Dict[str, Any]]:
+        """
+        Get conversation events for a subscriber.
+        
+        Args:
+            subscriber_id: Subscriber ID
+            timeout: Timeout in seconds
+            
+        Returns:
+            List of conversation events
+        """
+        # Find the subscriber
+        subscription = next((s for s in self.subscribers if s["subscriber_id"] == subscriber_id), None)
+        
+        if not subscription:
+            logger.warning(f"Subscriber {subscriber_id} not found")
+            return []
+        
+        # Get events from the queue
+        events = []
+        try:
+            # Try to get at least one event
+            event = await asyncio.wait_for(subscription["queue"].get(), timeout)
+            events.append(event)
+            
+            # Get any additional events without waiting
+            while not subscription["queue"].empty():
+                events.append(subscription["queue"].get_nowait())
+                
+        except asyncio.TimeoutError:
+            # No events available within timeout
+            pass
+        
+        return events
+    
+    async def get_conversation_history(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get conversation history based on filters.
+        
+        Args:
+            params: Query parameters including filters, limit, and offset
+            
+        Returns:
+            Conversation history
+        """
+        filters = params.get("filters", {})
+        limit = params.get("limit", 100)
+        offset = params.get("offset", 0)
+        
+        # Apply filters
+        filtered_history = self._filter_message_history(filters)
+        
+        # Apply pagination
+        paginated_history = filtered_history[offset:offset + limit]
+        
+        return {
+            "success": True,
+            "message": "Conversation history retrieved",
+            "total": len(filtered_history),
+            "limit": limit,
+            "offset": offset,
+            "history": paginated_history
+        }
+    
+    async def get_conversation_statistics(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get statistics about conversations.
+        
+        Args:
+            params: Query parameters including time_range and grouping
+            
+        Returns:
+            Conversation statistics
+        """
+        time_range = params.get("time_range", "all")
+        grouping = params.get("grouping", "agent")
+        
+        # Filter history by time range
+        if time_range == "all":
+            filtered_history = self.message_history
+        else:
+            # Parse time range
+            now = datetime.datetime.now()
+            
+            if time_range == "last_hour":
+                start_time = now - datetime.timedelta(hours=1)
+            elif time_range == "last_day":
+                start_time = now - datetime.timedelta(days=1)
+            elif time_range == "last_week":
+                start_time = now - datetime.timedelta(weeks=1)
+            else:
+                # Default to all
+                filtered_history = self.message_history
+                start_time = None
+            
+            if start_time:
+                start_time_str = start_time.isoformat()
+                filtered_history = [
+                    msg for msg in self.message_history
+                    if msg.get("timestamp", "") >= start_time_str
+                ]
+        
+        # Calculate statistics based on grouping
+        if grouping == "agent":
+            stats = self._calculate_agent_statistics(filtered_history)
+        elif grouping == "conversation":
+            stats = self._calculate_conversation_statistics(filtered_history)
+        elif grouping == "time":
+            stats = self._calculate_time_statistics(filtered_history)
+        else:
+            # Default to agent grouping
+            stats = self._calculate_agent_statistics(filtered_history)
+        
+        return {
+            "success": True,
+            "message": "Conversation statistics retrieved",
+            "time_range": time_range,
+            "grouping": grouping,
+            "total_messages": len(filtered_history),
+            "statistics": stats
+        }
+    
+    def _track_message(self, message: Dict[str, Any]) -> None:
+        """
+        Track a message in the history.
+        
+        Args:
+            message: Message to track
+        """
+        # Add to history
+        self.message_history.append(message)
+        
+        # Trim history if needed
+        if len(self.message_history) > self.max_history_size:
+            self.message_history = self.message_history[-self.max_history_size:]
+        
+        # Update conversation tracking
+        conversation_id = message["conversation_id"]
+        
+        if conversation_id not in self.conversations:
+            self.conversations[conversation_id] = {
+                "conversation_id": conversation_id,
+                "participants": [message["sender"], message["recipient"]],
+                "message_count": 0,
+                "first_message_time": message["timestamp"],
+                "last_message_time": message["timestamp"]
+            }
+        
+        # Update conversation stats
+        self.conversations[conversation_id]["message_count"] += 1
+        self.conversations[conversation_id]["last_message_time"] = message["timestamp"]
+    
+    def _get_conversation_id(self, agent1: str, agent2: str) -> str:
+        """
+        Get a consistent conversation ID for two agents.
+        
+        Args:
+            agent1: First agent ID
+            agent2: Second agent ID
+            
+        Returns:
+            Conversation ID
+        """
+        # Sort agent IDs to ensure consistency
+        sorted_agents = sorted([agent1, agent2])
+        return f"conv_{sorted_agents[0]}_{sorted_agents[1]}"
+    
+    async def _broadcast_message_event(self, message: Dict[str, Any], event_type: str) -> None:
+        """
+        Broadcast a message event to all subscribers.
+        
+        Args:
+            message: Message data
+            event_type: Event type (sent, delivered, etc.)
+        """
+        event = {
+            "event_type": event_type,
+            "timestamp": datetime.datetime.now().isoformat(),
+            "message": message
+        }
+        
+        for subscription in self.subscribers:
+            # Check if the event matches the subscription filters
+            if self._event_matches_filters(event, subscription["filters"]):
+                await subscription["queue"].put(event)
+    
+    def _event_matches_filters(self, event: Dict[str, Any], filters: Dict[str, Any]) -> bool:
+        """
+        Check if an event matches subscription filters.
+        
+        Args:
+            event: Event to check
+            filters: Filters to apply
+            
+        Returns:
+            True if the event matches the filters
+        """
+        if not filters:
+            return True
+        
+        message = event["message"]
+        
+        # Check agent filters
+        if "agent_id" in filters:
+            agent_id = filters["agent_id"]
+            if message["sender"] != agent_id and message["recipient"] != agent_id:
+                return False
+        
+        # Check conversation filter
+        if "conversation_id" in filters:
+            if message["conversation_id"] != filters["conversation_id"]:
+                return False
+        
+        # Check event type filter
+        if "event_types" in filters:
+            if event["event_type"] not in filters["event_types"]:
+                return False
+        
+        return True
+    
+    def _filter_message_history(self, filters: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Filter message history based on filters.
+        
+        Args:
+            filters: Filters to apply
+            
+        Returns:
+            Filtered message history
+        """
+        filtered_history = self.message_history
+        
+        # Filter by agent
+        if "agent_id" in filters:
+            agent_id = filters["agent_id"]
+            filtered_history = [
+                msg for msg in filtered_history
+                if msg["sender"] == agent_id or msg["recipient"] == agent_id
+            ]
+        
+        # Filter by conversation
+        if "conversation_id" in filters:
+            conversation_id = filters["conversation_id"]
+            filtered_history = [
+                msg for msg in filtered_history
+                if msg["conversation_id"] == conversation_id
+            ]
+        
+        # Filter by time range
+        if "start_time" in filters:
+            start_time = filters["start_time"]
+            filtered_history = [
+                msg for msg in filtered_history
+                if msg["timestamp"] >= start_time
+            ]
+        
+        if "end_time" in filters:
+            end_time = filters["end_time"]
+            filtered_history = [
+                msg for msg in filtered_history
+                if msg["timestamp"] <= end_time
+            ]
+        
+        # Filter by content
+        if "content_contains" in filters:
+            content_contains = filters["content_contains"].lower()
+            filtered_history = [
+                msg for msg in filtered_history
+                if content_contains in json.dumps(msg["content"]).lower()
+            ]
+        
+        return filtered_history
+    
+    def _calculate_agent_statistics(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Calculate statistics grouped by agent.
+        
+        Args:
+            messages: List of messages
+            
+        Returns:
+            Agent statistics
+        """
+        agent_stats = {}
+        
+        for msg in messages:
+            sender = msg["sender"]
+            recipient = msg["recipient"]
+            
+            # Update sender stats
+            if sender not in agent_stats:
+                agent_stats[sender] = {
+                    "sent": 0,
+                    "received": 0,
+                    "conversations": set()
+                }
+            
+            agent_stats[sender]["sent"] += 1
+            agent_stats[sender]["conversations"].add(msg["conversation_id"])
+            
+            # Update recipient stats
+            if recipient not in agent_stats:
+                agent_stats[recipient] = {
+                    "sent": 0,
+                    "received": 0,
+                    "conversations": set()
+                }
+            
+            agent_stats[recipient]["received"] += 1
+            agent_stats[recipient]["conversations"].add(msg["conversation_id"])
+        
+        # Convert sets to counts for JSON serialization
+        for agent_id, stats in agent_stats.items():
+            stats["conversation_count"] = len(stats["conversations"])
+            del stats["conversations"]
+        
+        return agent_stats
+    
+    def _calculate_conversation_statistics(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Calculate statistics grouped by conversation.
+        
+        Args:
+            messages: List of messages
+            
+        Returns:
+            Conversation statistics
+        """
+        conversation_stats = {}
+        
+        for msg in messages:
+            conv_id = msg["conversation_id"]
+            
+            if conv_id not in conversation_stats:
+                conversation_stats[conv_id] = {
+                    "message_count": 0,
+                    "participants": set(),
+                    "first_message": None,
+                    "last_message": None
+                }
+            
+            stats = conversation_stats[conv_id]
+            stats["message_count"] += 1
+            stats["participants"].add(msg["sender"])
+            stats["participants"].add(msg["recipient"])
+            
+            if stats["first_message"] is None or msg["timestamp"] < stats["first_message"]:
+                stats["first_message"] = msg["timestamp"]
+            
+            if stats["last_message"] is None or msg["timestamp"] > stats["last_message"]:
+                stats["last_message"] = msg["timestamp"]
+        
+        # Convert sets to lists for JSON serialization
+        for conv_id, stats in conversation_stats.items():
+            stats["participants"] = list(stats["participants"])
+            stats["participant_count"] = len(stats["participants"])
+            
+            # Calculate duration if possible
+            if stats["first_message"] and stats["last_message"]:
+                first_time = datetime.datetime.fromisoformat(stats["first_message"])
+                last_time = datetime.datetime.fromisoformat(stats["last_message"])
+                duration_seconds = (last_time - first_time).total_seconds()
+                stats["duration_seconds"] = duration_seconds
+        
+        return conversation_stats
+    
+    def _calculate_time_statistics(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Calculate statistics grouped by time periods.
+        
+        Args:
+            messages: List of messages
+            
+        Returns:
+            Time-based statistics
+        """
+        # Group by hour
+        hourly_stats = {}
+        
+        for msg in messages:
+            timestamp = datetime.datetime.fromisoformat(msg["timestamp"])
+            hour_key = timestamp.strftime("%Y-%m-%d %H:00")
+            
+            if hour_key not in hourly_stats:
+                hourly_stats[hour_key] = {
+                    "message_count": 0,
+                    "unique_senders": set(),
+                    "unique_recipients": set(),
+                    "conversations": set()
+                }
+            
+            stats = hourly_stats[hour_key]
+            stats["message_count"] += 1
+            stats["unique_senders"].add(msg["sender"])
+            stats["unique_recipients"].add(msg["recipient"])
+            stats["conversations"].add(msg["conversation_id"])
+        
+        # Convert sets to counts for JSON serialization
+        for hour, stats in hourly_stats.items():
+            stats["unique_sender_count"] = len(stats["unique_senders"])
+            stats["unique_recipient_count"] = len(stats["unique_recipients"])
+            stats["conversation_count"] = len(stats["conversations"])
+            del stats["unique_senders"]
+            del stats["unique_recipients"]
+            del stats["conversations"]
+        
+        return hourly_stats

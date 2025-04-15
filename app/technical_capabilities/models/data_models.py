@@ -1,0 +1,184 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""Models for technical capabilities module.
+
+This module defines the data models used by the technical capabilities module."""
+
+from typing import Dict, List, Any, Optional
+from pydantic import BaseModel, Field
+
+class CodeGenerationRequest(BaseModel):
+    """Request for code generation."""
+    project_specification_id: str
+    technology_stack: Dict[str, Any]
+    code_style_preferences: Dict[str, Any]
+    
+class CodeGenerationResult(BaseModel):
+    """Result of code generation."""
+    project_id: str
+    files: List[Dict[str, Any]]
+    structure: Dict[str, Any]
+    build_instructions: Dict[str, Any]
+    
+class TechnologyStack(BaseModel):
+    """Technology stack for a project."""
+    frontend: Dict[str, Any]
+    backend: Dict[str, Any]
+    database: Dict[str, Any]
+    deployment: Dict[str, Any]
+    
+class CodeStylePreferences(BaseModel):
+    """Code style preferences."""
+    language: str
+    indentation: str
+    naming_convention: Dict[str, str]
+
+class ProjectSpecification(BaseModel):
+    """Project specification."""
+    id: str
+    name: str
+    description: str
+    requirements: List[str]
+    features: List[Dict[str, Any]]
+    constraints: List[str]
+    
+class CodeReviewRequest(BaseModel):
+    """Request for code review."""
+    project_id: str
+    files: List[Dict[str, Any]]
+    review_criteria: Dict[str, Any]
+    
+class CodeReviewResult(BaseModel):
+    """Result of code review."""
+    project_id: str
+    review_id: str
+    issues: List[Dict[str, Any]]
+    suggestions: List[Dict[str, Any]]
+    quality_metrics: Dict[str, Any]
+    
+class TestGenerationRequest(BaseModel):
+    """Request for test generation."""
+    project_id: str
+    files: List[Dict[str, Any]]
+    test_framework: str
+    coverage_targets: Dict[str, float]
+    
+class TestGenerationResult(BaseModel):
+    """Result of test generation."""
+    project_id: str
+    test_files: List[Dict[str, Any]]
+    coverage_report: Dict[str, Any]
+    
+class DocumentationGenerationRequest(BaseModel):
+    """Request for documentation generation."""
+    project_id: str
+    files: List[Dict[str, Any]]
+    documentation_format: str
+    documentation_level: str
+    
+class DocumentationGenerationResult(BaseModel):
+    """Result of documentation generation."""
+    project_id: str
+    documentation_files: List[Dict[str, Any]]
+    
+class DeploymentConfigurationRequest(BaseModel):
+    """Request for deployment configuration."""
+    project_id: str
+    deployment_target: str
+    infrastructure_requirements: Dict[str, Any]
+    
+class DeploymentConfigurationResult(BaseModel):
+    """Result of deployment configuration."""
+    project_id: str
+    configuration_files: List[Dict[str, Any]]
+    deployment_instructions: Dict[str, Any]
+    
+class SecurityAuditRequest(BaseModel):
+    """Request for security audit."""
+    project_id: str
+    files: List[Dict[str, Any]]
+    security_standards: List[str]
+    
+class SecurityAuditResult(BaseModel):
+    """Result of security audit."""
+    project_id: str
+    audit_id: str
+    vulnerabilities: List[Dict[str, Any]]
+    recommendations: List[Dict[str, Any]]
+    compliance_report: Dict[str, Any]
+    
+class PerformanceOptimizationRequest(BaseModel):
+    """Request for performance optimization."""
+    project_id: str
+    files: List[Dict[str, Any]]
+    performance_targets: Dict[str, Any]
+    
+class PerformanceOptimizationResult(BaseModel):
+    """Result of performance optimization."""
+    project_id: str
+    optimized_files: List[Dict[str, Any]]
+    performance_report: Dict[str, Any]
+    
+class CodeMigrationRequest(BaseModel):
+    """Request for code migration."""
+    project_id: str
+    source_files: List[Dict[str, Any]]
+    source_technology: Dict[str, Any]
+    target_technology: Dict[str, Any]
+    
+class CodeMigrationResult(BaseModel):
+    """Result of code migration."""
+    project_id: str
+    migrated_files: List[Dict[str, Any]]
+    migration_report: Dict[str, Any]
+    
+class APIDesignRequest(BaseModel):
+    """Request for API design."""
+    project_id: str
+    requirements: List[str]
+    api_style: str
+    authentication_requirements: Dict[str, Any]
+    
+class APIDesignResult(BaseModel):
+    """Result of API design."""
+    project_id: str
+    api_specification: Dict[str, Any]
+    implementation_files: List[Dict[str, Any]]
+    
+class DatabaseDesignRequest(BaseModel):
+    """Request for database design."""
+    project_id: str
+    data_requirements: List[Dict[str, Any]]
+    database_type: str
+    performance_requirements: Dict[str, Any]
+    
+class DatabaseDesignResult(BaseModel):
+    """Result of database design."""
+    project_id: str
+    schema_definition: Dict[str, Any]
+    implementation_files: List[Dict[str, Any]]
+    
+class UIDesignRequest(BaseModel):
+    """Request for UI design."""
+    project_id: str
+    requirements: List[str]
+    design_style: Dict[str, Any]
+    accessibility_requirements: List[str]
+    
+class UIDesignResult(BaseModel):
+    """Result of UI design."""
+    project_id: str
+    design_files: List[Dict[str, Any]]
+    implementation_files: List[Dict[str, Any]]

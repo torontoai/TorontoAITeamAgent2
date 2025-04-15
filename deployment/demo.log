@@ -1,0 +1,131 @@
+2025-04-01 06:34:13,152 - __main__ - INFO - Loaded configuration: OpenManus Team AI v0.1.0
+2025-04-01 06:34:13,153 - app.collaboration.communication_framework - INFO - Agent Communication Framework initialized
+2025-04-01 06:34:13,153 - app.collaboration.framework - INFO - Real-time Collaboration Framework initialized
+2025-04-01 06:34:13,153 - __main__ - INFO - Initialized collaboration demo with config from /home/ubuntu/openmanus-team-ai/deployment/config.json
+2025-04-01 06:34:13,153 - app.collaboration.communication_framework - INFO - Agent Communication Framework initialized
+2025-04-01 06:34:13,153 - app.tools.registry - INFO - Tool Registry initialized
+2025-04-01 06:34:13,153 - app.agent.project_manager - INFO - Project Manager Agent initialized with model: gpt-4o
+2025-04-01 06:34:13,153 - __main__ - INFO - Set up agent pm_agent with role project_manager
+2025-04-01 06:34:13,153 - app.agent.base_agent - INFO - Base Agent initialized with role: product_manager
+2025-04-01 06:34:13,153 - app.agent.product_manager - INFO - Product Manager Agent initialized with model: gpt-4o
+2025-04-01 06:34:13,153 - __main__ - INFO - Set up agent product_agent with role product_manager
+2025-04-01 06:34:13,153 - app.agent.base_agent - INFO - Base Agent initialized with role: developer
+2025-04-01 06:34:13,153 - app.agent.developer - INFO - Developer Agent initialized with model: gpt-4o
+2025-04-01 06:34:13,153 - __main__ - INFO - Set up agent dev_agent with role developer
+2025-04-01 06:34:13,153 - app.agent.base_agent - INFO - Base Agent initialized with role: system_architect
+2025-04-01 06:34:13,154 - __main__ - INFO - Set up agent arch_agent with role system_architect
+2025-04-01 06:34:13,154 - app.agent.base_agent - INFO - Base Agent initialized with role: qa_testing_specialist
+2025-04-01 06:34:13,154 - __main__ - INFO - Set up agent qa_agent with role qa_testing_specialist
+2025-04-01 06:34:13,154 - __main__ - INFO - Set up 5 agents
+2025-04-01 06:34:13,154 - app.collaboration.communication_framework - INFO - Routing message msg_10bc96e7667b4c4593865171a35bf875 to agent product_agent
+2025-04-01 06:34:13,154 - app.collaboration.communication_framework - INFO - Message sent from pm_agent to product_agent with pattern request_response
+2025-04-01 06:34:13,154 - app.collaboration.communication_framework - INFO - Routing message msg_fd1dfea6c3fe4bdeb39bed41a67a67e7 to agent dev_agent
+2025-04-01 06:34:13,154 - app.collaboration.communication_framework - INFO - Message sent from pm_agent to dev_agent with pattern request_response
+2025-04-01 06:34:13,154 - app.collaboration.communication_framework - INFO - Routing message msg_f4e842abe558411d91720ebbbe2351c1 to agent arch_agent
+2025-04-01 06:34:13,154 - app.collaboration.communication_framework - INFO - Message sent from pm_agent to arch_agent with pattern request_response
+2025-04-01 06:34:13,155 - app.collaboration.communication_framework - INFO - Routing message msg_099bd1729c5c4733842b3d8902e6d613 to agent qa_agent
+2025-04-01 06:34:13,155 - app.collaboration.communication_framework - INFO - Message sent from pm_agent to qa_agent with pattern request_response
+2025-04-01 06:34:13,155 - app.collaboration.framework - INFO - Collaboration session collab_5d1319b872ef477a8549c5a2bb70697c created by pm_agent with 5 participants
+2025-04-01 06:34:13,155 - __main__ - INFO - Started feature development session: collab_5d1319b872ef477a8549c5a2bb70697c
+2025-04-01 06:34:13,155 - app.collaboration.communication_framework - INFO - Routing message msg_96a0983345d4430a8ce558c6de48bcd7 to agent product_agent
+2025-04-01 06:34:13,155 - app.collaboration.communication_framework - INFO - Message sent from pm_agent to product_agent with pattern broadcast
+2025-04-01 06:34:13,156 - app.collaboration.communication_framework - INFO - Routing message msg_f8a26d76b98e4ff98d0d35f75e8535f7 to agent dev_agent
+2025-04-01 06:34:13,156 - app.collaboration.communication_framework - INFO - Message sent from pm_agent to dev_agent with pattern broadcast
+2025-04-01 06:34:13,156 - app.collaboration.communication_framework - INFO - Routing message msg_cec754a90dff47258b1f08fffd7589a6 to agent arch_agent
+2025-04-01 06:34:13,156 - app.collaboration.communication_framework - INFO - Message sent from pm_agent to arch_agent with pattern broadcast
+2025-04-01 06:34:13,156 - app.collaboration.communication_framework - INFO - Routing message msg_e7a4647bbcec41dc89a5c242a74236c3 to agent qa_agent
+2025-04-01 06:34:13,156 - app.collaboration.communication_framework - INFO - Message sent from pm_agent to qa_agent with pattern broadcast
+2025-04-01 06:34:13,156 - app.collaboration.framework - INFO - Message sent in collaboration session collab_5d1319b872ef477a8549c5a2bb70697c by pm_agent
+2025-04-01 06:34:13,156 - __main__ - INFO - Step 1: Project Manager initiated feature development
+2025-04-01 06:34:13,156 - app.collaboration.communication_framework - INFO - Routing message msg_1e57a38cd6b94c48bd7fc14d40091c9a to agent pm_agent
+2025-04-01 06:34:13,156 - app.collaboration.communication_framework - INFO - Message sent from product_agent to pm_agent with pattern broadcast
+2025-04-01 06:34:13,156 - app.collaboration.communication_framework - INFO - Routing message msg_6dd724b94c63472195f6b2fe63c4e17d to agent dev_agent
+2025-04-01 06:34:13,156 - app.collaboration.communication_framework - INFO - Message sent from product_agent to dev_agent with pattern broadcast
+2025-04-01 06:34:13,157 - app.collaboration.communication_framework - INFO - Routing message msg_c8e2e4037d8a4a2ca9bac80b5375a0eb to agent arch_agent
+2025-04-01 06:34:13,157 - app.collaboration.communication_framework - INFO - Message sent from product_agent to arch_agent with pattern broadcast
+2025-04-01 06:34:13,157 - app.collaboration.communication_framework - INFO - Routing message msg_fed430674c924c88b70503e4a9a1c586 to agent qa_agent
+2025-04-01 06:34:13,157 - app.collaboration.communication_framework - INFO - Message sent from product_agent to qa_agent with pattern broadcast
+2025-04-01 06:34:13,157 - app.collaboration.framework - INFO - Shared state updated in collaboration session collab_5d1319b872ef477a8549c5a2bb70697c by product_agent
+2025-04-01 06:34:13,157 - __main__ - INFO - Step 2: Product Manager defined requirements
+2025-04-01 06:34:13,157 - app.collaboration.communication_framework - INFO - Routing message msg_95053996180c42329be102e5e8a7ffc2 to agent pm_agent
+2025-04-01 06:34:13,157 - app.collaboration.communication_framework - INFO - Message sent from arch_agent to pm_agent with pattern broadcast
+2025-04-01 06:34:13,157 - app.collaboration.communication_framework - INFO - Routing message msg_b9869af90da049cebd9394b73a80f73b to agent product_agent
+2025-04-01 06:34:13,157 - app.collaboration.communication_framework - INFO - Message sent from arch_agent to product_agent with pattern broadcast
+2025-04-01 06:34:13,157 - app.collaboration.communication_framework - INFO - Routing message msg_b5aa8d95b63845a98f581f33ccf18608 to agent dev_agent
+2025-04-01 06:34:13,157 - app.collaboration.communication_framework - INFO - Message sent from arch_agent to dev_agent with pattern broadcast
+2025-04-01 06:34:13,157 - app.collaboration.communication_framework - INFO - Routing message msg_6c9f37a39bc3464596b5f0421686c211 to agent qa_agent
+2025-04-01 06:34:13,158 - app.collaboration.communication_framework - INFO - Message sent from arch_agent to qa_agent with pattern broadcast
+2025-04-01 06:34:13,158 - app.collaboration.framework - INFO - Artifact artifact_ee3ade53ce2e45c0bfbd8e3766c1b19e added to collaboration session collab_5d1319b872ef477a8549c5a2bb70697c by arch_agent
+2025-04-01 06:34:13,158 - __main__ - INFO - Step 3: System Architect proposed architecture
+2025-04-01 06:34:13,158 - app.collaboration.communication_framework - INFO - Routing message msg_79bf44dc69134525bb2c4c7fd66bc63d to agent pm_agent
+2025-04-01 06:34:13,158 - app.collaboration.communication_framework - INFO - Message sent from dev_agent to pm_agent with pattern broadcast
+2025-04-01 06:34:13,158 - app.collaboration.communication_framework - INFO - Routing message msg_fef1beff4dc74612b5a4b9d990729774 to agent product_agent
+2025-04-01 06:34:13,158 - app.collaboration.communication_framework - INFO - Message sent from dev_agent to product_agent with pattern broadcast
+2025-04-01 06:34:13,158 - app.collaboration.communication_framework - INFO - Routing message msg_eaa2aa8b87d54b62a54e94969d252297 to agent arch_agent
+2025-04-01 06:34:13,158 - app.collaboration.communication_framework - INFO - Message sent from dev_agent to arch_agent with pattern broadcast
+2025-04-01 06:34:13,158 - app.collaboration.communication_framework - INFO - Routing message msg_428feb8255414714ab1c291c7cd4121e to agent qa_agent
+2025-04-01 06:34:13,158 - app.collaboration.communication_framework - INFO - Message sent from dev_agent to qa_agent with pattern broadcast
+2025-04-01 06:34:13,159 - app.collaboration.framework - INFO - Message sent in collaboration session collab_5d1319b872ef477a8549c5a2bb70697c by dev_agent
+2025-04-01 06:34:13,159 - __main__ - INFO - Step 4: Developer provided implementation plan
+2025-04-01 06:34:13,159 - app.collaboration.communication_framework - INFO - Routing message msg_cc8d39589dd845b0adb51fbd9755f6b3 to agent pm_agent
+2025-04-01 06:34:13,159 - app.collaboration.communication_framework - INFO - Message sent from qa_agent to pm_agent with pattern broadcast
+2025-04-01 06:34:13,159 - app.collaboration.communication_framework - INFO - Routing message msg_62973edf0159440ab6c54bb4caf2ded2 to agent product_agent
+2025-04-01 06:34:13,159 - app.collaboration.communication_framework - INFO - Message sent from qa_agent to product_agent with pattern broadcast
+2025-04-01 06:34:13,159 - app.collaboration.communication_framework - INFO - Routing message msg_3475dc5c6daa4ad3b94fe8c956781501 to agent dev_agent
+2025-04-01 06:34:13,159 - app.collaboration.communication_framework - INFO - Message sent from qa_agent to dev_agent with pattern broadcast
+2025-04-01 06:34:13,159 - app.collaboration.communication_framework - INFO - Routing message msg_2af966609f784dcb895482fa6efe2261 to agent arch_agent
+2025-04-01 06:34:13,159 - app.collaboration.communication_framework - INFO - Message sent from qa_agent to arch_agent with pattern broadcast
+2025-04-01 06:34:13,160 - app.collaboration.framework - INFO - Artifact artifact_56f79dd5902a404e907d3ef3a1e5a20d added to collaboration session collab_5d1319b872ef477a8549c5a2bb70697c by qa_agent
+2025-04-01 06:34:13,160 - __main__ - INFO - Step 5: QA Specialist created test plan
+2025-04-01 06:34:13,160 - app.collaboration.communication_framework - INFO - Routing message msg_7c9cf5c5b7254873875b3abab621a571 to agent product_agent
+2025-04-01 06:34:13,160 - app.collaboration.communication_framework - INFO - Message sent from pm_agent to product_agent with pattern broadcast
+2025-04-01 06:34:13,160 - app.collaboration.communication_framework - INFO - Routing message msg_fba12f9e7b0b4782b031560c3b26c4b7 to agent dev_agent
+2025-04-01 06:34:13,160 - app.collaboration.communication_framework - INFO - Message sent from pm_agent to dev_agent with pattern broadcast
+2025-04-01 06:34:13,160 - app.collaboration.communication_framework - INFO - Routing message msg_bf437598a3714aab9df5539bcb3ed775 to agent arch_agent
+2025-04-01 06:34:13,160 - app.collaboration.communication_framework - INFO - Message sent from pm_agent to arch_agent with pattern broadcast
+2025-04-01 06:34:13,160 - app.collaboration.communication_framework - INFO - Routing message msg_5988194785b54247bf77c1dbcdc494cc to agent qa_agent
+2025-04-01 06:34:13,160 - app.collaboration.communication_framework - INFO - Message sent from pm_agent to qa_agent with pattern broadcast
+2025-04-01 06:34:13,160 - app.collaboration.framework - INFO - Shared state updated in collaboration session collab_5d1319b872ef477a8549c5a2bb70697c by pm_agent
+2025-04-01 06:34:13,160 - __main__ - INFO - Step 6: Project Manager updated timeline
+2025-04-01 06:34:13,161 - app.collaboration.communication_framework - INFO - Routing message msg_55cc1d7900e24aca8a712e2bd1fa7d68 to agent pm_agent
+2025-04-01 06:34:13,161 - app.collaboration.communication_framework - INFO - Message sent from dev_agent to pm_agent with pattern broadcast
+2025-04-01 06:34:13,161 - app.collaboration.communication_framework - INFO - Routing message msg_76d913c515a44833b180121d478ec45b to agent product_agent
+2025-04-01 06:34:13,161 - app.collaboration.communication_framework - INFO - Message sent from dev_agent to product_agent with pattern broadcast
+2025-04-01 06:34:13,161 - app.collaboration.communication_framework - INFO - Routing message msg_d4fa58ba5ac647c59a0ece60956ace99 to agent arch_agent
+2025-04-01 06:34:13,161 - app.collaboration.communication_framework - INFO - Message sent from dev_agent to arch_agent with pattern broadcast
+2025-04-01 06:34:13,161 - app.collaboration.communication_framework - INFO - Routing message msg_2028844c548c4f9a975bc5d877552de0 to agent qa_agent
+2025-04-01 06:34:13,161 - app.collaboration.communication_framework - INFO - Message sent from dev_agent to qa_agent with pattern broadcast
+2025-04-01 06:34:13,161 - app.collaboration.framework - INFO - Artifact artifact_a2e9dba03a9742108bf2fc61072a2527 added to collaboration session collab_5d1319b872ef477a8549c5a2bb70697c by dev_agent
+2025-04-01 06:34:13,161 - __main__ - INFO - Step 7: Developer added code artifact
+2025-04-01 06:34:13,161 - app.collaboration.communication_framework - INFO - Routing message msg_844700d6e75241dfa2338947cf91a3d2 to agent pm_agent
+2025-04-01 06:34:13,161 - app.collaboration.communication_framework - INFO - Message sent from arch_agent to pm_agent with pattern broadcast
+2025-04-01 06:34:13,162 - app.collaboration.communication_framework - INFO - Routing message msg_67a1dacd078845d795def2d8ba1bfd27 to agent product_agent
+2025-04-01 06:34:13,162 - app.collaboration.communication_framework - INFO - Message sent from arch_agent to product_agent with pattern broadcast
+2025-04-01 06:34:13,162 - app.collaboration.communication_framework - INFO - Routing message msg_c7955a95f4a74901ae594df96ce48985 to agent dev_agent
+2025-04-01 06:34:13,162 - app.collaboration.communication_framework - INFO - Message sent from arch_agent to dev_agent with pattern broadcast
+2025-04-01 06:34:13,162 - app.collaboration.communication_framework - INFO - Routing message msg_a68fea70113e4dfd978b43893fad2194 to agent qa_agent
+2025-04-01 06:34:13,162 - app.collaboration.communication_framework - INFO - Message sent from arch_agent to qa_agent with pattern broadcast
+2025-04-01 06:34:13,162 - app.collaboration.framework - INFO - Message sent in collaboration session collab_5d1319b872ef477a8549c5a2bb70697c by arch_agent
+2025-04-01 06:34:13,162 - __main__ - INFO - Step 8: System Architect reviewed code
+2025-04-01 06:34:13,162 - app.collaboration.communication_framework - INFO - Routing message msg_07a302befdb3413e96a52c12f2c56e57 to agent pm_agent
+2025-04-01 06:34:13,162 - app.collaboration.communication_framework - INFO - Message sent from qa_agent to pm_agent with pattern broadcast
+2025-04-01 06:34:13,162 - app.collaboration.communication_framework - INFO - Routing message msg_85ced4446fbf48428c5f71e995569678 to agent product_agent
+2025-04-01 06:34:13,162 - app.collaboration.communication_framework - INFO - Message sent from qa_agent to product_agent with pattern broadcast
+2025-04-01 06:34:13,162 - app.collaboration.communication_framework - INFO - Routing message msg_7c7a6128f02647368e73838e4526b0ff to agent dev_agent
+2025-04-01 06:34:13,163 - app.collaboration.communication_framework - INFO - Message sent from qa_agent to dev_agent with pattern broadcast
+2025-04-01 06:34:13,163 - app.collaboration.communication_framework - INFO - Routing message msg_28dae62d8b2849f9af68ddfa33ebe4fc to agent arch_agent
+2025-04-01 06:34:13,163 - app.collaboration.communication_framework - INFO - Message sent from qa_agent to arch_agent with pattern broadcast
+2025-04-01 06:34:13,163 - app.collaboration.framework - INFO - Artifact artifact_ee13a3de5e2f49bba88a85402e41bfcf added to collaboration session collab_5d1319b872ef477a8549c5a2bb70697c by qa_agent
+2025-04-01 06:34:13,163 - __main__ - INFO - Step 9: QA Specialist added test cases
+2025-04-01 06:34:13,163 - app.collaboration.communication_framework - INFO - Routing message msg_4c4f2c17ee444c1397042b19627ef7c7 to agent pm_agent
+2025-04-01 06:34:13,163 - app.collaboration.communication_framework - INFO - Message sent from product_agent to pm_agent with pattern broadcast
+2025-04-01 06:34:13,163 - app.collaboration.communication_framework - INFO - Routing message msg_01dae12fb5f9422fb45e52368863330e to agent dev_agent
+2025-04-01 06:34:13,163 - app.collaboration.communication_framework - INFO - Message sent from product_agent to dev_agent with pattern broadcast
+2025-04-01 06:34:13,163 - app.collaboration.communication_framework - INFO - Routing message msg_4d15545dfef14e44bcf18654ec272f87 to agent arch_agent
+2025-04-01 06:34:13,163 - app.collaboration.communication_framework - INFO - Message sent from product_agent to arch_agent with pattern broadcast
+2025-04-01 06:34:13,164 - app.collaboration.communication_framework - INFO - Routing message msg_1da2c2c34f2448e3b96ad78e453bdf06 to agent qa_agent
+2025-04-01 06:34:13,164 - app.collaboration.communication_framework - INFO - Message sent from product_agent to qa_agent with pattern broadcast
+2025-04-01 06:34:13,164 - app.collaboration.framework - INFO - Shared state updated in collaboration session collab_5d1319b872ef477a8549c5a2bb70697c by product_agent
+2025-04-01 06:34:13,164 - __main__ - INFO - Step 10: Product Manager updated requirements
+2025-04-01 06:34:13,165 - __main__ - INFO - Demonstration result: {'success': True, 'message': 'Real-time collaboration demonstration completed successfully', 'session_id': 'collab_5d1319b872ef477a8549c5a2bb70697c', 'steps_completed': 10, 'artifacts_created': 4, 'messages_exchanged': 3}
+2025-04-01 06:34:13,165 - __main__ - INFO - Shutting down demonstration

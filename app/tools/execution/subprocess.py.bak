@@ -1,0 +1,144 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""
+Execution/Testing tools for TorontoAITeamAgent Team AI.
+
+This module provides tools for subprocess execution.
+"""
+
+from typing import Dict, Any, List, Optional
+import os
+import asyncio
+import subprocess
+from ..base import BaseTool, ToolResult
+
+class SubprocessTool(BaseTool):
+    """Tool for executing subprocesses."""
+    
+    name = "subprocess"
+    description = "Provides capabilities for executing shell commands and subprocesses."
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        Initialize the Subprocess tool.
+        
+        Args:
+            config: Tool configuration with optional settings
+        """
+        super().__init__(config)
+        self.timeout = self.config.get("timeout", 60)  # Default timeout in seconds
+        self.max_output_size = self.config.get("max_output_size", 1024 * 1024)  # 1MB
+        self.allowed_commands = self.config.get("allowed_commands", None)  # None means all commands are allowed
+    
+    async def execute(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Execute the Subprocess tool with the given parameters.
+        
+        Args:
+            params: Tool parameters including:
+                - command: Command to execute
+                - cwd: Working directory (optional)
+                - env: Environment variables (optional)
+                - timeout: Command timeout in seconds (optional)
+                - shell: Whether to use shell (optional, default: False)
+                
+        Returns:
+            Tool execution result
+        """
+        command = params.get("command")
+        if not command:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Command parameter is required"
+            )
+        
+        # Check if command is allowed
+        if self.allowed_commands is not None:
+            command_base = command.split()[0] if isinstance(command, str) else command[0]
+            if command_base not in self.allowed_commands:
+                return ToolResult(
+                    success=False,
+                    data={},
+                    error=f"Command '{command_base}' is not allowed"
+                )
+        
+        cwd = params.get("cwd", os.getcwd())
+        env = params.get("env", os.environ.copy())
+        timeout = params.get("timeout", self.timeout)
+        shell = params.get("shell", False)
+        
+        try:
+            # Run in a separate thread to avoid blocking
+            loop = asyncio.get_event_loop()
+            process = await loop.run_in_executor(
+                None,
+                lambda: subprocess.run(
+                    command,
+                    capture_output=True,
+                    text=True,
+                    cwd=cwd,
+                    env=env,
+                    timeout=timeout,
+                    shell=shell,
+                    check=False  # Don't raise exception on non-zero exit code
+                )
+            )
+            
+            # Truncate output if too large
+            stdout = process.stdout
+            stderr = process.stderr
+            
+            if len(stdout) > self.max_output_size:
+                stdout = stdout[:self.max_output_size] + "\n... (output truncated)"
+                
+            if len(stderr) > self.max_output_size:
+                stderr = stderr[:self.max_output_size] + "\n... (output truncated)"
+            
+            return ToolResult(
+                success=process.returncode == 0,
+                data={
+                    "returncode": process.returncode,
+                    "stdout": stdout,
+                    "stderr": stderr
+                },
+                error=f"Command failed with exit code {process.returncode}" if process.returncode != 0 else None
+            )
+        except subprocess.TimeoutExpired:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Command timed out after {timeout} seconds"
+            )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=str(e)
+            )
+    
+    def get_capabilities(self) -> List[str]:
+        """
+        Return a list of capabilities provided by this tool.
+        
+        Returns:
+            List of capability descriptions
+        """
+        return [
+            "Execute shell commands and subprocesses",
+            "Capture command output and exit codes",
+            "Set working directory and environment variables for commands"
+        ]

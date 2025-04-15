@@ -1,0 +1,18 @@
+{
+  "execution_time": 120.5,
+  "iterations": 8.0,
+  "token_usage": 3500.0,
+  "cost": 0.75,
+  "success": 1.0,
+  "quality_score": 0.85,
+  "message_count": 25.0,
+  "coordinator_messages_sent": 10.0,
+  "coordinator_processing_time": 45.2,
+  "researcher_messages_sent": 15.0,
+  "researcher_processing_time": 60.8,
+  "efficiency": 0.2857142857142857,
+  "speed": 0.008298755186721992,
+  "cost_effectiveness": 1.3333333333333333,
+  "architecture_complexity": 0.48809523809523814,
+  "complexity_efficiency": 2.048780487804878
+}

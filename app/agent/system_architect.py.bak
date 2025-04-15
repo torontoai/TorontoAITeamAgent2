@@ -1,0 +1,551 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""
+System Architect Agent for TorontoAITeamAgent.
+
+This module defines the System Architect Agent, which designs high-level system architecture,
+patterns, and technical decisions.
+"""
+
+from typing import Dict, Any, List, Optional
+import os
+import logging
+import asyncio
+from datetime import datetime
+
+from .base_agent import BaseAgent
+from ..tools.registry import registry
+
+logger = logging.getLogger(__name__)
+
+class SystemArchitectAgent(BaseAgent):
+    """
+    System Architect Agent designs high-level system architecture, patterns, and technical decisions.
+    """
+    
+    role = "system_architect"
+    description = "Designs high-level system architecture, patterns, and technical decisions"
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        Initialize the System Architect Agent.
+        
+        Args:
+            config: Agent configuration with optional settings
+        """
+        super().__init__(config)
+        
+        # System Architect specific capabilities
+        self.capabilities.extend([
+            "Design system architecture",
+            "Select appropriate design patterns",
+            "Make technical decisions",
+            "Create component diagrams",
+            "Define system interfaces",
+            "Ensure scalability and maintainability"
+        ])
+        
+        # System Architect specific tools
+        self.preferred_tools.extend([
+            "openai",     # For advanced reasoning
+            "deepseek",   # For complex architecture design
+            "claude"      # For technical decision making
+        ])
+        
+        # System Architect state
+        self.architectures = {}
+        self.design_decisions = {}
+        self.component_diagrams = {}
+        
+        logger.info(f"System Architect Agent initialized with model: {self.model}")
+    
+    async def design_architecture(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Design system architecture based on requirements.
+        
+        Args:
+            params: Architecture parameters including project_id and requirements
+            
+        Returns:
+            Architecture design result
+        """
+        project_id = params.get("project_id")
+        if not project_id:
+            return {
+                "success": False,
+                "message": "Missing project ID"
+            }
+        
+        requirements = params.get("requirements", {})
+        
+        # Create architecture entry for this project
+        if project_id not in self.architectures:
+            self.architectures[project_id] = {
+                "components": [],
+                "layers": [],
+                "patterns": [],
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
+            }
+        
+        # In a real implementation, this would use LLM to design architecture based on requirements
+        # For now, use placeholder data
+        
+        # Define architecture components
+        components = [
+            {
+                "id": "frontend",
+                "name": "Frontend",
+                "description": "User interface layer",
+                "technologies": ["React", "TypeScript", "Material UI"],
+                "responsibilities": ["User interface", "State management", "API communication"]
+            },
+            {
+                "id": "backend",
+                "name": "Backend API",
+                "description": "Application logic and API endpoints",
+                "technologies": ["Python", "FastAPI", "SQLAlchemy"],
+                "responsibilities": ["Business logic", "API endpoints", "Data validation"]
+            },
+            {
+                "id": "database",
+                "name": "Database",
+                "description": "Data storage",
+                "technologies": ["PostgreSQL"],
+                "responsibilities": ["Data persistence", "Data integrity", "Query optimization"]
+            },
+            {
+                "id": "auth",
+                "name": "Authentication Service",
+                "description": "User authentication and authorization",
+                "technologies": ["JWT", "OAuth2"],
+                "responsibilities": ["User authentication", "Authorization", "Session management"]
+            },
+            {
+                "id": "cache",
+                "name": "Cache Layer",
+                "description": "Performance optimization through caching",
+                "technologies": ["Redis"],
+                "responsibilities": ["Data caching", "Session storage", "Rate limiting"]
+            }
+        ]
+        
+        # Define architecture layers
+        layers = [
+            {
+                "id": "presentation",
+                "name": "Presentation Layer",
+                "components": ["frontend"],
+                "description": "Handles user interface and user interactions"
+            },
+            {
+                "id": "application",
+                "name": "Application Layer",
+                "components": ["backend", "auth"],
+                "description": "Implements business logic and application features"
+            },
+            {
+                "id": "data",
+                "name": "Data Layer",
+                "components": ["database", "cache"],
+                "description": "Manages data storage, retrieval, and caching"
+            }
+        ]
+        
+        # Define architecture patterns
+        patterns = [
+            {
+                "id": "mvc",
+                "name": "Model-View-Controller",
+                "description": "Separates application into three components: Model, View, and Controller",
+                "components": ["frontend", "backend", "database"]
+            },
+            {
+                "id": "repository",
+                "name": "Repository Pattern",
+                "description": "Abstracts data access logic from business logic",
+                "components": ["backend", "database"]
+            },
+            {
+                "id": "microservices",
+                "name": "Microservices Architecture",
+                "description": "Divides application into loosely coupled services",
+                "components": ["backend", "auth"]
+            }
+        ]
+        
+        # Update architecture
+        self.architectures[project_id]["components"] = components
+        self.architectures[project_id]["layers"] = layers
+        self.architectures[project_id]["patterns"] = patterns
+        self.architectures[project_id]["updated_at"] = datetime.now().isoformat()
+        
+        logger.info(f"Designed architecture for project {project_id}")
+        
+        return {
+            "success": True,
+            "message": "Architecture designed successfully",
+            "architecture": self.architectures[project_id]
+        }
+    
+    async def make_technical_decisions(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Make technical decisions based on requirements and constraints.
+        
+        Args:
+            params: Decision parameters including project_id, requirements, and constraints
+            
+        Returns:
+            Technical decisions result
+        """
+        project_id = params.get("project_id")
+        if not project_id:
+            return {
+                "success": False,
+                "message": "Missing project ID"
+            }
+        
+        requirements = params.get("requirements", {})
+        constraints = params.get("constraints", {})
+        
+        # Create design decisions entry for this project
+        if project_id not in self.design_decisions:
+            self.design_decisions[project_id] = {
+                "decisions": [],
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
+            }
+        
+        # In a real implementation, this would use LLM to make technical decisions
+        # For now, use placeholder data
+        
+        # Make technical decisions
+        decisions = [
+            {
+                "id": "tech_stack",
+                "category": "Technology Stack",
+                "decision": "Use Python/FastAPI for backend, React for frontend",
+                "rationale": "Python offers excellent libraries for AI/ML, FastAPI provides high performance, React is industry standard for frontend",
+                "alternatives": ["Node.js/Express", "Django", "Vue.js"],
+                "trade_offs": "Python may have slightly lower performance than Node.js but offers better AI/ML integration"
+            },
+            {
+                "id": "database",
+                "category": "Database",
+                "decision": "Use PostgreSQL as primary database",
+                "rationale": "PostgreSQL offers excellent support for complex queries, transactions, and has good performance",
+                "alternatives": ["MongoDB", "MySQL", "DynamoDB"],
+                "trade_offs": "Relational database provides better data integrity but may be less flexible than NoSQL options"
+            },
+            {
+                "id": "auth",
+                "category": "Authentication",
+                "decision": "Implement JWT-based authentication with OAuth2 support",
+                "rationale": "JWT provides stateless authentication, OAuth2 allows integration with third-party identity providers",
+                "alternatives": ["Session-based auth", "API keys"],
+                "trade_offs": "JWT is stateless but requires more client-side handling"
+            },
+            {
+                "id": "deployment",
+                "category": "Deployment",
+                "decision": "Use Docker containers with Kubernetes orchestration",
+                "rationale": "Containers provide consistency across environments, Kubernetes offers scalability and resilience",
+                "alternatives": ["Virtual machines", "Serverless"],
+                "trade_offs": "Kubernetes has higher operational complexity but offers better control and scalability"
+            },
+            {
+                "id": "caching",
+                "category": "Caching",
+                "decision": "Implement Redis for caching and session storage",
+                "rationale": "Redis offers high performance, versatility, and supports various data structures",
+                "alternatives": ["Memcached", "Application-level caching"],
+                "trade_offs": "Redis requires additional infrastructure but provides significant performance benefits"
+            }
+        ]
+        
+        # Update design decisions
+        self.design_decisions[project_id]["decisions"] = decisions
+        self.design_decisions[project_id]["updated_at"] = datetime.now().isoformat()
+        
+        logger.info(f"Made technical decisions for project {project_id}")
+        
+        return {
+            "success": True,
+            "message": "Technical decisions made successfully",
+            "decisions": self.design_decisions[project_id]
+        }
+    
+    async def create_component_diagram(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create component diagram for system architecture.
+        
+        Args:
+            params: Diagram parameters including project_id
+            
+        Returns:
+            Component diagram creation result
+        """
+        project_id = params.get("project_id")
+        if not project_id:
+            return {
+                "success": False,
+                "message": "Missing project ID"
+            }
+        
+        if project_id not in self.architectures:
+            return {
+                "success": False,
+                "message": "Architecture not found for this project"
+            }
+        
+        # Create component diagram entry for this project
+        if project_id not in self.component_diagrams:
+            self.component_diagrams[project_id] = {
+                "nodes": [],
+                "edges": [],
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
+            }
+        
+        # In a real implementation, this would generate a proper component diagram
+        # For now, use placeholder data
+        
+        # Create diagram nodes from architecture components
+        nodes = []
+        for component in self.architectures[project_id]["components"]:
+            nodes.append({
+                "id": component["id"],
+                "label": component["name"],
+                "type": "component",
+                "description": component["description"]
+            })
+        
+        # Create diagram edges (connections between components)
+        edges = [
+            {
+                "source": "frontend",
+                "target": "backend",
+                "label": "HTTP/REST",
+                "description": "Frontend communicates with backend via REST API"
+            },
+            {
+                "source": "backend",
+                "target": "database",
+                "label": "SQL",
+                "description": "Backend stores and retrieves data from database"
+            },
+            {
+                "source": "backend",
+                "target": "auth",
+                "label": "API",
+                "description": "Backend validates authentication with auth service"
+            },
+            {
+                "source": "backend",
+                "target": "cache",
+                "label": "Redis",
+                "description": "Backend uses cache for performance optimization"
+            },
+            {
+                "source": "auth",
+                "target": "database",
+                "label": "SQL",
+                "description": "Auth service stores user data in database"
+            }
+        ]
+        
+        # Update component diagram
+        self.component_diagrams[project_id]["nodes"] = nodes
+        self.component_diagrams[project_id]["edges"] = edges
+        self.component_diagrams[project_id]["updated_at"] = datetime.now().isoformat()
+        
+        logger.info(f"Created component diagram for project {project_id}")
+        
+        return {
+            "success": True,
+            "message": "Component diagram created successfully",
+            "diagram": self.component_diagrams[project_id]
+        }
+    
+    async def define_interfaces(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Define interfaces between system components.
+        
+        Args:
+            params: Interface parameters including project_id
+            
+        Returns:
+            Interface definition result
+        """
+        project_id = params.get("project_id")
+        if not project_id:
+            return {
+                "success": False,
+                "message": "Missing project ID"
+            }
+        
+        if project_id not in self.architectures:
+            return {
+                "success": False,
+                "message": "Architecture not found for this project"
+            }
+        
+        # In a real implementation, this would use LLM to define interfaces
+        # For now, use placeholder data
+        
+        # Define interfaces between components
+        interfaces = [
+            {
+                "id": "frontend_backend",
+                "name": "Frontend-Backend Interface",
+                "source": "frontend",
+                "target": "backend",
+                "type": "REST API",
+                "endpoints": [
+                    {
+                        "path": "/api/users",
+                        "method": "GET",
+                        "description": "Get list of users",
+                        "parameters": [],
+                        "response": {"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string"}, "name": {"type": "string"}}}}
+                    },
+                    {
+                        "path": "/api/users/{id}",
+                        "method": "GET",
+                        "description": "Get user by ID",
+                        "parameters": [{"name": "id", "in": "path", "required": True, "type": "string"}],
+                        "response": {"type": "object", "properties": {"id": {"type": "string"}, "name": {"type": "string"}}}
+                    }
+                ]
+            },
+            {
+                "id": "backend_database",
+                "name": "Backend-Database Interface",
+                "source": "backend",
+                "target": "database",
+                "type": "SQL",
+                "models": [
+                    {
+                        "name": "User",
+                        "fields": [
+                            {"name": "id", "type": "UUID", "primary_key": True},
+                            {"name": "name", "type": "VARCHAR(255)"},
+                            {"name": "email", "type": "VARCHAR(255)"},
+                            {"name": "created_at", "type": "TIMESTAMP"}
+                        ]
+                    },
+                    {
+                        "name": "Product",
+                        "fields": [
+                            {"name": "id", "type": "UUID", "primary_key": True},
+                            {"name": "name", "type": "VARCHAR(255)"},
+                            {"name": "price", "type": "DECIMAL(10,2)"},
+                            {"name": "created_at", "type": "TIMESTAMP"}
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "backend_auth",
+                "name": "Backend-Auth Interface",
+                "source": "backend",
+                "target": "auth",
+                "type": "API",
+                "endpoints": [
+                    {
+                        "path": "/auth/validate",
+                        "method": "POST",
+                        "description": "Validate authentication token",
+                        "parameters": [{"name": "token", "in": "body", "required": True, "type": "string"}],
+                        "response": {"type": "object", "properties": {"valid": {"type": "boolean"}, "user_id": {"type": "string"}}}
+                    }
+                ]
+            }
+        ]
+        
+        # Add interfaces to architecture
+        self.architectures[project_id]["interfaces"] = interfaces
+        self.architectures[project_id]["updated_at"] = datetime.now().isoformat()
+        
+        logger.info(f"Defined interfaces for project {project_id}")
+        
+        return {
+            "success": True,
+            "message": "Interfaces defined successfully",
+            "interfaces": interfaces
+        }
+    
+    async def process_task(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Process a task assigned to this agent.
+        
+        Args:
+            params: Task parameters including task_id and description
+            
+        Returns:
+            Task processing result
+        """
+        task_id = params.get("task_id")
+        if not task_id:
+            return {
+                "success": False,
+                "message": "Missing task ID"
+            }
+        
+        # Store task in agent's task list
+        self.tasks[task_id] = {
+            "id": task_id,
+            "description": params.get("description", ""),
+            "status": "in_progress",
+            "progress": 0,
+            "result": None
+        }
+        
+        logger.info(f"System Architect processing task {task_id}")
+        
+        # Determine task type and execute appropriate method
+        task_type = params.get("task_type", "")
+        project_id = params.get("project_id", "")
+        
+        if task_type == "design_architecture":
+            result = await self.design_architecture({
+                "project_id": project_id,
+                "requirements": params.get("requirements", {})
+            })
+        elif task_type == "make_technical_decisions":
+            result = await self.make_technical_decisions({
+                "project_id": project_id,
+                "requirements": params.get("requirements", {}),
+                "constraints": params.get("constraints", {})
+            })
+        elif task_type == "create_component_diagram":
+            result = await self.create_component_diagram({
+                "project_id": project_id
+            })
+        elif task_type == "define_interfaces":
+            result = await self.define_interfaces({
+                "project_id": project_id
+            })
+        else:
+            # Default task processing
+            result = await super().process_task(params)
+        
+        # Update task status
+        self.tasks[task_id]["status"] = "completed"
+        self.tasks[task_id]["progress"] = 100
+        self.tasks[task_id]["result"] = result
+        
+        return result

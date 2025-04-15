@@ -1,0 +1,342 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""
+Integration module for TORONTO AI Team Agent Training System.
+
+This module provides integration functionality for the training system components.
+"""
+
+import os
+import logging
+from typing import Dict, List, Any, Optional
+import importlib
+
+from .knowledge_extraction import pipeline as knowledge_pipeline
+from .agent_adaptation import adaptation_layer
+from .certification_content import certification_manager
+from .vector_db import VectorDatabaseFactory
+from .config import load_config, save_config
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class TrainingIntegration:
+    """
+    Integration class for the TORONTO AI Team Agent Training System.
+    """
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        Initialize the Training Integration.
+        
+        Args:
+            config: Configuration settings
+        """
+        self.config = config or load_config()
+        
+        # Initialize components
+        self._initialize_components()
+        
+        logger.info("Training Integration initialized")
+    
+    def _initialize_components(self):
+        """
+        Initialize system components with configuration.
+        """
+        # Apply configuration to knowledge pipeline
+        for key in ["chunking_strategy", "chunk_size", "chunk_overlap", "embedding_model", 
+                   "openai_api_key", "materials_path", "enable_image_extraction"]:
+            if key in self.config and hasattr(knowledge_pipeline, key):
+                setattr(knowledge_pipeline, key, self.config[key])
+        
+        # Re-initialize vector database
+        knowledge_pipeline._initialize_vector_db()
+        
+        # Apply configuration to certification manager
+        for key in ["certifications_path", "enable_versioning", "enable_auto_validation", 
+                   "enable_metadata_extraction", "max_versions_to_keep"]:
+            if key in self.config and hasattr(certification_manager, key):
+                setattr(certification_manager, key, self.config[key])
+        
+        # Re-initialize certifications directory
+        certification_manager._initialize_certifications_directory()
+        
+        # Apply configuration to adaptation layer
+        for key in ["enable_personalization", "enable_knowledge_feedback", 
+                   "enable_multi_agent_sharing", "knowledge_weight", "max_knowledge_chunks", 
+                   "context_window_size", "confidence_threshold"]:
+            if key in self.config and hasattr(adaptation_layer, key):
+                setattr(adaptation_layer, key, self.config[key])
+        
+        logger.info("Initialized components with configuration")
+    
+    def integrate_with_agent_system(self, agent_module_path: str) -> Dict[str, Any]:
+        """
+        Integrate training system with agent system.
+        
+        Args:
+            agent_module_path: Path to agent module
+            
+        Returns:
+            Integration result
+        """
+        try:
+            # Import agent module
+            agent_module = importlib.import_module(agent_module_path)
+            
+            # Get agent classes
+            agent_classes = []
+            for attr_name in dir(agent_module):
+                attr = getattr(agent_module, attr_name)
+                if isinstance(attr, type) and hasattr(attr, "__init__") and hasattr(attr, "process_task"):
+                    agent_classes.append(attr)
+            
+            if not agent_classes:
+                return {
+                    "success": False,
+                    "message": f"No agent classes found in module {agent_module_path}"
+                }
+            
+            # Patch agent classes
+            patched_classes = []
+            for agent_class in agent_classes:
+                patched_class = adaptation_layer.patch_agent_class(agent_class)
+                patched_classes.append(patched_class.__name__)
+            
+            logger.info(f"Integrated with agent system: {agent_module_path}")
+            logger.info(f"Patched agent classes: {', '.join(patched_classes)}")
+            
+            return {
+                "success": True,
+                "message": f"Successfully integrated with agent system",
+                "patched_classes": patched_classes
+            }
+            
+        except Exception as e:
+            logger.error(f"Error integrating with agent system: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error integrating with agent system: {str(e)}"
+            }
+    
+    def process_all_training_materials(self) -> Dict[str, Any]:
+        """
+        Process all training materials.
+        
+        Returns:
+            Processing result
+        """
+        try:
+            # Process materials
+            result = knowledge_pipeline.process_all_materials()
+            
+            logger.info(f"Processed {result.get('processed_files', 0)} training materials")
+            
+            return {
+                "success": True,
+                "message": f"Successfully processed training materials",
+                "result": result
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing training materials: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error processing training materials: {str(e)}"
+            }
+    
+    def process_all_certification_content(self) -> Dict[str, Any]:
+        """
+        Process all certification content.
+        
+        Returns:
+            Processing result
+        """
+        try:
+            # List certification content
+            list_result = certification_manager.list_certification_content()
+            
+            if not list_result.get("success", False):
+                return list_result
+            
+            certifications = list_result.get("certifications", {})
+            
+            if not certifications:
+                return {
+                    "success": True,
+                    "message": "No certification content to process",
+                    "processed": 0
+                }
+            
+            # Process each certification content
+            processed_count = 0
+            results = []
+            
+            for content_id, content in certifications.items():
+                # Skip templates
+                if content.get("status") == "template":
+                    continue
+                
+                # Process content
+                process_result = certification_manager.process_certification_content(content_id)
+                
+                if process_result.get("success", False):
+                    processed_count += 1
+                
+                results.append({
+                    "content_id": content_id,
+                    "result": process_result
+                })
+            
+            logger.info(f"Processed {processed_count} certification content items")
+            
+            return {
+                "success": True,
+                "message": f"Successfully processed {processed_count} certification content items",
+                "processed": processed_count,
+                "results": results
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing certification content: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error processing certification content: {str(e)}"
+            }
+    
+    def adapt_all_agent_roles(self, roles: List[str]) -> Dict[str, Any]:
+        """
+        Adapt all specified agent roles.
+        
+        Args:
+            roles: List of agent roles to adapt
+            
+        Returns:
+            Adaptation result
+        """
+        try:
+            if not roles:
+                return {
+                    "success": False,
+                    "message": "No roles specified"
+                }
+            
+            # Adapt each role
+            adapted_count = 0
+            results = []
+            
+            for role in roles:
+                # Adapt role
+                params = {
+                    "role": role,
+                    "training_id": f"training_{role}",
+                    "adaptation_config": {}
+                }
+                
+                adapt_result = adaptation_layer.adapt_agent_role(params)
+                
+                if adapt_result.get("success", False):
+                    adapted_count += 1
+                
+                results.append({
+                    "role": role,
+                    "result": adapt_result
+                })
+            
+            logger.info(f"Adapted {adapted_count} agent roles")
+            
+            return {
+                "success": True,
+                "message": f"Successfully adapted {adapted_count} agent roles",
+                "adapted": adapted_count,
+                "results": results
+            }
+            
+        except Exception as e:
+            logger.error(f"Error adapting agent roles: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error adapting agent roles: {str(e)}"
+            }
+    
+    def get_system_status(self) -> Dict[str, Any]:
+        """
+        Get system status.
+        
+        Returns:
+            System status
+        """
+        try:
+            # Get vector database status
+            vector_db_status = {
+                "type": knowledge_pipeline.vector_db.__class__.__name__,
+                "connection": "Connected" if hasattr(knowledge_pipeline.vector_db, "is_connected") and 
+                              knowledge_pipeline.vector_db.is_connected else "Unknown"
+            }
+            
+            # Get certification content count
+            cert_result = certification_manager.list_certification_content()
+            cert_count = len(cert_result.get("certifications", {})) if cert_result.get("success", False) else 0
+            
+            # Get knowledge stats
+            knowledge_stats = adaptation_layer.get_knowledge_stats()
+            
+            # Get adapted roles
+            roles = list(knowledge_stats.get("by_role", {}).keys())
+            
+            # Compile status
+            status = {
+                "vector_db": vector_db_status,
+                "knowledge_pipeline": {
+                    "chunking_strategy": knowledge_pipeline.chunking_strategy,
+                    "chunk_size": knowledge_pipeline.chunk_size,
+                    "chunk_overlap": knowledge_pipeline.chunk_overlap,
+                    "embedding_model": knowledge_pipeline.embedding_model
+                },
+                "certification_manager": {
+                    "versioning_enabled": certification_manager.enable_versioning,
+                    "auto_validation_enabled": certification_manager.enable_auto_validation,
+                    "metadata_extraction_enabled": certification_manager.enable_metadata_extraction,
+                    "certification_count": cert_count
+                },
+                "adaptation_layer": {
+                    "personalization_enabled": adaptation_layer.enable_personalization,
+                    "knowledge_feedback_enabled": adaptation_layer.enable_knowledge_feedback,
+                    "multi_agent_sharing_enabled": adaptation_layer.enable_multi_agent_sharing,
+                    "adapted_roles": roles,
+                    "knowledge_stats": knowledge_stats
+                }
+            }
+            
+            logger.info("Retrieved system status")
+            
+            return {
+                "success": True,
+                "message": "Successfully retrieved system status",
+                "status": status
+            }
+            
+        except Exception as e:
+            logger.error(f"Error retrieving system status: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error retrieving system status: {str(e)}"
+            }
+
+
+# Create a singleton instance
+integration = TrainingIntegration()

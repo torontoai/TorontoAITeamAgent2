@@ -1,0 +1,267 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""
+Project Manager Interface for TorontoAITeamAgent.
+
+This module provides the interface between human stakeholders and the Project Manager Agent.
+"""
+
+from typing import Dict, Any, List, Optional
+import logging
+import asyncio
+from datetime import datetime
+
+from ..agent.project_manager import ProjectManagerAgent
+from ..tools.registry import registry
+
+logger = logging.getLogger(__name__)
+
+class ProjectManagerInterface:
+    """
+    Interface between human stakeholders and the Project Manager Agent.
+    """
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        Initialize the Project Manager Interface.
+        
+        Args:
+            config: Interface configuration with optional settings
+        """
+        self.config = config or {}
+        
+        # Initialize Project Manager Agent
+        self.project_manager = ProjectManagerAgent(self.config.get("agents", {}).get("project_manager", {}))
+        
+        # Initialize tools
+        registry.load_tools_from_config(self.config)
+        
+        # Interface state
+        self.active_sessions = {}
+        self.notifications = []
+        
+        logger.info("Project Manager Interface initialized")
+    
+    async def create_project(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create a new project.
+        
+        Args:
+            params: Project parameters including name, description, and team composition
+            
+        Returns:
+            Project creation result
+        """
+        result = await self.project_manager.create_project(params)
+        
+        if result.get("success", False):
+            # Create a new session for this project
+            project_id = result.get("project_id")
+            self.active_sessions[project_id] = {
+                "project_id": project_id,
+                "created_at": datetime.now().isoformat(),
+                "last_activity": datetime.now().isoformat(),
+                "status": "active"
+            }
+            
+            logger.info(f"Created new session for project: {project_id}")
+        
+        return result
+    
+    async def send_message_to_project_manager(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Send a message from a human stakeholder to the Project Manager Agent.
+        
+        Args:
+            params: Message parameters including project_id, content, and attachments
+            
+        Returns:
+            Message sending result
+        """
+        project_id = params.get("project_id")
+        if not project_id or project_id not in self.active_sessions:
+            return {
+                "success": False,
+                "message": "Invalid project ID or inactive session"
+            }
+        
+        # Update session last activity
+        self.active_sessions[project_id]["last_activity"] = datetime.now().isoformat()
+        
+        # Forward message to Project Manager Agent
+        result = await self.project_manager.receive_message_from_human(params)
+        
+        return result
+    
+    async def get_project_status(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get the status of a project.
+        
+        Args:
+            params: Parameters including project_id
+            
+        Returns:
+            Project status
+        """
+        project_id = params.get("project_id")
+        if not project_id or project_id not in self.active_sessions:
+            return {
+                "success": False,
+                "message": "Invalid project ID or inactive session"
+            }
+        
+        # Update session last activity
+        self.active_sessions[project_id]["last_activity"] = datetime.now().isoformat()
+        
+        # Get project status from Project Manager Agent
+        result = await self.project_manager.get_project_status(params)
+        
+        return result
+    
+    async def get_agent_thinking(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get the thinking process of an agent.
+        
+        Args:
+            params: Parameters including project_id and agent_role
+            
+        Returns:
+            Agent thinking process
+        """
+        project_id = params.get("project_id")
+        if not project_id or project_id not in self.active_sessions:
+            return {
+                "success": False,
+                "message": "Invalid project ID or inactive session"
+            }
+        
+        # Update session last activity
+        self.active_sessions[project_id]["last_activity"] = datetime.now().isoformat()
+        
+        agent_role = params.get("agent_role", "project_manager")
+        
+        if agent_role == "project_manager":
+            # Get thinking process from Project Manager Agent
+            result = await self.project_manager.get_thinking_process(params)
+        else:
+            # Get thinking process from team member via Project Manager
+            result = await self.project_manager.communicate_with_team_member({
+                "project_id": project_id,
+                "role": agent_role,
+                "content": {
+                    "action": "get_thinking_process",
+                    "params": params
+                }
+            })
+        
+        return result
+    
+    async def close_session(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Close a project session.
+        
+        Args:
+            params: Parameters including project_id
+            
+        Returns:
+            Session closure result
+        """
+        project_id = params.get("project_id")
+        if not project_id or project_id not in self.active_sessions:
+            return {
+                "success": False,
+                "message": "Invalid project ID or inactive session"
+            }
+        
+        # Update session status
+        self.active_sessions[project_id]["status"] = "closed"
+        self.active_sessions[project_id]["closed_at"] = datetime.now().isoformat()
+        
+        logger.info(f"Closed session for project: {project_id}")
+        
+        return {
+            "success": True,
+            "message": f"Session closed for project: {project_id}",
+            "project_id": project_id
+        }
+    
+    async def get_notifications(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get notifications for a human stakeholder.
+        
+        Args:
+            params: Parameters including project_id
+            
+        Returns:
+            Notifications
+        """
+        project_id = params.get("project_id")
+        if project_id:
+            # Get notifications for a specific project
+            project_notifications = [n for n in self.notifications if n.get("project_id") == project_id]
+            
+            # Mark notifications as read
+            for notification in project_notifications:
+                notification["read"] = True
+            
+            return {
+                "success": True,
+                "message": "Notifications retrieved",
+                "notifications": project_notifications,
+                "count": len(project_notifications)
+            }
+        else:
+            # Get all notifications
+            # Mark notifications as read
+            for notification in self.notifications:
+                notification["read"] = True
+            
+            return {
+                "success": True,
+                "message": "All notifications retrieved",
+                "notifications": self.notifications,
+                "count": len(self.notifications)
+            }
+    
+    async def add_notification(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Add a notification for a human stakeholder.
+        
+        Args:
+            params: Notification parameters including project_id, title, and content
+            
+        Returns:
+            Notification addition result
+        """
+        notification = {
+            "id": f"notif_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            "project_id": params.get("project_id"),
+            "title": params.get("title", "Notification"),
+            "content": params.get("content", ""),
+            "timestamp": datetime.now().isoformat(),
+            "read": False,
+            "priority": params.get("priority", "normal")
+        }
+        
+        self.notifications.append(notification)
+        
+        logger.info(f"Added notification: {notification['title']}")
+        
+        return {
+            "success": True,
+            "message": "Notification added",
+            "notification_id": notification["id"]
+        }

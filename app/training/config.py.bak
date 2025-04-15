@@ -1,0 +1,114 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""
+Configuration module for TORONTO AI Team Agent Training System.
+
+This module provides configuration loading and saving functionality.
+"""
+
+import os
+import json
+import logging
+from typing import Dict, Any
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Default configuration path
+DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
+
+# Default configuration values
+DEFAULT_CONFIG = {
+    "vector_db_type": "in_memory",
+    "vector_db_path": os.path.join(os.path.dirname(__file__), "vector_db"),
+    "materials_path": os.path.join(os.path.dirname(__file__), "materials"),
+    "certifications_path": os.path.join(os.path.dirname(__file__), "certifications"),
+    "chunking_strategy": "semantic",
+    "chunk_size": 1000,
+    "chunk_overlap": 200,
+    "embedding_model": "text-embedding-3-large",
+    "enable_versioning": True,
+    "enable_personalization": True,
+    "enable_multi_agent_sharing": True,
+    "enable_auto_validation": True,
+    "enable_metadata_extraction": True,
+    "max_knowledge_chunks": 3,
+    "confidence_threshold": 0.6
+}
+
+
+def load_config(config_path: str = DEFAULT_CONFIG_PATH) -> Dict[str, Any]:
+    """
+    Load configuration from file.
+    
+    Args:
+        config_path: Path to configuration file
+        
+    Returns:
+        Configuration dictionary
+    """
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                config = json.load(f)
+            
+            logger.info(f"Loaded configuration from {config_path}")
+            
+            # Merge with default config to ensure all keys are present
+            merged_config = DEFAULT_CONFIG.copy()
+            merged_config.update(config)
+            
+            return merged_config
+        else:
+            # Create default configuration
+            os.makedirs(os.path.dirname(config_path), exist_ok=True)
+            with open(config_path, "w") as f:
+                json.dump(DEFAULT_CONFIG, f, indent=2)
+            
+            logger.info(f"Created default configuration at {config_path}")
+            
+            return DEFAULT_CONFIG.copy()
+            
+    except Exception as e:
+        logger.error(f"Error loading configuration: {str(e)}")
+        return DEFAULT_CONFIG.copy()
+
+
+def save_config(config: Dict[str, Any], config_path: str = DEFAULT_CONFIG_PATH) -> bool:
+    """
+    Save configuration to file.
+    
+    Args:
+        config: Configuration dictionary
+        config_path: Path to configuration file
+        
+    Returns:
+        Success status
+    """
+    try:
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        
+        with open(config_path, "w") as f:
+            json.dump(config, f, indent=2)
+        
+        logger.info(f"Saved configuration to {config_path}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error saving configuration: {str(e)}")
+        return False

@@ -1,0 +1,253 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""API endpoints for the enhanced communication monitoring system.
+
+This module provides API endpoints for accessing the enhanced communication
+monitoring capabilities of the TORONTO AI Team Agent Team AI system."""
+
+from typing import Dict, Any, List, Optional
+import logging
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Depends
+from fastapi.responses import JSONResponse
+import asyncio
+import json
+import uuid
+
+from ..collaboration.enhanced_communication_framework import EnhancedCommunicationFramework
+
+router = APIRouter()
+logger = logging.getLogger(__name__)
+
+# Initialize communication framework
+communication_framework = EnhancedCommunicationFramework()
+
+# Active WebSocket connections
+websocket_connections = {}
+
+@router.post("/subscribe")
+async def subscribe_to_conversations(filters: Dict[str, Any] = None):
+    """
+    Subscribe to conversation events.
+    
+    Args:
+        filters: Optional filters for the subscription
+        
+    Returns:
+        Subscription result with subscriber ID
+    """
+    subscriber_id = f"subscriber_{uuid.uuid4().hex}"
+    
+    result = await communication_framework.subscribe_to_conversations(subscriber_id, filters)
+    
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["message"])
+    
+    return result
+
+@router.post("/unsubscribe/{subscriber_id}")
+async def unsubscribe_from_conversations(subscriber_id: str):
+    """
+    Unsubscribe from conversation events.
+    
+    Args:
+        subscriber_id: Subscriber ID to unsubscribe
+        
+    Returns:
+        Unsubscription result
+    """
+    result = await communication_framework.unsubscribe_from_conversations(subscriber_id)
+    
+    if not result["success"]:
+        raise HTTPException(status_code=404, detail=result["message"])
+    
+    return result
+
+@router.get("/events/{subscriber_id}")
+async def get_conversation_events(subscriber_id: str, timeout: float = 0.1):
+    """
+    Get conversation events for a subscriber.
+    
+    Args:
+        subscriber_id: Subscriber ID
+        timeout: Timeout in seconds
+        
+    Returns:
+        List of conversation events
+    """
+    events = await communication_framework.get_conversation_events(subscriber_id, timeout)
+    
+    return {
+        "success": True,
+        "message": f"Retrieved {len(events)} events",
+        "events": events
+    }
+
+@router.post("/history")
+async def get_conversation_history(params: Dict[str, Any]):
+    """
+    Get conversation history based on filters.
+    
+    Args:
+        params: Query parameters including filters, limit, and offset
+        
+    Returns:
+        Conversation history
+    """
+    result = await communication_framework.get_conversation_history(params)
+    
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["message"])
+    
+    return result
+
+@router.post("/statistics")
+async def get_conversation_statistics(params: Dict[str, Any]):
+    """
+    Get statistics about conversations.
+    
+    Args:
+        params: Query parameters including time_range and grouping
+        
+    Returns:
+        Conversation statistics
+    """
+    result = await communication_framework.get_conversation_statistics(params)
+    
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["message"])
+    
+    return result
+
+@router.websocket("/ws/{subscriber_id}")
+async def websocket_endpoint(websocket: WebSocket, subscriber_id: str):
+    """
+    WebSocket endpoint for real-time conversation events.
+    
+    Args:
+        websocket: WebSocket connection
+        subscriber_id: Subscriber ID
+    """
+    await websocket.accept()
+    
+    # Store the connection
+    websocket_connections[subscriber_id] = websocket
+    
+    try:
+        # Process incoming messages (for filters, etc.)
+        while True:
+            # Wait for a message from the client
+            data = await websocket.receive_text()
+            
+            try:
+                message = json.loads(data)
+                
+                # Handle different message types
+                if message.get("type") == "set_filters":
+                    # Update subscription filters
+                    filters = message.get("filters", {})
+                    
+                    # Unsubscribe and resubscribe with new filters
+                    await communication_framework.unsubscribe_from_conversations(subscriber_id)
+                    result = await communication_framework.subscribe_to_conversations(subscriber_id, filters)
+                    
+                    # Send confirmation
+                    await websocket.send_json({
+                        "type": "filters_updated",
+                        "success": result["success"],
+                        "message": result["message"]
+                    })
+                
+                elif message.get("type") == "ping":
+                    # Respond to ping
+                    await websocket.send_json({
+                        "type": "pong",
+                        "timestamp": message.get("timestamp")
+                    })
+            
+            except json.JSONDecodeError:
+                # Invalid JSON
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Invalid JSON message"
+                })
+            
+            # Check for new events
+            events = await communication_framework.get_conversation_events(subscriber_id)
+            
+            if events:
+                # Send events to the client
+                await websocket.send_json({
+                    "type": "events",
+                    "events": events
+                })
+    
+    except WebSocketDisconnect:
+        # Clean up on disconnect
+        if subscriber_id in websocket_connections:
+            del websocket_connections[subscriber_id]
+        
+        # Unsubscribe
+        await communication_framework.unsubscribe_from_conversations(subscriber_id)
+    
+    except Exception as e:
+        logger.error(f"WebSocket error: {str(e)}")
+        
+        # Clean up
+        if subscriber_id in websocket_connections:
+            del websocket_connections[subscriber_id]
+        
+        # Unsubscribe
+        await communication_framework.unsubscribe_from_conversations(subscriber_id)
+
+# Background task to send events to WebSocket clients
+async def send_events_to_websocket_clients():
+    """
+    Background task to send events to WebSocket clients.
+    """
+    while True:
+        # Process each subscriber
+        for subscriber_id, websocket in list(websocket_connections.items()):
+            try:
+                # Get events for this subscriber
+                events = await communication_framework.get_conversation_events(subscriber_id, timeout=0.01)
+                
+                if events:
+                    # Send events to the client
+                    await websocket.send_json({
+                        "type": "events",
+                        "events": events
+                    })
+            
+            except Exception as e:
+                logger.error(f"Error sending events to WebSocket client {subscriber_id}: {str(e)}")
+                
+                # Clean up on error
+                if subscriber_id in websocket_connections:
+                    del websocket_connections[subscriber_id]
+                
+                # Unsubscribe
+                await communication_framework.unsubscribe_from_conversations(subscriber_id)
+        
+        # Sleep to avoid high CPU usage
+        await asyncio.sleep(0.1)
+
+# Start the background task
+@router.on_event("startup")
+async def startup_event():
+    """
+    Start the background task on startup.
+    """
+    asyncio.create_task(send_events_to_websocket_clients())

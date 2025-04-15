@@ -1,0 +1,488 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""
+Reporting Service for Project Manager Agent.
+
+This module provides services for generating various project reports.
+"""
+
+import logging
+import asyncio
+import datetime
+import json
+from typing import Dict, Any, List, Optional, Union
+
+from ..models import Project, Task, TeamMember, Stakeholder, RiskAssessment, DecisionRecord
+
+logger = logging.getLogger(__name__)
+
+class ReportingService:
+    """
+    Service for generating various project reports.
+    """
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        Initialize the reporting service.
+        
+        Args:
+            config: Configuration settings
+        """
+        self.config = config or {}
+        self.task_service = None  # Will be set by dependency injection
+        self.team_service = None  # Will be set by dependency injection
+        self.stakeholder_service = None  # Will be set by dependency injection
+        self.risk_service = None  # Will be set by dependency injection
+        self.decision_service = None  # Will be set by dependency injection
+        logger.info("Reporting service initialized")
+    
+    def set_task_service(self, task_service):
+        """Set task service reference."""
+        self.task_service = task_service
+    
+    def set_team_service(self, team_service):
+        """Set team service reference."""
+        self.team_service = team_service
+    
+    def set_stakeholder_service(self, stakeholder_service):
+        """Set stakeholder service reference."""
+        self.stakeholder_service = stakeholder_service
+    
+    def set_risk_service(self, risk_service):
+        """Set risk service reference."""
+        self.risk_service = risk_service
+    
+    def set_decision_service(self, decision_service):
+        """Set decision service reference."""
+        self.decision_service = decision_service
+    
+    async def generate_report(self, project_id: str, report_type: str) -> Dict[str, Any]:
+        """
+        Generate a report for a project.
+        
+        Args:
+            project_id: Project ID
+            report_type: Report type
+            
+        Returns:
+            Generated report
+        """
+        logger.info(f"Generating {report_type} report for project: {project_id}")
+        
+        # Check which report type is requested
+        if report_type == "status":
+            return await self.generate_status_report(project_id)
+        elif report_type == "progress":
+            return await self.generate_progress_report(project_id)
+        elif report_type == "risk":
+            return await self.generate_risk_report(project_id)
+        elif report_type == "team":
+            return await self.generate_team_report(project_id)
+        elif report_type == "decision":
+            return await self.generate_decision_report(project_id)
+        elif report_type == "executive":
+            return await self.generate_executive_report(project_id)
+        else:
+            raise ValueError(f"Unknown report type: {report_type}")
+    
+    async def generate_status_report(self, project_id: str) -> Dict[str, Any]:
+        """
+        Generate a status report for a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            Status report
+        """
+        logger.info(f"Generating status report for project: {project_id}")
+        
+        # Check if we have access to required services
+        if not self.task_service:
+            raise ValueError("Task service not available")
+        
+        # Get project
+        project = await self.task_service.get_project(project_id)
+        
+        # Get tasks
+        tasks = await self.task_service.list_tasks(project_id)
+        
+        # Calculate task statistics
+        task_stats = {
+            "total": len(tasks),
+            "todo": 0,
+            "in_progress": 0,
+            "review": 0,
+            "done": 0,
+            "blocked": 0
+        }
+        
+        for task in tasks:
+            task_stats[task.status.value] += 1
+        
+        # Calculate completion percentage
+        completion_percentage = (task_stats["done"] / task_stats["total"]) * 100 if task_stats["total"] > 0 else 0
+        
+        # Get recent tasks (updated in the last 7 days)
+        now = datetime.datetime.now()
+        seven_days_ago = now - datetime.timedelta(days=7)
+        recent_tasks = [task for task in tasks if task.updated_at > seven_days_ago]
+        
+        # Build status report
+        status_report = {
+            "project": project.to_dict(),
+            "generated_at": now.isoformat(),
+            "report_type": "status",
+            "task_statistics": task_stats,
+            "completion_percentage": completion_percentage,
+            "recent_tasks": [task.to_dict() for task in recent_tasks],
+            "all_tasks": [task.to_dict() for task in tasks]
+        }
+        
+        return status_report
+    
+    async def generate_progress_report(self, project_id: str) -> Dict[str, Any]:
+        """
+        Generate a progress report for a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            Progress report
+        """
+        logger.info(f"Generating progress report for project: {project_id}")
+        
+        # Check if we have access to required services
+        if not self.task_service:
+            raise ValueError("Task service not available")
+        
+        # Get project
+        project = await self.task_service.get_project(project_id)
+        
+        # Get tasks
+        tasks = await self.task_service.list_tasks(project_id)
+        
+        # Calculate task statistics
+        task_stats = {
+            "total": len(tasks),
+            "todo": 0,
+            "in_progress": 0,
+            "review": 0,
+            "done": 0,
+            "blocked": 0
+        }
+        
+        for task in tasks:
+            task_stats[task.status.value] += 1
+        
+        # Calculate completion percentage
+        completion_percentage = (task_stats["done"] / task_stats["total"]) * 100 if task_stats["total"] > 0 else 0
+        
+        # Calculate estimated vs. actual hours
+        total_estimated_hours = sum(task.estimated_hours or 0 for task in tasks)
+        total_actual_hours = sum(task.actual_hours or 0 for task in tasks)
+        
+        # Calculate progress over time
+        # In a real implementation, this would use historical data
+        # For now, we'll just use the current state
+        
+        # Build progress report
+        progress_report = {
+            "project": project.to_dict(),
+            "generated_at": datetime.datetime.now().isoformat(),
+            "report_type": "progress",
+            "task_statistics": task_stats,
+            "completion_percentage": completion_percentage,
+            "estimated_hours": total_estimated_hours,
+            "actual_hours": total_actual_hours,
+            "tasks": [task.to_dict() for task in tasks]
+        }
+        
+        return progress_report
+    
+    async def generate_risk_report(self, project_id: str) -> Dict[str, Any]:
+        """
+        Generate a risk report for a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            Risk report
+        """
+        logger.info(f"Generating risk report for project: {project_id}")
+        
+        # Check if we have access to required services
+        if not self.task_service or not self.risk_service:
+            raise ValueError("Required services not available")
+        
+        # Get project
+        project = await self.task_service.get_project(project_id)
+        
+        # Get risk profile
+        risk_profile = await self.risk_service.get_project_risk_profile(project_id)
+        
+        # Build risk report
+        risk_report = {
+            "project": project.to_dict(),
+            "generated_at": datetime.datetime.now().isoformat(),
+            "report_type": "risk",
+            "risk_profile": risk_profile
+        }
+        
+        return risk_report
+    
+    async def generate_team_report(self, project_id: str) -> Dict[str, Any]:
+        """
+        Generate a team report for a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            Team report
+        """
+        logger.info(f"Generating team report for project: {project_id}")
+        
+        # Check if we have access to required services
+        if not self.task_service or not self.team_service:
+            raise ValueError("Required services not available")
+        
+        # Get project
+        project = await self.task_service.get_project(project_id)
+        
+        # Get team members
+        team_members = await self.team_service.list_team_members(project_id)
+        
+        # Get team workload
+        workload = await self.team_service.get_team_workload(project_id)
+        
+        # Build team report
+        team_report = {
+            "project": project.to_dict(),
+            "generated_at": datetime.datetime.now().isoformat(),
+            "report_type": "team",
+            "team_members": [tm.to_dict() for tm in team_members],
+            "workload": workload
+        }
+        
+        return team_report
+    
+    async def generate_decision_report(self, project_id: str) -> Dict[str, Any]:
+        """
+        Generate a decision report for a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            Decision report
+        """
+        logger.info(f"Generating decision report for project: {project_id}")
+        
+        # Check if we have access to required services
+        if not self.task_service or not self.decision_service:
+            raise ValueError("Required services not available")
+        
+        # Get project
+        project = await self.task_service.get_project(project_id)
+        
+        # Get decisions
+        decisions = await self.decision_service.list_decisions(project_id)
+        
+        # Get pending decisions
+        pending_decisions = await self.decision_service.get_pending_decisions(project_id)
+        
+        # Build decision report
+        decision_report = {
+            "project": project.to_dict(),
+            "generated_at": datetime.datetime.now().isoformat(),
+            "report_type": "decision",
+            "decisions": [d.to_dict() for d in decisions],
+            "pending_decisions": [d.to_dict() for d in pending_decisions]
+        }
+        
+        return decision_report
+    
+    async def generate_executive_report(self, project_id: str) -> Dict[str, Any]:
+        """
+        Generate an executive report for a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            Executive report
+        """
+        logger.info(f"Generating executive report for project: {project_id}")
+        
+        # Check if we have access to required services
+        if not self.task_service:
+            raise ValueError("Task service not available")
+        
+        # Get project
+        project = await self.task_service.get_project(project_id)
+        
+        # Get tasks
+        tasks = await self.task_service.list_tasks(project_id)
+        
+        # Calculate task statistics
+        task_stats = {
+            "total": len(tasks),
+            "todo": 0,
+            "in_progress": 0,
+            "review": 0,
+            "done": 0,
+            "blocked": 0
+        }
+        
+        for task in tasks:
+            task_stats[task.status.value] += 1
+        
+        # Calculate completion percentage
+        completion_percentage = (task_stats["done"] / task_stats["total"]) * 100 if task_stats["total"] > 0 else 0
+        
+        # Get risk information if available
+        risk_summary = None
+        if self.risk_service:
+            try:
+                risks = await self.risk_service.list_risks(project_id)
+                risk_summary = {
+                    "total_risks": len(risks),
+                    "critical_risks": len([r for r in risks if r.severity.value == "critical"]),
+                    "high_risks": len([r for r in risks if r.severity.value == "high"]),
+                    "medium_risks": len([r for r in risks if r.severity.value == "medium"]),
+                    "low_risks": len([r for r in risks if r.severity.value == "low"])
+                }
+            except Exception as e:
+                logger.error(f"Error getting risk information: {e}")
+        
+        # Get decision information if available
+        decision_summary = None
+        if self.decision_service:
+            try:
+                decisions = await self.decision_service.list_decisions(project_id)
+                pending_decisions = await self.decision_service.get_pending_decisions(project_id)
+                decision_summary = {
+                    "total_decisions": len(decisions),
+                    "pending_decisions": len(pending_decisions),
+                    "approved_decisions": len([d for d in decisions if d.status.value == "approved"]),
+                    "rejected_decisions": len([d for d in decisions if d.status.value == "rejected"]),
+                    "deferred_decisions": len([d for d in decisions if d.status.value == "deferred"])
+                }
+            except Exception as e:
+                logger.error(f"Error getting decision information: {e}")
+        
+        # Get team information if available
+        team_summary = None
+        if self.team_service:
+            try:
+                team_members = await self.team_service.list_team_members(project_id)
+                team_summary = {
+                    "total_team_members": len(team_members),
+                    "ai_members": len([tm for tm in team_members if tm.is_ai]),
+                    "human_members": len([tm for tm in team_members if not tm.is_ai])
+                }
+            except Exception as e:
+                logger.error(f"Error getting team information: {e}")
+        
+        # Build executive report
+        executive_report = {
+            "project": project.to_dict(),
+            "generated_at": datetime.datetime.now().isoformat(),
+            "report_type": "executive",
+            "summary": {
+                "status": project.status.value,
+                "completion_percentage": completion_percentage,
+                "task_statistics": task_stats,
+                "start_date": project.start_date.isoformat() if project.start_date else None,
+                "end_date": project.end_date.isoformat() if project.end_date else None
+            }
+        }
+        
+        # Add optional sections if available
+        if risk_summary:
+            executive_report["risk_summary"] = risk_summary
+        
+        if decision_summary:
+            executive_report["decision_summary"] = decision_summary
+        
+        if team_summary:
+            executive_report["team_summary"] = team_summary
+        
+        return executive_report
+    
+    async def export_report(self, report: Dict[str, Any], format: str = "json") -> str:
+        """
+        Export a report to a specific format.
+        
+        Args:
+            report: Report data
+            format: Export format
+            
+        Returns:
+            Exported report
+        """
+        logger.info(f"Exporting report to {format} format")
+        
+        if format == "json":
+            return json.dumps(report, indent=2)
+        elif format == "html":
+            # In a real implementation, this would generate HTML
+            # For now, we'll just return a simple HTML representation
+            html = "<html><head><title>Project Report</title></head><body>"
+            html += f"<h1>{report.get('report_type', 'Unknown').title()} Report</h1>"
+            html += f"<h2>Project: {report.get('project', {}).get('name', 'Unknown')}</h2>"
+            html += f"<p>Generated at: {report.get('generated_at', 'Unknown')}</p>"
+            html += "<pre>" + json.dumps(report, indent=2) + "</pre>"
+            html += "</body></html>"
+            return html
+        elif format == "csv":
+            # In a real implementation, this would generate CSV
+            # For now, we'll just return a message
+            return "CSV export not implemented yet"
+        else:
+            raise ValueError(f"Unknown export format: {format}")
+    
+    async def schedule_report(self, project_id: str, report_type: str, schedule: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Schedule a recurring report.
+        
+        Args:
+            project_id: Project ID
+            report_type: Report type
+            schedule: Schedule information
+            
+        Returns:
+            Schedule information
+        """
+        logger.info(f"Scheduling {report_type} report for project: {project_id}")
+        
+        # In a real implementation, this would set up a scheduled task
+        # For now, we'll just return the schedule information
+        
+        schedule_id = f"schedule_{project_id}_{report_type}_{datetime.datetime.now().timestamp()}"
+        
+        schedule_info = {
+            "id": schedule_id,
+            "project_id": project_id,
+            "report_type": report_type,
+            "schedule": schedule,
+            "created_at": datetime.datetime.now().isoformat()
+        }
+        
+        logger.info(f"Report scheduled: {schedule_id}")
+        return schedule_info

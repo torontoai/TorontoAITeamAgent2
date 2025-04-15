@@ -1,0 +1,743 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""Multi-Agent System for TorontoAITeamAgent Team AI.
+
+This module implements the core multi-agent system architecture that enables
+multiple specialized agents to work together on complex projects."""
+
+from typing import Dict, Any, List, Optional, Type, Union
+import os
+import asyncio
+import logging
+import uuid
+import time
+import json
+from ..tools.registry import registry
+from ..agent.base_agent import BaseAgent
+from ..agent.additional_roles import ADDITIONAL_AGENT_ROLES
+
+logger = logging.getLogger(__name__)
+
+class MultiAgentSystem:
+    """Core system for managing multiple agents working together on projects.
+    
+    This system coordinates the interactions between different specialized agents,
+    manages communication, and handles task assignment and tracking."""
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """Initialize the Multi-Agent System.
+        
+        Args:
+            config: System configuration with optional settings"""
+        self.config = config or {}
+        self.agents = {}  # Store active agents
+        self.projects = {}  # Store active projects
+        self.communication_logs = {}  # Store communication logs
+        
+        # Initialize tools
+        self.queue_tool = registry.get_tool("queue")
+        
+        # Default configuration
+        self.default_config = {
+            "max_agents": 20,
+            "default_model": "gpt-4o",
+            "communication_retention": 100,  # Number of messages to retain per project
+            "learning_enabled": True,
+            "learning_interval": 86400,  # 24 hours
+            "performance_tracking": True
+        }
+        
+        # Merge default config with provided config
+        for key, value in self.default_config.items():
+            if key not in self.config:
+                self.config[key] = value
+    
+    async def create_project(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create a new project with a team of agents.
+        
+        Args:
+            params: Project parameters including:
+                - name: Project name
+                - description: Project description
+                - requirements: Project requirements
+                - team_composition: List of agent roles to include
+                - human_stakeholder: Information about the human stakeholder
+                
+        Returns:
+            Project creation result
+        """
+        name = params.get("name")
+        description = params.get("description", "")
+        requirements = params.get("requirements", "")
+        team_composition = params.get("team_composition", ["project_manager", "product_manager", "developer"])
+        human_stakeholder = params.get("human_stakeholder", {})
+        
+        if not name:
+            return {
+                "success": False,
+                "error": "Project name is required"
+            }
+        
+        # Generate project ID
+        project_id = str(uuid.uuid4())
+        
+        # Ensure project manager is included
+        if "project_manager" not in team_composition:
+            team_composition.insert(0, "project_manager")
+        
+        # Create communication queues for the project
+        queues = {}
+        
+        # Create a queue for human to project manager communication
+        human_to_pm_queue = await self.queue_tool.execute({
+            "operation": "create",
+            "queue_id": f"{project_id}_human_to_pm"
+        })
+        
+        if not human_to_pm_queue.success:
+            return {
+                "success": False,
+                "error": f"Failed to create human to project manager queue: {human_to_pm_queue.error}"
+            }
+        
+        queues["human_to_pm"] = f"{project_id}_human_to_pm"
+        
+        # Create a queue for project manager to human communication
+        pm_to_human_queue = await self.queue_tool.execute({
+            "operation": "create",
+            "queue_id": f"{project_id}_pm_to_human"
+        })
+        
+        if not pm_to_human_queue.success:
+            return {
+                "success": False,
+                "error": f"Failed to create project manager to human queue: {pm_to_human_queue.error}"
+            }
+        
+        queues["pm_to_human"] = f"{project_id}_pm_to_human"
+        
+        # Create queues for inter-agent communication
+        for source_role in team_composition:
+            for target_role in team_composition:
+                if source_role != target_role:
+                    queue_id = f"{project_id}_{source_role}_to_{target_role}"
+                    queue_result = await self.queue_tool.execute({
+                        "operation": "create",
+                        "queue_id": queue_id
+                    })
+                    
+                    if not queue_result.success:
+                        return {
+                            "success": False,
+                            "error": f"Failed to create queue from {source_role} to {target_role}: {queue_result.error}"
+                        }
+                    
+                    queues[f"{source_role}_to_{target_role}"] = queue_id
+        
+        # Create agents for the project
+        project_agents = {}
+        
+        for role in team_composition:
+            agent_id = f"{project_id}_{role}"
+            
+            # Create agent
+            agent_result = await self.create_agent({
+                "agent_id": agent_id,
+                "role": role,
+                "project_id": project_id,
+                "queues": queues
+            })
+            
+            if not agent_result["success"]:
+                return {
+                    "success": False,
+                    "error": f"Failed to create {role} agent: {agent_result['error']}"
+                }
+            
+            project_agents[role] = agent_id
+        
+        # Create project record
+        project = {
+            "id": project_id,
+            "name": name,
+            "description": description,
+            "requirements": requirements,
+            "team_composition": team_composition,
+            "agents": project_agents,
+            "queues": queues,
+            "human_stakeholder": human_stakeholder,
+            "status": "active",
+            "created_at": time.time(),
+            "updated_at": time.time(),
+            "tasks": [],
+            "artifacts": []
+        }
+        
+        # Store project
+        self.projects[project_id] = project
+        
+        # Initialize communication log for the project
+        self.communication_logs[project_id] = []
+        
+        # Initialize project for the project manager
+        pm_agent_id = project_agents["project_manager"]
+        pm_agent = self.agents[pm_agent_id]["agent"]
+        
+        init_result = await pm_agent.initialize_project({
+            "project_id": project_id,
+            "name": name,
+            "description": description,
+            "requirements": requirements,
+            "team_composition": team_composition
+        })
+        
+        if not init_result["success"]:
+            return {
+                "success": False,
+                "error": f"Failed to initialize project for project manager: {init_result['error']}"
+            }
+        
+        return {
+            "success": True,
+            "project_id": project_id,
+            "name": name,
+            "team_composition": team_composition,
+            "message": f"Project '{name}' created successfully with {len(team_composition)} agents"
+        }
+    
+    async def create_agent(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create a new agent.
+        
+        Args:
+            params: Agent parameters including:
+                - agent_id: Unique identifier for the agent
+                - role: Agent role
+                - project_id: Project ID the agent belongs to
+                - queues: Communication queues for the agent
+                
+        Returns:
+            Agent creation result
+        """
+        agent_id = params.get("agent_id")
+        role = params.get("role")
+        project_id = params.get("project_id")
+        queues = params.get("queues", {})
+        
+        if not agent_id:
+            return {
+                "success": False,
+                "error": "Agent ID is required"
+            }
+            
+        if not role:
+            return {
+                "success": False,
+                "error": "Agent role is required"
+            }
+            
+        if not project_id:
+            return {
+                "success": False,
+                "error": "Project ID is required"
+            }
+        
+        # Check if agent already exists
+        if agent_id in self.agents:
+            return {
+                "success": False,
+                "error": f"Agent with ID '{agent_id}' already exists"
+            }
+        
+        # Check if max agents reached
+        if len(self.agents) >= self.config["max_agents"]:
+            return {
+                "success": False,
+                "error": f"Maximum number of agents ({self.config['max_agents']}) reached"
+            }
+        
+        # Get agent class based on role
+        agent_class = self._get_agent_class(role)
+        if not agent_class:
+            return {
+                "success": False,
+                "error": f"Unknown agent role: {role}"
+            }
+        
+        # Create agent configuration
+        agent_config = {
+            "id": agent_id,
+            "role": role,
+            "project_id": project_id,
+            "queues": queues,
+            "model": self.config.get(f"{role}_model", self.config["default_model"]),
+            "learning_enabled": self.config["learning_enabled"]
+        }
+        
+        # Create agent instance
+        try:
+            agent = agent_class(agent_config)
+            
+            # Store agent
+            self.agents[agent_id] = {
+                "agent": agent,
+                "role": role,
+                "project_id": project_id,
+                "status": "active",
+                "created_at": time.time(),
+                "updated_at": time.time()
+            }
+            
+            return {
+                "success": True,
+                "agent_id": agent_id,
+                "role": role,
+                "project_id": project_id,
+                "message": f"Agent '{agent_id}' with role '{role}' created successfully"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to create agent: {str(e)}"
+            }
+    
+    async def send_message_to_project_manager(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Send a message from the human stakeholder to the project manager.
+        
+        Args:
+            params: Message parameters including:
+                - project_id: Project ID
+                - message: Message content
+                - attachments: Optional attachments
+                
+        Returns:
+            Message sending result
+        """
+        project_id = params.get("project_id")
+        message = params.get("message")
+        attachments = params.get("attachments", [])
+        
+        if not project_id:
+            return {
+                "success": False,
+                "error": "Project ID is required"
+            }
+            
+        if not message:
+            return {
+                "success": False,
+                "error": "Message content is required"
+            }
+        
+        # Check if project exists
+        if project_id not in self.projects:
+            return {
+                "success": False,
+                "error": f"Project with ID '{project_id}' does not exist"
+            }
+        
+        project = self.projects[project_id]
+        
+        # Get human to PM queue
+        queue_id = project["queues"].get("human_to_pm")
+        if not queue_id:
+            return {
+                "success": False,
+                "error": "Human to project manager queue not found"
+            }
+        
+        # Create message object
+        message_obj = {
+            "id": str(uuid.uuid4()),
+            "timestamp": time.time(),
+            "sender": "human",
+            "receiver": "project_manager",
+            "content": message,
+            "attachments": attachments
+        }
+        
+        # Add message to communication log
+        self._add_to_communication_log(project_id, message_obj)
+        
+        # Send message to queue
+        result = await self.queue_tool.execute({
+            "operation": "put",
+            "queue_id": queue_id,
+            "item": message_obj
+        })
+        
+        if not result.success:
+            return {
+                "success": False,
+                "error": f"Failed to send message to project manager: {result.error}"
+            }
+        
+        return {
+            "success": True,
+            "message_id": message_obj["id"],
+            "project_id": project_id,
+            "message": "Message sent to project manager successfully"
+        }
+    
+    async def get_messages_from_project_manager(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get messages from the project manager to the human stakeholder.
+        
+        Args:
+            params: Parameters including:
+                - project_id: Project ID
+                - timeout: Optional timeout in seconds
+                
+        Returns:
+            Messages from project manager
+        """
+        project_id = params.get("project_id")
+        timeout = params.get("timeout", 0.1)  # Short timeout by default
+        
+        if not project_id:
+            return {
+                "success": False,
+                "error": "Project ID is required"
+            }
+        
+        # Check if project exists
+        if project_id not in self.projects:
+            return {
+                "success": False,
+                "error": f"Project with ID '{project_id}' does not exist"
+            }
+        
+        project = self.projects[project_id]
+        
+        # Get PM to human queue
+        queue_id = project["queues"].get("pm_to_human")
+        if not queue_id:
+            return {
+                "success": False,
+                "error": "Project manager to human queue not found"
+            }
+        
+        messages = []
+        
+        # Try to get messages from queue
+        while True:
+            result = await self.queue_tool.execute({
+                "operation": "get",
+                "queue_id": queue_id,
+                "timeout": timeout
+            })
+            
+            if not result.success:
+                # Queue is empty or timeout
+                break
+            
+            messages.append(result.data["item"])
+        
+        return {
+            "success": True,
+            "project_id": project_id,
+            "messages": messages,
+            "count": len(messages)
+        }
+    
+    async def process_agent_messages(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Process messages between agents for a project.
+        
+        This method triggers the processing of messages in the agent queues,
+        allowing agents to communicate and collaborate.
+        
+        Args:
+            params: Parameters including:
+                - project_id: Project ID
+                - iterations: Number of message processing iterations
+                
+        Returns:
+            Processing result
+        """
+        project_id = params.get("project_id")
+        iterations = params.get("iterations", 1)
+        
+        if not project_id:
+            return {
+                "success": False,
+                "error": "Project ID is required"
+            }
+        
+        # Check if project exists
+        if project_id not in self.projects:
+            return {
+                "success": False,
+                "error": f"Project with ID '{project_id}' does not exist"
+            }
+        
+        project = self.projects[project_id]
+        
+        # Process messages for each agent
+        for i in range(iterations):
+            for role, agent_id in project["agents"].items():
+                agent_data = self.agents[agent_id]
+                agent = agent_data["agent"]
+                
+                # Process incoming messages
+                process_result = await agent.process_messages()
+                
+                if not process_result["success"]:
+                    logger.warning(f"Agent {agent_id} failed to process messages: {process_result['error']}")
+        
+        return {
+            "success": True,
+            "project_id": project_id,
+            "iterations": iterations,
+            "message": f"Processed agent messages for {iterations} iterations"
+        }
+    
+    async def get_project_status(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get the status of a project.
+        
+        Args:
+            params: Parameters including:
+                - project_id: Project ID
+                
+        Returns:
+            Project status
+        """
+        project_id = params.get("project_id")
+        
+        if not project_id:
+            return {
+                "success": False,
+                "error": "Project ID is required"
+            }
+        
+        # Check if project exists
+        if project_id not in self.projects:
+            return {
+                "success": False,
+                "error": f"Project with ID '{project_id}' does not exist"
+            }
+        
+        project = self.projects[project_id]
+        
+        # Get project manager agent
+        pm_agent_id = project["agents"]["project_manager"]
+        pm_agent = self.agents[pm_agent_id]["agent"]
+        
+        # Get project status from project manager
+        status_result = await pm_agent.get_project_status()
+        
+        if not status_result["success"]:
+            return {
+                "success": False,
+                "error": f"Failed to get project status: {status_result['error']}"
+            }
+        
+        return {
+            "success": True,
+            "project_id": project_id,
+            "name": project["name"],
+            "status": status_result["status"],
+            "progress": status_result["progress"],
+            "tasks": status_result["tasks"],
+            "team": project["team_composition"],
+            "updated_at": project["updated_at"]
+        }
+    
+    async def get_communication_log(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get the communication log for a project.
+        
+        Args:
+            params: Parameters including:
+                - project_id: Project ID
+                - limit: Maximum number of messages to return
+                - filter: Optional filter for messages
+                
+        Returns:
+            Communication log
+        """
+        project_id = params.get("project_id")
+        limit = params.get("limit", 100)
+        filter_params = params.get("filter", {})
+        
+        if not project_id:
+            return {
+                "success": False,
+                "error": "Project ID is required"
+            }
+        
+        # Check if project exists
+        if project_id not in self.projects:
+            return {
+                "success": False,
+                "error": f"Project with ID '{project_id}' does not exist"
+            }
+        
+        # Check if communication log exists
+        if project_id not in self.communication_logs:
+            return {
+                "success": False,
+                "error": f"Communication log for project '{project_id}' not found"
+            }
+        
+        # Get communication log
+        log = self.communication_logs[project_id]
+        
+        # Apply filters if provided
+        if filter_params:
+            filtered_log = []
+            
+            for message in log:
+                include = True
+                
+                for key, value in filter_params.items():
+                    if key in message and message[key] != value:
+                        include = False
+                        break
+                
+                if include:
+                    filtered_log.append(message)
+            
+            log = filtered_log
+        
+        # Apply limit
+        if limit > 0 and limit < len(log):
+            log = log[-limit:]
+        
+        return {
+            "success": True,
+            "project_id": project_id,
+            "log": log,
+            "count": len(log)
+        }
+    
+    async def run_learning_cycle(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Run a learning cycle for agents to improve their communication.
+        
+        Args:
+            params: Parameters including:
+                - project_id: Project ID
+                
+        Returns:
+            Learning cycle result
+        """
+        project_id = params.get("project_id")
+        
+        if not project_id:
+            return {
+                "success": False,
+                "error": "Project ID is required"
+            }
+        
+        # Check if project exists
+        if project_id not in self.projects:
+            return {
+                "success": False,
+                "error": f"Project with ID '{project_id}' does not exist"
+            }
+        
+        # Check if learning is enabled
+        if not self.config["learning_enabled"]:
+            return {
+                "success": False,
+                "error": "Learning is not enabled in the system configuration"
+            }
+        
+        project = self.projects[project_id]
+        
+        # Get communication log
+        if project_id not in self.communication_logs:
+            return {
+                "success": False,
+                "error": f"Communication log for project '{project_id}' not found"
+            }
+        
+        log = self.communication_logs[project_id]
+        
+        # Run learning cycle for each agent
+        learning_results = {}
+        
+        for role, agent_id in project["agents"].items():
+            agent_data = self.agents[agent_id]
+            agent = agent_data["agent"]
+            
+            # Filter log for messages relevant to this agent
+            agent_log = [
+                message for message in log
+                if message["sender"] == role or message["receiver"] == role
+            ]
+            
+            # Run learning cycle
+            learn_result = await agent.learn_from_communication(agent_log)
+            
+            learning_results[role] = {
+                "success": learn_result["success"],
+                "improvements": learn_result.get("improvements", []),
+                "error": learn_result.get("error")
+            }
+        
+        return {
+            "success": True,
+            "project_id": project_id,
+            "learning_results": learning_results,
+            "message": f"Learning cycle completed for project '{project_id}'"
+        }
+    
+    def _get_agent_class(self, role: str) -> Optional[Type[BaseAgent]]:
+        """Get the agent class for a specific role.
+        
+        Args:
+            role: Agent role
+            
+        Returns:
+            Agent class or None if not found"""
+        # Check additional roles first
+        if role in ADDITIONAL_AGENT_ROLES:
+            return ADDITIONAL_AGENT_ROLES[role]
+        
+        # Check core roles
+        if role == "project_manager":
+            from ..agent.project_manager import ProjectManagerAgent
+            return ProjectManagerAgent
+        elif role == "product_manager":
+            from ..agent.product_manager import ProductManagerAgent
+            return ProductManagerAgent
+        elif role == "developer":
+            from ..agent.developer import DeveloperAgent
+            return DeveloperAgent
+        
+        return None
+    
+    def _add_to_communication_log(self, project_id: str, message: Dict[str, Any]) -> None:
+        """Add a message to the communication log.
+        
+        Args:
+            project_id: Project ID
+            message: Message to add"""
+        if project_id not in self.communication_logs:
+            self.communication_logs[project_id] = []
+        
+        # Add message to log
+        self.communication_logs[project_id].append(message)
+        
+        # Trim log if it exceeds the retention limit
+        retention = self.config["communication_retention"]
+        if len(self.communication_logs[project_id]) > retention:
+            self.communication_logs[project_id] = self.communication_logs[project_id][-retention:]

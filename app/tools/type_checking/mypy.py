@@ -1,0 +1,242 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""Type Checking tools for TorontoAITeamAgent Team AI.
+
+This module provides tools for type checking using MyPy."""
+
+from typing import Dict, Any, List, Optional
+import os
+import asyncio
+import subprocess
+import tempfile
+import json
+import re
+from ..base import BaseTool, ToolResult
+
+class MyPyTool(BaseTool):
+    """Tool for type checking Python code using MyPy."""
+    
+    name = "mypy"
+    description = "Provides capabilities for static type checking Python code using MyPy."
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """Initialize the MyPy tool.
+        
+        Args:
+            config: Tool configuration with optional settings"""
+        super().__init__(config)
+        self.timeout = self.config.get("timeout", 60)  # Default timeout in seconds
+        self.python_version = self.config.get("python_version", "3.10")
+        
+        # Check if mypy is installed
+        try:
+            subprocess.run(["mypy", "--version"], capture_output=True, check=True)
+        except (subprocess.SubprocessError, FileNotFoundError):
+            raise ImportError("MyPy is not installed. Install it with 'pip install mypy>=1.0.0'")
+    
+    async def execute(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Execute the MyPy tool with the given parameters.
+        
+        Args:
+            params: Tool parameters including:
+                - operation: Operation to perform (check)
+                - code: Python code to check
+                - files: List of files to check
+                - python_version: Python version to use for type checking (optional)
+                - disallow_untyped_defs: Whether to disallow untyped function definitions (optional)
+                - disallow_incomplete_defs: Whether to disallow incomplete function definitions (optional)
+                - timeout: Command timeout in seconds (optional)
+                
+        Returns:
+            Tool execution result
+        """
+        operation = params.get("operation")
+        if not operation:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Operation parameter is required"
+            )
+            
+        try:
+            if operation == "check":
+                return await self._check_types(params)
+            else:
+                return ToolResult(
+                    success=False,
+                    data={},
+                    error=f"Unsupported operation: {operation}"
+                )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=str(e)
+            )
+    
+    async def _check_types(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Check types in Python code using MyPy.
+        
+        Args:
+            params: Parameters for type checking
+            
+        Returns:
+            Tool execution result
+        """
+        code = params.get("code")
+        files = params.get("files", [])
+        python_version = params.get("python_version", self.python_version)
+        disallow_untyped_defs = params.get("disallow_untyped_defs", False)
+        disallow_incomplete_defs = params.get("disallow_incomplete_defs", False)
+        timeout = params.get("timeout", self.timeout)
+        
+        # Build command
+        cmd = ["mypy", "--no-color-output", "--show-column-numbers", f"--python-version={python_version}"]
+        
+        if disallow_untyped_defs:
+            cmd.append("--disallow-untyped-defs")
+            
+        if disallow_incomplete_defs:
+            cmd.append("--disallow-incomplete-defs")
+        
+        if code:
+            # Check code string
+            with tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False) as temp_file:
+                temp_file_path = temp_file.name
+                temp_file.write(code)
+            
+            try:
+                # Add the temporary file to the command
+                cmd.append(temp_file_path)
+                
+                # Run in a separate thread to avoid blocking
+                loop = asyncio.get_event_loop()
+                process = await loop.run_in_executor(
+                    None,
+                    lambda: subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout,
+                        check=False
+                    )
+                )
+                
+                # Parse the output
+                errors = self._parse_mypy_output(process.stdout)
+                
+                return ToolResult(
+                    success=process.returncode == 0,
+                    data={
+                        "errors": errors,
+                        "error_count": len(errors),
+                        "has_errors": len(errors) > 0,
+                        "stdout": process.stdout,
+                        "stderr": process.stderr
+                    },
+                    error="Type checking failed" if process.returncode != 0 else None
+                )
+            finally:
+                # Clean up the temporary file
+                if os.path.exists(temp_file_path):
+                    os.unlink(temp_file_path)
+        
+        elif files:
+            # Check files
+            cmd.extend(files)
+            
+            # Run in a separate thread to avoid blocking
+            loop = asyncio.get_event_loop()
+            process = await loop.run_in_executor(
+                None,
+                lambda: subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout,
+                    check=False
+                )
+            )
+            
+            # Parse the output
+            errors = self._parse_mypy_output(process.stdout)
+            
+            # Group errors by file
+            errors_by_file = {}
+            for error in errors:
+                file_path = error.get("file")
+                if file_path not in errors_by_file:
+                    errors_by_file[file_path] = []
+                errors_by_file[file_path].append(error)
+            
+            return ToolResult(
+                success=process.returncode == 0,
+                data={
+                    "errors_by_file": errors_by_file,
+                    "error_count": len(errors),
+                    "has_errors": len(errors) > 0,
+                    "files_checked": files,
+                    "stdout": process.stdout,
+                    "stderr": process.stderr
+                },
+                error="Type checking failed" if process.returncode != 0 else None
+            )
+        
+        else:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Either code or files parameter is required for type checking"
+            )
+    
+    def _parse_mypy_output(self, output: str) -> List[Dict[str, Any]]:
+        """Parse MyPy output to extract error information.
+        
+        Args:
+            output: MyPy output
+            
+        Returns:
+            List of error dictionaries"""
+        errors = []
+        
+        for line in output.splitlines():
+            # Parse error lines in the format: file:line:column: error_type: message
+            match = re.match(r"(.+):(\d+):(\d+): (\w+): (.+)", line)
+            if match:
+                file_path, line_num, col_num, error_type, message = match.groups()
+                errors.append({
+                    "file": file_path,
+                    "line": int(line_num),
+                    "column": int(col_num),
+                    "type": error_type,
+                    "message": message
+                })
+        
+        return errors
+    
+    def get_capabilities(self) -> List[str]:
+        """Return a list of capabilities provided by this tool.
+        
+        Returns:
+            List of capability descriptions"""
+        return [
+            "Static type checking for Python code",
+            "Identify type errors and inconsistencies",
+            "Enforce type annotations in function definitions",
+            "Check individual files or code strings"
+        ]

@@ -1,0 +1,237 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""
+Dependency Injection Framework
+
+This module provides a lightweight dependency injection framework for the TORONTO AI TEAM AGENT.
+It allows for loose coupling between components and easier testing through dependency substitution.
+"""
+
+import inspect
+import logging
+from typing import Dict, Any, Type, Callable, Optional, List, Set, get_type_hints
+
+logger = logging.getLogger(__name__)
+
+class DependencyContainer:
+    """
+    Container for managing dependencies and their lifecycle.
+    
+    This class provides methods for registering, resolving, and managing dependencies.
+    It supports singleton and transient lifecycle management.
+    """
+    
+    def __init__(self):
+        """Initialize the dependency container."""
+        self._registrations = {}  # Type/name -> factory
+        self._singletons = {}  # Type/name -> instance
+        self._type_mappings = {}  # Interface -> Implementation
+    
+    def register(self, service_type: Type, factory: Callable = None, 
+                 singleton: bool = True, name: str = None):
+        """
+        Register a service with the container.
+        
+        Args:
+            service_type: Type of service to register
+            factory: Factory function to create the service (defaults to constructor)
+            singleton: Whether the service should be a singleton
+            name: Optional name for the service (for multiple implementations of same type)
+        """
+        key = (service_type, name)
+        
+        if factory is None:
+            factory = service_type
+            
+        self._registrations[key] = {
+            'factory': factory,
+            'singleton': singleton
+        }
+        
+        logger.debug(f"Registered {service_type.__name__}{f' as {name}' if name else ''}")
+        return self
+    
+    def register_instance(self, instance: Any, service_type: Type = None, name: str = None):
+        """
+        Register an existing instance with the container.
+        
+        Args:
+            instance: Instance to register
+            service_type: Type to register as (defaults to instance type)
+            name: Optional name for the service
+        """
+        if service_type is None:
+            service_type = type(instance)
+            
+        key = (service_type, name)
+        self._singletons[key] = instance
+        
+        logger.debug(f"Registered instance of {service_type.__name__}{f' as {name}' if name else ''}")
+        return self
+    
+    def register_type(self, interface_type: Type, implementation_type: Type):
+        """
+        Register a type mapping from interface to implementation.
+        
+        Args:
+            interface_type: Interface type
+            implementation_type: Implementation type
+        """
+        self._type_mappings[interface_type] = implementation_type
+        
+        logger.debug(f"Registered type mapping: {interface_type.__name__} -> {implementation_type.__name__}")
+        return self
+    
+    def resolve(self, service_type: Type, name: str = None) -> Any:
+        """
+        Resolve a service from the container.
+        
+        Args:
+            service_type: Type of service to resolve
+            name: Optional name of the service
+            
+        Returns:
+            Resolved service instance
+        """
+        # Check if we have a type mapping
+        if service_type in self._type_mappings:
+            service_type = self._type_mappings[service_type]
+        
+        key = (service_type, name)
+        
+        # Check if we already have a singleton instance
+        if key in self._singletons:
+            return self._singletons[key]
+        
+        # Check if we have a registration
+        if key not in self._registrations:
+            raise KeyError(f"No registration found for {service_type.__name__}{f' with name {name}' if name else ''}")
+        
+        registration = self._registrations[key]
+        factory = registration['factory']
+        singleton = registration['singleton']
+        
+        # If factory is a type, we need to inject dependencies
+        if inspect.isclass(factory):
+            instance = self._create_instance(factory)
+        else:
+            # Otherwise, it's a factory function
+            instance = factory(self)
+        
+        # If it's a singleton, store the instance
+        if singleton:
+            self._singletons[key] = instance
+        
+        return instance
+    
+    def _create_instance(self, cls: Type) -> Any:
+        """
+        Create an instance of a class with dependencies injected.
+        
+        Args:
+            cls: Class to instantiate
+            
+        Returns:
+            Instance of the class
+        """
+        # Get constructor parameters
+        signature = inspect.signature(cls.__init__)
+        parameters = signature.parameters
+        
+        # Skip self parameter
+        parameters = list(parameters.values())[1:]
+        
+        # Get type hints
+        type_hints = get_type_hints(cls.__init__)
+        
+        # Prepare arguments
+        kwargs = {}
+        
+        for param in parameters:
+            param_name = param.name
+            
+            # Skip if parameter has default value and we can't resolve it
+            if param.default is not inspect.Parameter.empty:
+                try:
+                    # Try to get the type from type hints
+                    if param_name in type_hints:
+                        param_type = type_hints[param_name]
+                        kwargs[param_name] = self.resolve(param_type)
+                except KeyError:
+                    # Use default value
+                    continue
+            else:
+                # Parameter is required
+                if param_name in type_hints:
+                    param_type = type_hints[param_name]
+                    kwargs[param_name] = self.resolve(param_type)
+                else:
+                    raise ValueError(f"Cannot resolve parameter {param_name} for {cls.__name__}")
+        
+        # Create instance
+        return cls(**kwargs)
+    
+    def inject(self, instance: Any):
+        """
+        Inject dependencies into an existing instance.
+        
+        Args:
+            instance: Instance to inject dependencies into
+            
+        Returns:
+            The instance with dependencies injected
+        """
+        # Look for setter methods that follow the pattern set_*
+        for name, method in inspect.getmembers(instance, predicate=inspect.ismethod):
+            if name.startswith('set_') and name != 'set_task_service':
+                # Get the dependency name from the setter method name
+                dependency_name = name[4:]  # Remove 'set_' prefix
+                
+                # Try to resolve the dependency
+                try:
+                    # Get the parameter type from the method signature
+                    signature = inspect.signature(method)
+                    parameters = list(signature.parameters.values())
+                    
+                    if len(parameters) != 1:
+                        continue
+                    
+                    param = parameters[0]
+                    type_hints = get_type_hints(method)
+                    
+                    if param.name in type_hints:
+                        param_type = type_hints[param.name]
+                        dependency = self.resolve(param_type)
+                        
+                        # Call the setter method with the resolved dependency
+                        method(dependency)
+                        logger.debug(f"Injected {param_type.__name__} into {instance.__class__.__name__}.{name}")
+                except Exception as e:
+                    logger.warning(f"Failed to inject dependency into {instance.__class__.__name__}.{name}: {e}")
+        
+        return instance
+
+
+# Global container instance
+container = DependencyContainer()
+
+def get_container() -> DependencyContainer:
+    """
+    Get the global dependency container.
+    
+    Returns:
+        Global dependency container
+    """
+    return container

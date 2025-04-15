@@ -1,0 +1,402 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""Integration Tests for TORONTO AI Team Agent Training System.
+
+This module provides tests to verify that all components of the training system
+work together correctly."""
+
+import os
+import sys
+import unittest
+import tempfile
+import shutil
+import json
+import time
+from pathlib import Path
+import logging
+
+# Add parent directory to path to allow imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app.training.knowledge_extraction import pipeline as knowledge_pipeline
+from app.training.agent_adaptation import adaptation_layer
+from app.training.certification_content import certification_manager
+from app.training.vector_db import VectorDatabaseFactory
+from app.training.cli import TrainingCLI
+from app.training.config import load_config, save_config
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class IntegrationTests(unittest.TestCase):
+    """Integration tests for the TORONTO AI Team Agent Training System."""
+    
+    @classmethod
+    def setUpClass(cls):
+        """Set up test environment."""
+        # Create temporary directory for tests
+        cls.test_dir = tempfile.mkdtemp()
+        
+        # Create test materials directory
+        cls.materials_dir = os.path.join(cls.test_dir, "materials")
+        os.makedirs(cls.materials_dir, exist_ok=True)
+        
+        # Create test certifications directory
+        cls.certifications_dir = os.path.join(cls.test_dir, "certifications")
+        os.makedirs(cls.certifications_dir, exist_ok=True)
+        
+        # Create test vector database directory
+        cls.vector_db_dir = os.path.join(cls.test_dir, "vector_db")
+        os.makedirs(cls.vector_db_dir, exist_ok=True)
+        
+        # Create test configuration
+        cls.test_config = {
+            "vector_db_type": "in_memory",
+            "vector_db_path": cls.vector_db_dir,
+            "materials_path": cls.materials_dir,
+            "certifications_path": cls.certifications_dir,
+            "chunking_strategy": "fixed_size",
+            "chunk_size": 500,
+            "chunk_overlap": 100,
+            "enable_versioning": True,
+            "enable_personalization": True,
+            "enable_multi_agent_sharing": True
+        }
+        
+        # Create test training materials
+        cls._create_test_materials()
+        
+        # Initialize components with test configuration
+        cls._initialize_components()
+        
+        logger.info("Test environment set up")
+    
+    @classmethod
+    def tearDownClass(cls):
+        """Clean up test environment."""
+        # Remove temporary directory
+        shutil.rmtree(cls.test_dir)
+        
+        logger.info("Test environment cleaned up")
+    
+    @classmethod
+    def _create_test_materials(cls):
+        """Create test training materials."""
+        # Create project manager training material
+        pm_content = """# Project Manager Training
+
+## Description
+This is a test training material for project managers.
+
+## Project Planning
+Project planning is the process of defining project goals, tasks, and resources.
+
+### Creating a Project Plan
+A project plan outlines the tasks, timeline, and resources needed for a project.
+
+### Risk Management
+Risk management involves identifying, assessing, and mitigating potential risks.
+
+## Team Leadership
+Team leadership involves guiding and motivating team members to achieve project goals.
+
+### Communication
+Effective communication is essential for project success.
+
+### Conflict Resolution
+Conflict resolution involves addressing disagreements constructively.
+"""
+        
+        with open(os.path.join(cls.materials_dir, "project_manager_training.md"), "w") as f:
+            f.write(pm_content)
+        
+        # Create product manager training material
+        product_content = """# Product Manager Training
+
+## Description
+This is a test training material for product managers.
+
+## Product Strategy
+Product strategy defines the direction and goals for a product.
+
+### Market Analysis
+Market analysis involves researching market trends and customer needs.
+
+### Competitive Analysis
+Competitive analysis involves evaluating competitors' products and strategies.
+
+## User Experience
+User experience focuses on creating products that meet user needs and expectations.
+
+### User Research
+User research involves gathering insights about user behaviors and preferences.
+
+### Usability Testing
+Usability testing evaluates how well users can use a product.
+"""
+        
+        with open(os.path.join(cls.materials_dir, "product_manager_training.md"), "w") as f:
+            f.write(product_content)
+        
+        logger.info("Created test training materials")
+    
+    @classmethod
+    def _initialize_components(cls):
+        """Initialize system components with test configuration."""
+        # Update knowledge pipeline configuration
+        for key, value in cls.test_config.items():
+            if hasattr(knowledge_pipeline, key):
+                setattr(knowledge_pipeline, key, value)
+        
+        # Initialize vector database
+        knowledge_pipeline._initialize_vector_db()
+        
+        # Update certification manager configuration
+        certification_manager.certifications_path = cls.test_config["certifications_path"]
+        certification_manager.enable_versioning = cls.test_config["enable_versioning"]
+        certification_manager._initialize_certifications_directory()
+        
+        # Update adaptation layer configuration
+        adaptation_layer.enable_personalization = cls.test_config["enable_personalization"]
+        adaptation_layer.enable_multi_agent_sharing = cls.test_config["enable_multi_agent_sharing"]
+        
+        logger.info("Initialized components with test configuration")
+    
+    def test_01_knowledge_extraction(self):
+        """Test knowledge extraction pipeline."""
+        # Process all materials
+        result = knowledge_pipeline.process_all_materials()
+        
+        # Verify result
+        self.assertTrue(result["success"])
+        self.assertEqual(result["processed_files"], 2)
+        self.assertGreater(result["total_chunks"], 0)
+        self.assertGreater(result["total_embeddings"], 0)
+        
+        logger.info("Knowledge extraction test passed")
+    
+    def test_02_knowledge_query(self):
+        """Test knowledge query functionality."""
+        # Query knowledge base
+        results = knowledge_pipeline.query_knowledge(
+            query="project planning and risk management",
+            top_k=3
+        )
+        
+        # Verify results
+        self.assertIsInstance(results, list)
+        self.assertGreater(len(results), 0)
+        
+        # Check result structure
+        for result in results:
+            self.assertIn("score", result)
+            self.assertIn("document", result)
+            self.assertIn("content", result["document"])
+            
+        logger.info("Knowledge query test passed")
+    
+    def test_03_agent_adaptation(self):
+        """Test agent adaptation layer."""
+        # Adapt agent role
+        params = {
+            "role": "project_manager",
+            "training_id": "test_training",
+            "adaptation_config": {
+                "preferred_topics": ["project planning", "risk management"],
+                "expertise_level": "intermediate"
+            }
+        }
+        
+        result = adaptation_layer.adapt_agent_role(params)
+        
+        # Verify result
+        self.assertTrue(result["success"])
+        self.assertEqual(result["role"], "project_manager")
+        self.assertIn("adaptation_id", result)
+        
+        # Check agent context
+        context = adaptation_layer.get_agent_context("project_manager")
+        self.assertIsNotNone(context)
+        self.assertEqual(context["training_id"], "test_training")
+        
+        # Check personalization profile
+        profile = adaptation_layer.get_personalization_profile("project_manager")
+        self.assertIsNotNone(profile)
+        self.assertEqual(profile["role"], "project_manager")
+        self.assertEqual(profile["expertise_level"], "intermediate")
+        
+        logger.info("Agent adaptation test passed")
+    
+    def test_04_certification_content(self):
+        """Test certification content management."""
+        # Create certification template
+        template_result = certification_manager.create_certification_template("google_project_manager")
+        
+        # Verify template result
+        self.assertTrue(template_result["success"])
+        self.assertIn("template_id", template_result)
+        
+        template_id = template_result["template_id"]
+        
+        # List certification content
+        list_result = certification_manager.list_certification_content()
+        
+        # Verify list result
+        self.assertTrue(list_result["success"])
+        self.assertIn("certifications", list_result)
+        self.assertIn(template_id, list_result["certifications"])
+        
+        # Process certification content
+        process_result = certification_manager.process_certification_content(template_id)
+        
+        # Verify process result
+        self.assertTrue(process_result["success"])
+        self.assertIn("results", process_result)
+        
+        logger.info("Certification content test passed")
+    
+    def test_05_cli_interface(self):
+        """Test CLI interface."""
+        # Create CLI instance
+        cli = TrainingCLI()
+        
+        # Test status command
+        status_result = cli.run(["status"])
+        
+        # Verify status result
+        self.assertTrue(status_result["success"])
+        self.assertIn("status", status_result)
+        
+        # Test query command
+        query_result = cli.run(["query", "project management"])
+        
+        # Verify query result
+        self.assertTrue(query_result["success"])
+        self.assertIn("results", query_result)
+        
+        logger.info("CLI interface test passed")
+    
+    def test_06_integration_workflow(self):
+        """Test complete integration workflow."""
+        # 1. Create test certification content
+        cert_content = """# Test Certification Content
+
+## Description
+This is a test certification content for integration testing.
+
+## Key Concepts
+These are the key concepts for the test certification.
+
+## Best Practices
+These are the best practices for the test certification.
+"""
+        
+        cert_path = os.path.join(self.test_dir, "test_cert.md")
+        with open(cert_path, "w") as f:
+            f.write(cert_content)
+        
+        # 2. Add certification content
+        add_params = {
+            "certification_type": "google_project_manager",
+            "content_path": cert_path,
+            "metadata": {
+                "title": "Test Certification",
+                "description": "Test certification for integration testing"
+            }
+        }
+        
+        add_result = certification_manager.add_certification_content(add_params)
+        self.assertTrue(add_result["success"])
+        content_id = add_result["content_id"]
+        
+        # 3. Process certification content
+        process_result = certification_manager.process_certification_content(content_id)
+        self.assertTrue(process_result["success"])
+        
+        # 4. Adapt agent role
+        adapt_params = {
+            "role": "test_role",
+            "training_id": "integration_test",
+            "adaptation_config": {
+                "preferred_topics": ["certification", "testing"],
+                "expertise_level": "beginner"
+            }
+        }
+        
+        adapt_result = adaptation_layer.adapt_agent_role(adapt_params)
+        self.assertTrue(adapt_result["success"])
+        
+        # 5. Query knowledge with role filter
+        query_results = knowledge_pipeline.query_knowledge(
+            query="certification concepts",
+            role="test_role",
+            top_k=2
+        )
+        
+        self.assertIsInstance(query_results, list)
+        
+        # 6. Update personalization profile
+        profile_update = {
+            "expertise_level": "advanced",
+            "preferred_topics": ["advanced certification", "integration testing"]
+        }
+        
+        update_result = adaptation_layer.update_personalization_profile("test_role", profile_update)
+        self.assertTrue(update_result["success"])
+        
+        # 7. Verify updated profile
+        profile = adaptation_layer.get_personalization_profile("test_role")
+        self.assertEqual(profile["expertise_level"], "advanced")
+        
+        logger.info("Integration workflow test passed")
+    
+    def test_07_error_handling(self):
+        """Test error handling in the integration system."""
+        # Test invalid query
+        try:
+            results = knowledge_pipeline.query_knowledge(query=None)
+            self.fail("Should have raised an exception")
+        except Exception:
+            pass
+        
+        # Test invalid adaptation
+        invalid_adapt_result = adaptation_layer.adapt_agent_role({})
+        self.assertFalse(invalid_adapt_result["success"])
+        
+        # Test invalid certification content
+        invalid_cert_result = certification_manager.process_certification_content("invalid_id")
+        self.assertFalse(invalid_cert_result["success"])
+        
+        logger.info("Error handling test passed")
+
+
+def run_tests():
+    """Run integration tests."""
+    # Create test suite
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(IntegrationTests))
+    
+    # Run tests
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(suite)
+    
+    return result.wasSuccessful()
+
+
+if __name__ == "__main__":
+    success = run_tests()
+    sys.exit(0 if success else 1)

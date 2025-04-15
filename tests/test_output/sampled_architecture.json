@@ -1,0 +1,167 @@
+{
+  "id": null,
+  "name": "Sampled_Hierarchical Architecture_9283",
+  "description": "A hierarchical architecture with multiple levels",
+  "agents": [
+    {
+      "id": "agent_0",
+      "name": "Coordinator 0.0",
+      "role": "coordinator",
+      "capabilities": [
+        "planning",
+        "delegation",
+        "decision_making"
+      ],
+      "model_name": "gpt-4",
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000
+      },
+      "custom_role_name": null
+    },
+    {
+      "id": "agent_1",
+      "name": "Manager 1.0",
+      "role": "manager",
+      "capabilities": [
+        "coordination",
+        "monitoring",
+        "reporting"
+      ],
+      "model_name": "gpt-4",
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000
+      },
+      "custom_role_name": null
+    },
+    {
+      "id": "agent_2",
+      "name": "Manager 1.1",
+      "role": "manager",
+      "capabilities": [
+        "coordination",
+        "monitoring",
+        "reporting"
+      ],
+      "model_name": "gpt-4",
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000
+      },
+      "custom_role_name": null
+    },
+    {
+      "id": "agent_3",
+      "name": "Manager 1.2",
+      "role": "manager",
+      "capabilities": [
+        "coordination",
+        "monitoring",
+        "reporting"
+      ],
+      "model_name": "gpt-4",
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000
+      },
+      "custom_role_name": null
+    },
+    {
+      "id": "agent_4",
+      "name": "Worker 2.0",
+      "role": "worker",
+      "capabilities": [
+        "code_execution",
+        "information_retrieval",
+        "quality_assessment"
+      ],
+      "model_name": "gpt-4",
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000
+      },
+      "custom_role_name": null
+    },
+    {
+      "id": "agent_5",
+      "name": "Worker 2.1",
+      "role": "worker",
+      "capabilities": [
+        "code_execution",
+        "information_retrieval"
+      ],
+      "model_name": "gpt-4",
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000
+      },
+      "custom_role_name": null
+    },
+    {
+      "id": "agent_6",
+      "name": "Worker 2.2",
+      "role": "worker",
+      "capabilities": [
+        "code_execution",
+        "information_retrieval"
+      ],
+      "model_name": "gpt-4",
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000
+      },
+      "custom_role_name": null
+    },
+    {
+      "id": "agent_7",
+      "name": "Worker 2.3",
+      "role": "worker",
+      "capabilities": [
+        "code_execution",
+        "information_retrieval"
+      ],
+      "model_name": "gpt-4",
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000
+      },
+      "custom_role_name": null
+    },
+    {
+      "id": "agent_8",
+      "name": "Worker 2.4",
+      "role": "worker",
+      "capabilities": [
+        "code_execution",
+        "information_retrieval"
+      ],
+      "model_name": "gpt-4",
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000
+      },
+      "custom_role_name": null
+    },
+    {
+      "id": "agent_9",
+      "name": "Worker 2.5",
+      "role": "worker",
+      "capabilities": [
+        "code_execution",
+        "information_retrieval"
+      ],
+      "model_name": "gpt-4",
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000
+      },
+      "custom_role_name": null
+    }
+  ],
+  "connections": [],
+  "communication_pattern": "hierarchical",
+  "parameters": {},
+  "created_at": "2025-04-15T02:27:16.203937",
+  "updated_at": "2025-04-15T02:27:16.203938"
+}

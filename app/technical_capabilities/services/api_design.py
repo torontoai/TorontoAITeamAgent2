@@ -1,0 +1,1806 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""API Design Service for technical capabilities module.
+
+This module provides services for designing APIs based on project requirements."""
+
+import os
+import sys
+import logging
+import time
+from typing import Dict, List, Any, Optional
+
+from ..models.data_models import (
+    APIDesignRequest,
+    APIDesignResult
+)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class APIDesignService:
+    """Service for designing APIs based on project requirements."""
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """Initialize the API design service.
+        
+        Args:
+            config: Configuration settings"""
+        self.config = config or {}
+        self.templates_dir = self.config.get('templates_dir', 'templates')
+        logger.info("Initialized API design service")
+    
+    async def design_api(self, request: APIDesignRequest) -> APIDesignResult:
+        """
+        Design API based on project requirements.
+        
+        Args:
+            request: API design request
+            
+        Returns:
+            API design result
+        """
+        logger.info(f"Designing API for project: {request.project_id}")
+        
+        # Generate API specification
+        api_specification = await self._generate_api_specification(
+            request.requirements,
+            request.api_style,
+            request.authentication_requirements
+        )
+        
+        # Generate implementation files
+        implementation_files = await self._generate_implementation_files(
+            request.project_id,
+            api_specification,
+            request.api_style
+        )
+        
+        # Create result
+        result = APIDesignResult(
+            project_id=request.project_id,
+            api_specification=api_specification,
+            implementation_files=implementation_files
+        )
+        
+        logger.info(f"Designed API for project: {request.project_id}")
+        return result
+    
+    async def _generate_api_specification(
+        self,
+        requirements: List[str],
+        api_style: str,
+        authentication_requirements: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Generate API specification based on requirements.
+        
+        Args:
+            requirements: List of requirements
+            api_style: API style (e.g., 'rest', 'graphql', 'grpc')
+            authentication_requirements: Authentication requirements
+            
+        Returns:
+            API specification
+        """
+        # In a real implementation, this would generate a detailed API specification
+        # For now, return a mock specification
+        
+        # Generate endpoints based on requirements
+        endpoints = []
+        for i, requirement in enumerate(requirements):
+            endpoint = self._generate_endpoint_from_requirement(requirement, api_style, i)
+            if endpoint:
+                endpoints.append(endpoint)
+        
+        # Generate authentication specification
+        auth_spec = self._generate_authentication_specification(authentication_requirements, api_style)
+        
+        # Generate API specification based on style
+        if api_style.lower() == 'rest':
+            return self._generate_rest_api_specification(endpoints, auth_spec)
+        elif api_style.lower() == 'graphql':
+            return self._generate_graphql_api_specification(endpoints, auth_spec)
+        elif api_style.lower() == 'grpc':
+            return self._generate_grpc_api_specification(endpoints, auth_spec)
+        else:
+            return {
+                "style": api_style,
+                "version": "1.0.0",
+                "endpoints": endpoints,
+                "authentication": auth_spec
+            }
+    
+    def _generate_endpoint_from_requirement(
+        self, requirement: str, api_style: str, index: int
+    ) -> Dict[str, Any]:
+        """Generate an endpoint from a requirement.
+        
+        Args:
+            requirement: Requirement
+            api_style: API style
+            index: Index for generating unique names
+            
+        Returns:
+            Endpoint specification"""
+        # In a real implementation, this would parse the requirement and generate an appropriate endpoint
+        # For now, return a mock endpoint
+        
+        # Extract keywords from requirement
+        keywords = requirement.lower().split()
+        
+        # Determine if this is a CRUD operation
+        is_create = any(word in keywords for word in ['create', 'add', 'insert', 'post'])
+        is_read = any(word in keywords for word in ['read', 'get', 'fetch', 'retrieve', 'list'])
+        is_update = any(word in keywords for word in ['update', 'modify', 'put', 'patch'])
+        is_delete = any(word in keywords for word in ['delete', 'remove', 'destroy'])
+        
+        # Determine resource name (simplified)
+        resource_name = f"resource{index + 1}"
+        for word in keywords:
+            if len(word) > 3 and word not in ['create', 'read', 'update', 'delete', 'list', 'get', 'post', 'put', 'patch']:
+                resource_name = word
+                break
+        
+        # Generate endpoint based on API style
+        if api_style.lower() == 'rest':
+            return self._generate_rest_endpoint(resource_name, is_create, is_read, is_update, is_delete)
+        elif api_style.lower() == 'graphql':
+            return self._generate_graphql_endpoint(resource_name, is_create, is_read, is_update, is_delete)
+        elif api_style.lower() == 'grpc':
+            return self._generate_grpc_endpoint(resource_name, is_create, is_read, is_update, is_delete)
+        else:
+            return {
+                "name": resource_name,
+                "operations": {
+                    "create": is_create,
+                    "read": is_read,
+                    "update": is_update,
+                    "delete": is_delete
+                }
+            }
+    
+    def _generate_rest_endpoint(
+        self, resource_name: str, is_create: bool, is_read: bool, is_update: bool, is_delete: bool
+    ) -> Dict[str, Any]:
+        """Generate a REST endpoint.
+        
+        Args:
+            resource_name: Resource name
+            is_create: Whether to include create operation
+            is_read: Whether to include read operation
+            is_update: Whether to include update operation
+            is_delete: Whether to include delete operation
+            
+        Returns:
+            REST endpoint specification"""
+        endpoint = {
+            "resource": resource_name,
+            "path": f"/api/{resource_name}s",
+            "methods": []
+        }
+        
+        # Add methods based on operations
+        if is_create:
+            endpoint["methods"].append({
+                "type": "POST",
+                "path": f"/api/{resource_name}s",
+                "description": f"Create a new {resource_name}",
+                "request_body": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "description": {"type": "string"}
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": f"{resource_name.capitalize()} created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {"type": "string"},
+                                        "name": {"type": "string"},
+                                        "description": {"type": "string"},
+                                        "created_at": {"type": "string", "format": "date-time"}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+        
+        if is_read:
+            # List all
+            endpoint["methods"].append({
+                "type": "GET",
+                "path": f"/api/{resource_name}s",
+                "description": f"List all {resource_name}s",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "schema": {"type": "integer", "default": 1}
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "schema": {"type": "integer", "default": 10}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": f"List of {resource_name}s",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {"type": "string"},
+                                                    "name": {"type": "string"},
+                                                    "description": {"type": "string"},
+                                                    "created_at": {"type": "string", "format": "date-time"}
+                                                }
+                                            }
+                                        },
+                                        "pagination": {
+                                            "type": "object",
+                                            "properties": {
+                                                "total": {"type": "integer"},
+                                                "pages": {"type": "integer"},
+                                                "current_page": {"type": "integer"},
+                                                "limit": {"type": "integer"}
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+            
+            # Get by ID
+            endpoint["methods"].append({
+                "type": "GET",
+                "path": f"/api/{resource_name}s/{{id}}",
+                "description": f"Get a {resource_name} by ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": f"{resource_name.capitalize()} ID",
+                        "required": True,
+                        "schema": {"type": "string"}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": f"{resource_name.capitalize()} found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {"type": "string"},
+                                        "name": {"type": "string"},
+                                        "description": {"type": "string"},
+                                        "created_at": {"type": "string", "format": "date-time"},
+                                        "updated_at": {"type": "string", "format": "date-time"}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": f"{resource_name.capitalize()} not found"
+                    }
+                }
+            })
+        
+        if is_update:
+            endpoint["methods"].append({
+                "type": "PUT",
+                "path": f"/api/{resource_name}s/{{id}}",
+                "description": f"Update a {resource_name}",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": f"{resource_name.capitalize()} ID",
+                        "required": True,
+                        "schema": {"type": "string"}
+                    }
+                ],
+                "request_body": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "description": {"type": "string"}
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": f"{resource_name.capitalize()} updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {"type": "string"},
+                                        "name": {"type": "string"},
+                                        "description": {"type": "string"},
+                                        "updated_at": {"type": "string", "format": "date-time"}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": f"{resource_name.capitalize()} not found"
+                    }
+                }
+            })
+        
+        if is_delete:
+            endpoint["methods"].append({
+                "type": "DELETE",
+                "path": f"/api/{resource_name}s/{{id}}",
+                "description": f"Delete a {resource_name}",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": f"{resource_name.capitalize()} ID",
+                        "required": True,
+                        "schema": {"type": "string"}
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": f"{resource_name.capitalize()} deleted successfully"
+                    },
+                    "404": {
+                        "description": f"{resource_name.capitalize()} not found"
+                    }
+                }
+            })
+        
+        return endpoint
+    
+    def _generate_graphql_endpoint(
+        self, resource_name: str, is_create: bool, is_read: bool, is_update: bool, is_delete: bool
+    ) -> Dict[str, Any]:
+        """Generate a GraphQL endpoint.
+        
+        Args:
+            resource_name: Resource name
+            is_create: Whether to include create operation
+            is_read: Whether to include read operation
+            is_update: Whether to include update operation
+            is_delete: Whether to include delete operation
+            
+        Returns:
+            GraphQL endpoint specification"""
+        endpoint = {
+            "resource": resource_name,
+            "type_definition": f"""
+type {resource_name.capitalize()} {{
+  id: ID!
+  name: String!
+  description: String
+  createdAt: DateTime!
+  updatedAt: DateTime
+}}
+
+type {resource_name.capitalize()}Connection {{
+  edges: [{resource_name.capitalize()}Edge!]!
+  pageInfo: PageInfo!
+}}
+
+type {resource_name.capitalize()}Edge {{
+  node: {resource_name.capitalize()}!
+  cursor: String!
+}}
+""",
+            "queries": [],
+            "mutations": []
+        }
+        
+        # Add queries based on operations
+        if is_read:
+            endpoint["queries"].append({
+                "name": f"{resource_name}s",
+                "description": f"Get all {resource_name}s",
+                "arguments": [
+                    {"name": "first", "type": "Int", "description": "Number of items to return"},
+                    {"name": "after", "type": "String", "description": "Cursor for pagination"}
+                ],
+                "return_type": f"{resource_name.capitalize()}Connection!",
+                "resolver": f"get{resource_name.capitalize()}s"
+            })
+            
+            endpoint["queries"].append({
+                "name": resource_name,
+                "description": f"Get a {resource_name} by ID",
+                "arguments": [
+                    {"name": "id", "type": "ID!", "description": f"{resource_name.capitalize()} ID"}
+                ],
+                "return_type": f"{resource_name.capitalize()}",
+                "resolver": f"get{resource_name.capitalize()}"
+            })
+        
+        # Add mutations based on operations
+        if is_create:
+            endpoint["mutations"].append({
+                "name": f"create{resource_name.capitalize()}",
+                "description": f"Create a new {resource_name}",
+                "arguments": [
+                    {"name": "name", "type": "String!", "description": f"{resource_name.capitalize()} name"},
+                    {"name": "description", "type": "String", "description": f"{resource_name.capitalize()} description"}
+                ],
+                "return_type": f"{resource_name.capitalize()}!",
+                "resolver": f"create{resource_name.capitalize()}"
+            })
+        
+        if is_update:
+            endpoint["mutations"].append({
+                "name": f"update{resource_name.capitalize()}",
+                "description": f"Update a {resource_name}",
+                "arguments": [
+                    {"name": "id", "type": "ID!", "description": f"{resource_name.capitalize()} ID"},
+                    {"name": "name", "type": "String", "description": f"{resource_name.capitalize()} name"},
+                    {"name": "description", "type": "String", "description": f"{resource_name.capitalize()} description"}
+                ],
+                "return_type": f"{resource_name.capitalize()}!",
+                "resolver": f"update{resource_name.capitalize()}"
+            })
+        
+        if is_delete:
+            endpoint["mutations"].append({
+                "name": f"delete{resource_name.capitalize()}",
+                "description": f"Delete a {resource_name}",
+                "arguments": [
+                    {"name": "id", "type": "ID!", "description": f"{resource_name.capitalize()} ID"}
+                ],
+                "return_type": "Boolean!",
+                "resolver": f"delete{resource_name.capitalize()}"
+            })
+        
+        return endpoint
+    
+    def _generate_grpc_endpoint(
+        self, resource_name: str, is_create: bool, is_read: bool, is_update: bool, is_delete: bool
+    ) -> Dict[str, Any]:
+        """Generate a gRPC endpoint.
+        
+        Args:
+            resource_name: Resource name
+            is_create: Whether to include create operation
+            is_read: Whether to include read operation
+            is_update: Whether to include update operation
+            is_delete: Whether to include delete operation
+            
+        Returns:
+            gRPC endpoint specification"""
+        endpoint = {
+            "resource": resource_name,
+            "service_name": f"{resource_name.capitalize()}Service",
+            "proto_definition": f"""
+syntax = "proto3";
+
+package {resource_name.lower()};
+
+service {resource_name.capitalize()}Service {{
+""",
+            "messages": [
+                f"""
+message {resource_name.capitalize()} {{
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string created_at = 4;
+  string updated_at = 5;
+}}
+"""
+            ],
+            "methods": []
+        }
+        
+        # Add methods based on operations
+        if is_create:
+            endpoint["proto_definition"] += f"""  // Create a new {resource_name}
+  rpc Create{resource_name.capitalize()}(Create{resource_name.capitalize()}Request) returns (Create{resource_name.capitalize()}Response);
+"""
+            endpoint["messages"].append(f"""
+message Create{resource_name.capitalize()}Request {{
+  string name = 1;
+  string description = 2;
+}}
+
+message Create{resource_name.capitalize()}Response {{
+  {resource_name.capitalize()} {resource_name} = 1;
+}}
+""")
+            endpoint["methods"].append({
+                "name": f"Create{resource_name.capitalize()}",
+                "input": f"Create{resource_name.capitalize()}Request",
+                "output": f"Create{resource_name.capitalize()}Response",
+                "description": f"Create a new {resource_name}"
+            })
+        
+        if is_read:
+            endpoint["proto_definition"] += f"""  // Get all {resource_name}s
+  rpc List{resource_name.capitalize()}s(List{resource_name.capitalize()}sRequest) returns (List{resource_name.capitalize()}sResponse);
+  
+  // Get a {resource_name} by ID
+  rpc Get{resource_name.capitalize()}(Get{resource_name.capitalize()}Request) returns (Get{resource_name.capitalize()}Response);
+"""
+            endpoint["messages"].append(f"""
+message List{resource_name.capitalize()}sRequest {{
+  int32 page = 1;
+  int32 limit = 2;
+}}
+
+message List{resource_name.capitalize()}sResponse {{
+  repeated {resource_name.capitalize()} {resource_name}s = 1;
+  Pagination pagination = 2;
+}}
+
+message Get{resource_name.capitalize()}Request {{
+  string id = 1;
+}}
+
+message Get{resource_name.capitalize()}Response {{
+  {resource_name.capitalize()} {resource_name} = 1;
+}}
+
+message Pagination {{
+  int32 total = 1;
+  int32 pages = 2;
+  int32 current_page = 3;
+  int32 limit = 4;
+}}
+""")
+            endpoint["methods"].append({
+                "name": f"List{resource_name.capitalize()}s",
+                "input": f"List{resource_name.capitalize()}sRequest",
+                "output": f"List{resource_name.capitalize()}sResponse",
+                "description": f"Get all {resource_name}s"
+            })
+            endpoint["methods"].append({
+                "name": f"Get{resource_name.capitalize()}",
+                "input": f"Get{resource_name.capitalize()}Request",
+                "output": f"Get{resource_name.capitalize()}Response",
+                "description": f"Get a {resource_name} by ID"
+            })
+        
+        if is_update:
+            endpoint["proto_definition"] += f"""  // Update a {resource_name}
+  rpc Update{resource_name.capitalize()}(Update{resource_name.capitalize()}Request) returns (Update{resource_name.capitalize()}Response);
+"""
+            endpoint["messages"].append(f"""
+message Update{resource_name.capitalize()}Request {{
+  string id = 1;
+  string name = 2;
+  string description = 3;
+}}
+
+message Update{resource_name.capitalize()}Response {{
+  {resource_name.capitalize()} {resource_name} = 1;
+}}
+""")
+            endpoint["methods"].append({
+                "name": f"Update{resource_name.capitalize()}",
+                "input": f"Update{resource_name.capitalize()}Request",
+                "output": f"Update{resource_name.capitalize()}Response",
+                "description": f"Update a {resource_name}"
+            })
+        
+        if is_delete:
+            endpoint["proto_definition"] += f"""  // Delete a {resource_name}
+  rpc Delete{resource_name.capitalize()}(Delete{resource_name.capitalize()}Request) returns (Delete{resource_name.capitalize()}Response);
+"""
+            endpoint["messages"].append(f"""
+message Delete{resource_name.capitalize()}Request {{
+  string id = 1;
+}}
+
+message Delete{resource_name.capitalize()}Response {{
+  bool success = 1;
+}}
+""")
+            endpoint["methods"].append({
+                "name": f"Delete{resource_name.capitalize()}",
+                "input": f"Delete{resource_name.capitalize()}Request",
+                "output": f"Delete{resource_name.capitalize()}Response",
+                "description": f"Delete a {resource_name}"
+            })
+        
+        # Close service definition
+        endpoint["proto_definition"] += "}\n"
+        
+        return endpoint
+    
+    def _generate_authentication_specification(
+        self, authentication_requirements: Dict[str, Any], api_style: str
+    ) -> Dict[str, Any]:
+        """Generate authentication specification.
+        
+        Args:
+            authentication_requirements: Authentication requirements
+            api_style: API style
+            
+        Returns:
+            Authentication specification"""
+        # In a real implementation, this would generate a detailed authentication specification
+        # For now, return a mock specification
+        
+        auth_type = authentication_requirements.get('type', 'jwt')
+        
+        if auth_type.lower() == 'jwt':
+            return {
+                "type": "jwt",
+                "token_expiration": authentication_requirements.get('token_expiration', 3600),
+                "refresh_token": authentication_requirements.get('refresh_token', True),
+                "header_name": "Authorization",
+                "token_prefix": "Bearer"
+            }
+        elif auth_type.lower() == 'oauth2':
+            return {
+                "type": "oauth2",
+                "flows": authentication_requirements.get('flows', ['authorization_code']),
+                "scopes": authentication_requirements.get('scopes', ['read', 'write']),
+                "token_url": "/api/oauth/token",
+                "authorization_url": "/api/oauth/authorize"
+            }
+        elif auth_type.lower() == 'api_key':
+            return {
+                "type": "api_key",
+                "header_name": authentication_requirements.get('header_name', 'X-API-Key'),
+                "in": authentication_requirements.get('in', 'header')
+            }
+        else:
+            return {
+                "type": auth_type,
+                "details": authentication_requirements
+            }
+    
+    def _generate_rest_api_specification(
+        self, endpoints: List[Dict[str, Any]], auth_spec: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Generate REST API specification.
+        
+        Args:
+            endpoints: List of endpoints
+            auth_spec: Authentication specification
+            
+        Returns:
+            REST API specification"""
+        return {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "API Specification",
+                "version": "1.0.0",
+                "description": "API specification generated by TORONTO AI TEAM AGENT"
+            },
+            "servers": [
+                {
+                    "url": "https://api.example.com",
+                    "description": "Production server"
+                },
+                {
+                    "url": "https://staging-api.example.com",
+                    "description": "Staging server"
+                }
+            ],
+            "paths": {endpoint["path"]: {
+                method["type"].lower(): {
+                    "summary": method["description"],
+                    "parameters": method.get("parameters", []),
+                    "requestBody": {"content": {"application/json": {"schema": method["request_body"]}}} if "request_body" in method else None,
+                    "responses": method["responses"],
+                    "security": [{"bearerAuth": []}] if auth_spec["type"] == "jwt" else [{"apiKey": []}]
+                } for method in endpoint["methods"]
+            } for endpoint in endpoints},
+            "components": {
+                "securitySchemes": {
+                    "bearerAuth": {
+                        "type": "http",
+                        "scheme": "bearer",
+                        "bearerFormat": "JWT"
+                    } if auth_spec["type"] == "jwt" else None,
+                    "apiKey": {
+                        "type": "apiKey",
+                        "in": auth_spec.get("in", "header"),
+                        "name": auth_spec.get("header_name", "X-API-Key")
+                    } if auth_spec["type"] == "api_key" else None
+                }
+            }
+        }
+    
+    def _generate_graphql_api_specification(
+        self, endpoints: List[Dict[str, Any]], auth_spec: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Generate GraphQL API specification.
+        
+        Args:
+            endpoints: List of endpoints
+            auth_spec: Authentication specification
+            
+        Returns:
+            GraphQL API specification"""
+        # Combine all type definitions
+        type_definitions = "\n".join([endpoint.get("type_definition", "") for endpoint in endpoints])
+        
+        # Combine all queries
+        queries = []
+        for endpoint in endpoints:
+            for query in endpoint.get("queries", []):
+                queries.append(query)
+        
+        # Combine all mutations
+        mutations = []
+        for endpoint in endpoints:
+            for mutation in endpoint.get("mutations", []):
+                mutations.append(mutation)
+        
+        # Generate query type
+        query_type = "type Query {\n"
+        for query in queries:
+            args = ", ".join([f"{arg['name']}: {arg['type']}" for arg in query.get("arguments", [])])
+            query_type += f"  {query['name']}({args}): {query['return_type']}\n"
+        query_type += "}\n"
+        
+        # Generate mutation type
+        mutation_type = "type Mutation {\n"
+        for mutation in mutations:
+            args = ", ".join([f"{arg['name']}: {arg['type']}" for arg in mutation.get("arguments", [])])
+            mutation_type += f"  {mutation['name']}({args}): {mutation['return_type']}\n"
+        mutation_type += "}\n"
+        
+        # Generate schema
+        schema = f"""
+# Common types
+type PageInfo {{
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}}
+
+scalar DateTime
+
+{type_definitions}
+
+{query_type}
+
+{mutation_type}
+
+schema {{
+  query: Query
+  mutation: Mutation
+}}
+"""
+        
+        return {
+            "schema": schema,
+            "queries": queries,
+            "mutations": mutations,
+            "authentication": auth_spec
+        }
+    
+    def _generate_grpc_api_specification(
+        self, endpoints: List[Dict[str, Any]], auth_spec: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Generate gRPC API specification.
+        
+        Args:
+            endpoints: List of endpoints
+            auth_spec: Authentication specification
+            
+        Returns:
+            gRPC API specification"""
+        # Combine all proto definitions
+        proto_definitions = []
+        for endpoint in endpoints:
+            proto_definition = endpoint.get("proto_definition", "")
+            messages = "\n".join(endpoint.get("messages", []))
+            proto_definitions.append(f"{proto_definition}\n{messages}")
+        
+        # Combine all methods
+        methods = []
+        for endpoint in endpoints:
+            for method in endpoint.get("methods", []):
+                methods.append({
+                    "service": endpoint.get("service_name", ""),
+                    **method
+                })
+        
+        return {
+            "proto_definitions": proto_definitions,
+            "services": [{"name": endpoint.get("service_name", ""), "methods": [
+                method for method in methods if method["service"] == endpoint.get("service_name", "")
+            ]} for endpoint in endpoints],
+            "authentication": auth_spec
+        }
+    
+    async def _generate_implementation_files(
+        self,
+        project_id: str,
+        api_specification: Dict[str, Any],
+        api_style: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Generate implementation files based on API specification.
+        
+        Args:
+            project_id: Project ID
+            api_specification: API specification
+            api_style: API style
+            
+        Returns:
+            List of implementation files
+        """
+        # In a real implementation, this would generate actual implementation files
+        # For now, return mock implementation files
+        
+        if api_style.lower() == 'rest':
+            return self._generate_rest_implementation_files(project_id, api_specification)
+        elif api_style.lower() == 'graphql':
+            return self._generate_graphql_implementation_files(project_id, api_specification)
+        elif api_style.lower() == 'grpc':
+            return self._generate_grpc_implementation_files(project_id, api_specification)
+        else:
+            return [{
+                "path": "api/README.md",
+                "content": f"# API Implementation\n\nThis is a mock implementation for {api_style} API.",
+                "description": "API implementation README"
+            }]
+    
+    def _generate_rest_implementation_files(
+        self, project_id: str, api_specification: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Generate REST implementation files.
+        
+        Args:
+            project_id: Project ID
+            api_specification: API specification
+            
+        Returns:
+            List of implementation files"""
+        files = []
+        
+        # Generate server file
+        server_file = {
+            "path": "api/server.js",
+            "content": """const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const jwt = require('jsonwebtoken');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Authentication middleware
+const authenticateJWT = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  
+  if (authHeader) {
+    const token = authHeader.split(' ')[1];
+    
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+      if (err) {
+        return res.sendStatus(403);
+      }
+      
+      req.user = user;
+      next();
+    });
+  } else {
+    res.sendStatus(401);
+  }
+};
+
+// Routes
+app.use('/api', require('./routes'));
+
+// Error handling
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+module.exports = app;
+""",
+            "description": "Express server setup"
+        }
+        files.append(server_file)
+        
+        # Generate routes file
+        routes_file = {
+            "path": "api/routes/index.js",
+            "content": """const express = require('express');
+const router = express.Router();
+
+// Import route modules
+""",
+            "description": "API routes index"
+        }
+        
+        # Generate route files for each path
+        paths = api_specification.get("paths", {})
+        for path, methods in paths.items():
+            # Extract resource name from path
+            path_parts = path.split('/')
+            resource_name = path_parts[-1]
+            if resource_name.endswith('s'):
+                resource_name = resource_name[:-1]
+            
+            # Add import to routes index
+            routes_file["content"] += f"const {resource_name}Routes = require('./{resource_name}');\n"
+            
+            # Generate route file
+            route_file = {
+                "path": f"api/routes/{resource_name}.js",
+                "content": f"""const express = require('express');
+const router = express.Router();
+const {resource_name}Controller = require('../controllers/{resource_name}');
+const authenticateJWT = require('../middleware/auth');
+
+""",
+                "description": f"{resource_name} routes"
+            }
+            
+            # Add routes based on methods
+            for method_name, method in methods.items():
+                method_name = method_name.upper()
+                route_path = path.replace(f"/api/{resource_name}s", '')
+                if not route_path:
+                    route_path = '/'
+                
+                route_file["content"] += f"// {method['summary']}\n"
+                route_file["content"] += f"router.{method_name.lower()}('{route_path}', authenticateJWT, {resource_name}Controller.{self._get_controller_method_name(method_name, route_path)});\n\n"
+            
+            route_file["content"] += "module.exports = router;\n"
+            files.append(route_file)
+            
+            # Generate controller file
+            controller_file = {
+                "path": f"api/controllers/{resource_name}.js",
+                "content": f"""const {resource_name}Service = require('../services/{resource_name}');
+
+""",
+                "description": f"{resource_name} controller"
+            }
+            
+            # Add controller methods
+            for method_name, method in methods.items():
+                method_name = method_name.upper()
+                route_path = path.replace(f"/api/{resource_name}s", '')
+                if not route_path:
+                    route_path = '/'
+                
+                controller_method = self._get_controller_method_name(method_name, route_path)
+                
+                controller_file["content"] += f"""// {method['summary']}
+exports.{controller_method} = async (req, res, next) => {{
+  try {{
+    // Implementation goes here
+    const result = await {resource_name}Service.{controller_method}(req.params, req.body, req.query);
+    return res.status({self._get_success_status_code(method_name)}).json(result);
+  }} catch (error) {{
+    next(error);
+  }}
+}};
+
+"""
+            
+            files.append(controller_file)
+            
+            # Generate service file
+            service_file = {
+                "path": f"api/services/{resource_name}.js",
+                "content": f"""const {resource_name}Model = require('../models/{resource_name}');
+
+""",
+                "description": f"{resource_name} service"
+            }
+            
+            # Add service methods
+            for method_name, method in methods.items():
+                method_name = method_name.upper()
+                route_path = path.replace(f"/api/{resource_name}s", '')
+                if not route_path:
+                    route_path = '/'
+                
+                service_method = self._get_controller_method_name(method_name, route_path)
+                
+                service_file["content"] += f"""// {method['summary']}
+exports.{service_method} = async (params, body, query) => {{
+  // Implementation goes here
+  // This is a mock implementation
+  
+  {self._get_service_method_implementation(method_name, resource_name, route_path)}
+}};
+
+"""
+            
+            files.append(service_file)
+            
+            # Generate model file
+            model_file = {
+                "path": f"api/models/{resource_name}.js",
+                "content": f"""const mongoose = require('mongoose');
+
+const {resource_name}Schema = new mongoose.Schema({{
+  name: {{ type: String, required: true }},
+  description: {{ type: String }},
+  createdAt: {{ type: Date, default: Date.now }},
+  updatedAt: {{ type: Date }}
+}}, {{ timestamps: true }});
+
+module.exports = mongoose.model('{resource_name.capitalize()}', {resource_name}Schema);
+""",
+                "description": f"{resource_name} model"
+            }
+            
+            files.append(model_file)
+        
+        # Finalize routes index
+        routes_file["content"] += "\n// Register routes\n"
+        for path in paths:
+            path_parts = path.split('/')
+            resource_name = path_parts[-1]
+            if resource_name.endswith('s'):
+                resource_name = resource_name[:-1]
+            
+            routes_file["content"] += f"router.use('/{resource_name}s', {resource_name}Routes);\n"
+        
+        routes_file["content"] += "\nmodule.exports = router;\n"
+        files.append(routes_file)
+        
+        # Generate auth middleware
+        auth_file = {
+            "path": "api/middleware/auth.js",
+            "content": """const jwt = require('jsonwebtoken');
+
+module.exports = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  
+  if (authHeader) {
+    const token = authHeader.split(' ')[1];
+    
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+      if (err) {
+        return res.status(403).json({ error: 'Invalid or expired token' });
+      }
+      
+      req.user = user;
+      next();
+    });
+  } else {
+    res.status(401).json({ error: 'Authentication required' });
+  }
+};
+""",
+            "description": "Authentication middleware"
+        }
+        files.append(auth_file)
+        
+        return files
+    
+    def _get_controller_method_name(self, method_name: str, route_path: str) -> str:
+        """Get controller method name based on HTTP method and route path.
+        
+        Args:
+            method_name: HTTP method name
+            route_path: Route path
+            
+        Returns:
+            Controller method name"""
+        if method_name == 'GET':
+            if route_path == '/':
+                return 'getAll'
+            elif '{id}' in route_path:
+                return 'getById'
+            else:
+                return 'get'
+        elif method_name == 'POST':
+            return 'create'
+        elif method_name == 'PUT':
+            return 'update'
+        elif method_name == 'DELETE':
+            return 'delete'
+        else:
+            return method_name.lower()
+    
+    def _get_success_status_code(self, method_name: str) -> int:
+        """Get success status code based on HTTP method.
+        
+        Args:
+            method_name: HTTP method name
+            
+        Returns:
+            Success status code"""
+        if method_name == 'POST':
+            return 201
+        elif method_name == 'DELETE':
+            return 204
+        else:
+            return 200
+    
+    def _get_service_method_implementation(self, method_name: str, resource_name: str, route_path: str) -> str:
+        """Get service method implementation based on HTTP method, resource name, and route path.
+        
+        Args:
+            method_name: HTTP method name
+            resource_name: Resource name
+            route_path: Route path
+            
+        Returns:
+            Service method implementation"""
+        if method_name == 'GET':
+            if route_path == '/':
+                return f"""const {{ page = 1, limit = 10 }} = query;
+  const skip = (page - 1) * limit;
+  
+  const {resource_name}s = await {resource_name}Model.find()
+    .skip(skip)
+    .limit(parseInt(limit));
+  
+  const total = await {resource_name}Model.countDocuments();
+  
+  return {{
+    data: {resource_name}s,
+    pagination: {{
+      total,
+      pages: Math.ceil(total / limit),
+      current_page: page,
+      limit
+    }}
+  }};"""
+            elif '{id}' in route_path:
+                return f"""const {{ id }} = params;
+  
+  const {resource_name} = await {resource_name}Model.findById(id);
+  
+  if (!{resource_name}) {{
+    const error = new Error('{resource_name.capitalize()} not found');
+    error.statusCode = 404;
+    throw error;
+  }}
+  
+  return {resource_name};"""
+            else:
+                return f"""// Custom GET implementation
+  return {{ message: 'Not implemented' }};"""
+        elif method_name == 'POST':
+            return f"""const new{resource_name.capitalize()} = new {resource_name}Model(body);
+  
+  const saved{resource_name.capitalize()} = await new{resource_name.capitalize()}.save();
+  
+  return saved{resource_name.capitalize()};"""
+        elif method_name == 'PUT':
+            return f"""const {{ id }} = params;
+  
+  const {resource_name} = await {resource_name}Model.findById(id);
+  
+  if (!{resource_name}) {{
+    const error = new Error('{resource_name.capitalize()} not found');
+    error.statusCode = 404;
+    throw error;
+  }}
+  
+  Object.assign({resource_name}, body);
+  {resource_name}.updatedAt = new Date();
+  
+  const updated{resource_name.capitalize()} = await {resource_name}.save();
+  
+  return updated{resource_name.capitalize()};"""
+        elif method_name == 'DELETE':
+            return f"""const {{ id }} = params;
+  
+  const {resource_name} = await {resource_name}Model.findById(id);
+  
+  if (!{resource_name}) {{
+    const error = new Error('{resource_name.capitalize()} not found');
+    error.statusCode = 404;
+    throw error;
+  }}
+  
+  await {resource_name}Model.deleteOne({{ _id: id }});
+  
+  return {{ success: true }};"""
+        else:
+            return f"""// Custom {method_name} implementation
+  return {{ message: 'Not implemented' }};"""
+    
+    def _generate_graphql_implementation_files(
+        self, project_id: str, api_specification: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Generate GraphQL implementation files.
+        
+        Args:
+            project_id: Project ID
+            api_specification: API specification
+            
+        Returns:
+            List of implementation files"""
+        files = []
+        
+        # Generate schema file
+        schema_file = {
+            "path": "api/schema.graphql",
+            "content": api_specification.get("schema", "# GraphQL Schema"),
+            "description": "GraphQL schema"
+        }
+        files.append(schema_file)
+        
+        # Generate server file
+        server_file = {
+            "path": "api/server.js",
+            "content": """const { ApolloServer } = require('apollo-server-express');
+const express = require('express');
+const { readFileSync } = require('fs');
+const { join } = require('path');
+const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+
+// Import resolvers
+const resolvers = require('./resolvers');
+
+// Read schema
+const typeDefs = readFileSync(join(__dirname, 'schema.graphql'), 'utf8');
+
+// Create Express app
+const app = express();
+
+// Authentication middleware
+const getUser = (token) => {
+  if (token) {
+    try {
+      return jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      return null;
+    }
+  }
+  return null;
+};
+
+// Create Apollo Server
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
+  context: ({ req }) => {
+    const token = req.headers.authorization || '';
+    const user = getUser(token.replace('Bearer ', ''));
+    return { user };
+  }
+});
+
+// Apply middleware
+server.applyMiddleware({ app });
+
+// Connect to database
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
+// Start server
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}${server.graphqlPath}`);
+});
+""",
+            "description": "GraphQL server setup"
+        }
+        files.append(server_file)
+        
+        # Generate resolvers index file
+        resolvers_index_file = {
+            "path": "api/resolvers/index.js",
+            "content": """// Import resolver modules
+""",
+            "description": "GraphQL resolvers index"
+        }
+        
+        # Generate resolver files for each resource
+        queries = api_specification.get("queries", [])
+        mutations = api_specification.get("mutations", [])
+        
+        # Group by resource
+        resources = {}
+        for query in queries:
+            resource = query["resolver"].replace("get", "").lower()
+            if resource not in resources:
+                resources[resource] = {"queries": [], "mutations": []}
+            resources[resource]["queries"].append(query)
+        
+        for mutation in mutations:
+            resource = mutation["name"].replace("create", "").replace("update", "").replace("delete", "").lower()
+            if resource not in resources:
+                resources[resource] = {"queries": [], "mutations": []}
+            resources[resource]["mutations"].append(mutation)
+        
+        # Generate resolver and model files for each resource
+        for resource, data in resources.items():
+            # Add import to resolvers index
+            resolvers_index_file["content"] += f"const {resource}Resolvers = require('./{resource}');\n"
+            
+            # Generate resolver file
+            resolver_file = {
+                "path": f"api/resolvers/{resource}.js",
+                "content": f"""const {resource}Model = require('../models/{resource}');
+
+module.exports = {{
+""",
+                "description": f"{resource} resolvers"
+            }
+            
+            # Add Query resolvers
+            if data["queries"]:
+                resolver_file["content"] += "  Query: {\n"
+                for query in data["queries"]:
+                    resolver_file["content"] += f"""    {query["name"]}: async (_, args, context) => {{
+      // Check authentication
+      if (!context.user) {{
+        throw new Error('Authentication required');
+      }}
+      
+      {self._get_graphql_resolver_implementation(query, resource)}
+    }},
+"""
+                resolver_file["content"] += "  },\n"
+            
+            # Add Mutation resolvers
+            if data["mutations"]:
+                resolver_file["content"] += "  Mutation: {\n"
+                for mutation in data["mutations"]:
+                    resolver_file["content"] += f"""    {mutation["name"]}: async (_, args, context) => {{
+      // Check authentication
+      if (!context.user) {{
+        throw new Error('Authentication required');
+      }}
+      
+      {self._get_graphql_resolver_implementation(mutation, resource)}
+    }},
+"""
+                resolver_file["content"] += "  },\n"
+            
+            # Add Type resolvers if needed
+            resolver_file["content"] += f"""  {resource.capitalize()}: {{
+    // Add any field resolvers here
+  }}
+}};
+"""
+            
+            files.append(resolver_file)
+            
+            # Generate model file
+            model_file = {
+                "path": f"api/models/{resource}.js",
+                "content": f"""const mongoose = require('mongoose');
+
+const {resource}Schema = new mongoose.Schema({{
+  name: {{ type: String, required: true }},
+  description: {{ type: String }},
+  createdAt: {{ type: Date, default: Date.now }},
+  updatedAt: {{ type: Date }}
+}}, {{ timestamps: true }});
+
+module.exports = mongoose.model('{resource.capitalize()}', {resource}Schema);
+""",
+                "description": f"{resource} model"
+            }
+            
+            files.append(model_file)
+        
+        # Finalize resolvers index
+        resolvers_index_file["content"] += "\nmodule.exports = [\n"
+        for resource in resources:
+            resolvers_index_file["content"] += f"  {resource}Resolvers,\n"
+        resolvers_index_file["content"] += "];\n"
+        
+        files.append(resolvers_index_file)
+        
+        return files
+    
+    def _get_graphql_resolver_implementation(self, operation: Dict[str, Any], resource: str) -> str:
+        """Get GraphQL resolver implementation.
+        
+        Args:
+            operation: Operation details
+            resource: Resource name
+            
+        Returns:
+            Resolver implementation"""
+        name = operation["name"]
+        
+        if name.startswith("get") or name == resource:
+            if name.endswith("s"):
+                return f"""// Get all {resource}s
+      const {{ first = 10, after }} = args;
+      
+      // Implement pagination with cursors
+      let query = {{}};
+      if (after) {{
+        const cursor = Buffer.from(after, 'base64').toString('ascii');
+        query._id = {{ $gt: cursor }};
+      }}
+      
+      const {resource}s = await {resource}Model.find(query).limit(first + 1);
+      
+      const hasNextPage = {resource}s.length > first;
+      const edges = {resource}s.slice(0, first).map(node => ({{
+        node,
+        cursor: Buffer.from(node._id.toString()).toString('base64')
+      }}));
+      
+      return {{
+        edges,
+        pageInfo: {{
+          hasNextPage,
+          hasPreviousPage: !!after,
+          startCursor: edges.length > 0 ? edges[0].cursor : null,
+          endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null
+        }}
+      }};"""
+            else:
+                return f"""// Get {resource} by ID
+      const {{ id }} = args;
+      
+      const {resource} = await {resource}Model.findById(id);
+      
+      if (!{resource}) {{
+        throw new Error('{resource.capitalize()} not found');
+      }}
+      
+      return {resource};"""
+        elif name.startswith("create"):
+            return f"""// Create a new {resource}
+      const {{ name, description }} = args;
+      
+      const new{resource.capitalize()} = new {resource}Model({{
+        name,
+        description
+      }});
+      
+      return await new{resource.capitalize()}.save();"""
+        elif name.startswith("update"):
+            return f"""// Update a {resource}
+      const {{ id, name, description }} = args;
+      
+      const {resource} = await {resource}Model.findById(id);
+      
+      if (!{resource}) {{
+        throw new Error('{resource.capitalize()} not found');
+      }}
+      
+      if (name) {resource}.name = name;
+      if (description) {resource}.description = description;
+      {resource}.updatedAt = new Date();
+      
+      return await {resource}.save();"""
+        elif name.startswith("delete"):
+            return f"""// Delete a {resource}
+      const {{ id }} = args;
+      
+      const {resource} = await {resource}Model.findById(id);
+      
+      if (!{resource}) {{
+        throw new Error('{resource.capitalize()} not found');
+      }}
+      
+      await {resource}Model.deleteOne({{ _id: id }});
+      
+      return true;"""
+        else:
+            return f"""// Custom resolver implementation
+      return {{ message: 'Not implemented' }};"""
+    
+    def _generate_grpc_implementation_files(
+        self, project_id: str, api_specification: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Generate gRPC implementation files.
+        
+        Args:
+            project_id: Project ID
+            api_specification: API specification
+            
+        Returns:
+            List of implementation files"""
+        files = []
+        
+        # Generate proto file
+        proto_file = {
+            "path": "api/proto/service.proto",
+            "content": "\n".join(api_specification.get("proto_definitions", [])),
+            "description": "gRPC proto definition"
+        }
+        files.append(proto_file)
+        
+        # Generate server file
+        server_file = {
+            "path": "api/server.js",
+            "content": """const grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
+const path = require('path');
+const mongoose = require('mongoose');
+
+// Load proto file
+const PROTO_PATH = path.join(__dirname, 'proto/service.proto');
+const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true
+});
+
+const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
+
+// Import service implementations
+""",
+            "description": "gRPC server setup"
+        }
+        
+        # Generate service implementations
+        services = api_specification.get("services", [])
+        
+        for service in services:
+            service_name = service.get("name", "")
+            package_name = service_name.split('.')[0].toLowerCase() if '.' in service_name else ""
+            
+            # Add import to server file
+            server_file["content"] += f"const {service_name}Service = require('./services/{service_name}');\n"
+            
+            # Generate service file
+            service_file = {
+                "path": f"api/services/{service_name}.js",
+                "content": f"""const {service_name.toLowerCase()}Model = require('../models/{service_name.toLowerCase()}');
+const jwt = require('jsonwebtoken');
+
+// Authentication middleware
+const authenticate = (call) => {{
+  const metadata = call.metadata.getMap();
+  const token = metadata.authorization;
+  
+  if (!token) {{
+    throw new Error('Authentication required');
+  }}
+  
+  try {{
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded;
+  }} catch (error) {{
+    throw new Error('Invalid or expired token');
+  }}
+}};
+
+module.exports = {{
+""",
+                "description": f"{service_name} service implementation"
+            }
+            
+            # Add method implementations
+            for method in service.get("methods", []):
+                method_name = method.get("name", "")
+                
+                service_file["content"] += f"""  {method_name}: async (call, callback) => {{
+    try {{
+      // Authenticate request
+      const user = authenticate(call);
+      
+      {self._get_grpc_method_implementation(method, service_name.toLowerCase())}
+    }} catch (error) {{
+      callback({{
+        code: grpc.status.INTERNAL,
+        message: error.message
+      }});
+    }}
+  }},
+"""
+            
+            service_file["content"] += "};\n"
+            files.append(service_file)
+            
+            # Generate model file
+            model_file = {
+                "path": f"api/models/{service_name.toLowerCase()}.js",
+                "content": f"""const mongoose = require('mongoose');
+
+const {service_name.toLowerCase()}Schema = new mongoose.Schema({{
+  name: {{ type: String, required: true }},
+  description: {{ type: String }},
+  createdAt: {{ type: Date, default: Date.now }},
+  updatedAt: {{ type: Date }}
+}}, {{ timestamps: true }});
+
+module.exports = mongoose.model('{service_name}', {service_name.toLowerCase()}Schema);
+""",
+                "description": f"{service_name} model"
+            }
+            
+            files.append(model_file)
+        
+        # Finalize server file
+        server_file["content"] += "\n// Connect to database\n"
+        server_file["content"] += """mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
+// Create gRPC server
+const server = new grpc.Server();
+
+// Add services to server
+"""
+        
+        for service in services:
+            service_name = service.get("name", "")
+            package_name = service_name.split('.')[0].toLowerCase() if '.' in service_name else ""
+            
+            if package_name:
+                server_file["content"] += f"server.addService(protoDescriptor.{package_name}.{service_name}.service, {service_name}Service);\n"
+            else:
+                server_file["content"] += f"server.addService(protoDescriptor.{service_name}.service, {service_name}Service);\n"
+        
+        server_file["content"] += """
+// Start server
+const PORT = process.env.PORT || 50051;
+server.bindAsync(`0.0.0.0:${PORT}`, grpc.ServerCredentials.createInsecure(), (error, port) => {
+  if (error) {
+    console.error(error);
+    return;
+  }
+  
+  server.start();
+  console.log(`gRPC server running on port ${port}`);
+});
+"""
+        
+        files.append(server_file)
+        
+        return files
+    
+    def _get_grpc_method_implementation(self, method: Dict[str, Any], resource: str) -> str:
+        """Get gRPC method implementation.
+        
+        Args:
+            method: Method details
+            resource: Resource name
+            
+        Returns:
+            Method implementation"""
+        name = method.get("name", "")
+        
+        if name.startswith("Create"):
+            return f"""// Create a new {resource}
+      const {{ name, description }} = call.request;
+      
+      const new{resource.capitalize()} = new {resource}Model({{
+        name,
+        description
+      }});
+      
+      const saved{resource.capitalize()} = await new{resource.capitalize()}.save();
+      
+      callback(null, {{
+        {resource}: saved{resource.capitalize()}.toObject()
+      }});"""
+        elif name.startswith("List"):
+            return f"""// List all {resource}s
+      const {{ page = 1, limit = 10 }} = call.request;
+      const skip = (page - 1) * limit;
+      
+      const {resource}s = await {resource}Model.find()
+        .skip(skip)
+        .limit(parseInt(limit));
+      
+      const total = await {resource}Model.countDocuments();
+      
+      callback(null, {{
+        {resource}s: {resource}s.map(item => item.toObject()),
+        pagination: {{
+          total,
+          pages: Math.ceil(total / limit),
+          current_page: page,
+          limit
+        }}
+      }});"""
+        elif name.startswith("Get"):
+            return f"""// Get {resource} by ID
+      const {{ id }} = call.request;
+      
+      const {resource} = await {resource}Model.findById(id);
+      
+      if (!{resource}) {{
+        return callback({{
+          code: grpc.status.NOT_FOUND,
+          message: '{resource.capitalize()} not found'
+        }});
+      }}
+      
+      callback(null, {{
+        {resource}: {resource}.toObject()
+      }});"""
+        elif name.startswith("Update"):
+            return f"""// Update a {resource}
+      const {{ id, name, description }} = call.request;
+      
+      const {resource} = await {resource}Model.findById(id);
+      
+      if (!{resource}) {{
+        return callback({{
+          code: grpc.status.NOT_FOUND,
+          message: '{resource.capitalize()} not found'
+        }});
+      }}
+      
+      if (name) {resource}.name = name;
+      if (description) {resource}.description = description;
+      {resource}.updatedAt = new Date();
+      
+      const updated{resource.capitalize()} = await {resource}.save();
+      
+      callback(null, {{
+        {resource}: updated{resource.capitalize()}.toObject()
+      }});"""
+        elif name.startswith("Delete"):
+            return f"""// Delete a {resource}
+      const {{ id }} = call.request;
+      
+      const {resource} = await {resource}Model.findById(id);
+      
+      if (!{resource}) {{
+        return callback({{
+          code: grpc.status.NOT_FOUND,
+          message: '{resource.capitalize()} not found'
+        }});
+      }}
+      
+      await {resource}Model.deleteOne({{ _id: id }});
+      
+      callback(null, {{
+        success: true
+      }});"""
+        else:
+            return f"""// Custom method implementation
+      callback(null, {{
+        message: 'Not implemented'
+      }});"""

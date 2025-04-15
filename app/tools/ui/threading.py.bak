@@ -1,0 +1,391 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""
+UI/Utilities tools for TorontoAITeamAgent Team AI.
+
+This module provides tools for threading operations.
+"""
+
+from typing import Dict, Any, List, Optional, Callable
+import os
+import asyncio
+import threading
+import time
+import uuid
+from ..base import BaseTool, ToolResult
+
+class ThreadingTool(BaseTool):
+    """Tool for managing threads and background tasks."""
+    
+    name = "threading"
+    description = "Provides capabilities for managing threads and background tasks."
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        Initialize the Threading tool.
+        
+        Args:
+            config: Tool configuration with optional settings
+        """
+        super().__init__(config)
+        self.threads = {}  # Store active threads
+        self.results = {}  # Store thread results
+        self.max_threads = self.config.get("max_threads", 10)
+    
+    async def execute(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Execute the Threading tool with the given parameters.
+        
+        Args:
+            params: Tool parameters including:
+                - operation: Operation to perform (start, stop, status, list)
+                - thread_id: Identifier for the thread (for operations on existing threads)
+                - function: Function code to run in the thread (for start operation)
+                - args: Arguments to pass to the function (for start operation)
+                - timeout: Timeout for thread operations (optional)
+                
+        Returns:
+            Tool execution result
+        """
+        operation = params.get("operation")
+        if not operation:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Operation parameter is required"
+            )
+            
+        try:
+            if operation == "start":
+                return await self._start_thread(params)
+            elif operation == "stop":
+                return await self._stop_thread(params)
+            elif operation == "status":
+                return await self._get_thread_status(params)
+            elif operation == "list":
+                return await self._list_threads(params)
+            elif operation == "get_result":
+                return await self._get_thread_result(params)
+            else:
+                return ToolResult(
+                    success=False,
+                    data={},
+                    error=f"Unsupported operation: {operation}"
+                )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=str(e)
+            )
+    
+    async def _start_thread(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Start a new thread.
+        
+        Args:
+            params: Parameters for starting a thread
+            
+        Returns:
+            Tool execution result
+        """
+        thread_id = params.get("thread_id", str(uuid.uuid4()))
+        function_code = params.get("function")
+        args = params.get("args", {})
+        
+        if not function_code:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Function parameter is required for start operation"
+            )
+        
+        # Check if thread already exists
+        if thread_id in self.threads:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Thread with ID '{thread_id}' already exists"
+            )
+        
+        # Check if max threads reached
+        if len(self.threads) >= self.max_threads:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Maximum number of threads ({self.max_threads}) reached"
+            )
+        
+        # Create function from code
+        try:
+            # Create a namespace for the function
+            namespace = {}
+            exec(function_code, namespace)
+            
+            # Get the function from the namespace
+            function_name = None
+            for name, obj in namespace.items():
+                if callable(obj) and name != "__builtins__":
+                    function_name = name
+                    break
+            
+            if not function_name:
+                return ToolResult(
+                    success=False,
+                    data={},
+                    error="No function found in the provided code"
+                )
+            
+            function = namespace[function_name]
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Failed to create function from code: {str(e)}"
+            )
+        
+        # Create thread wrapper function
+        def thread_wrapper():
+            try:
+                result = function(**args)
+                self.results[thread_id] = {
+                    "success": True,
+                    "result": result,
+                    "error": None
+                }
+            except Exception as e:
+                self.results[thread_id] = {
+                    "success": False,
+                    "result": None,
+                    "error": str(e)
+                }
+            finally:
+                # Remove thread from active threads
+                if thread_id in self.threads:
+                    self.threads[thread_id]["active"] = False
+        
+        # Create and start thread
+        thread = threading.Thread(target=thread_wrapper)
+        thread.daemon = True
+        thread.start()
+        
+        # Store thread
+        self.threads[thread_id] = {
+            "thread": thread,
+            "function_name": function_name,
+            "start_time": time.time(),
+            "active": True
+        }
+        
+        return ToolResult(
+            success=True,
+            data={
+                "thread_id": thread_id,
+                "function_name": function_name,
+                "status": "started"
+            }
+        )
+    
+    async def _stop_thread(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Stop a thread.
+        
+        Args:
+            params: Parameters for stopping a thread
+            
+        Returns:
+            Tool execution result
+        """
+        thread_id = params.get("thread_id")
+        
+        if not thread_id:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Thread ID parameter is required for stop operation"
+            )
+        
+        # Check if thread exists
+        if thread_id not in self.threads:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Thread with ID '{thread_id}' does not exist"
+            )
+        
+        thread_data = self.threads[thread_id]
+        
+        # Mark thread as inactive
+        thread_data["active"] = False
+        
+        # Note: Python threads cannot be forcibly terminated
+        # We can only mark them as inactive and wait for them to complete
+        
+        return ToolResult(
+            success=True,
+            data={
+                "thread_id": thread_id,
+                "function_name": thread_data["function_name"],
+                "status": "stopping",
+                "message": "Thread marked for stopping, but may continue until completion"
+            }
+        )
+    
+    async def _get_thread_status(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Get the status of a thread.
+        
+        Args:
+            params: Parameters for getting thread status
+            
+        Returns:
+            Tool execution result
+        """
+        thread_id = params.get("thread_id")
+        
+        if not thread_id:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Thread ID parameter is required for status operation"
+            )
+        
+        # Check if thread exists
+        if thread_id not in self.threads:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Thread with ID '{thread_id}' does not exist"
+            )
+        
+        thread_data = self.threads[thread_id]
+        thread = thread_data["thread"]
+        
+        # Get thread status
+        is_alive = thread.is_alive()
+        runtime = time.time() - thread_data["start_time"]
+        
+        # Get result if available
+        result = self.results.get(thread_id)
+        
+        return ToolResult(
+            success=True,
+            data={
+                "thread_id": thread_id,
+                "function_name": thread_data["function_name"],
+                "is_alive": is_alive,
+                "active": thread_data["active"],
+                "runtime": runtime,
+                "result": result
+            }
+        )
+    
+    async def _list_threads(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        List all threads.
+        
+        Args:
+            params: Parameters for listing threads
+            
+        Returns:
+            Tool execution result
+        """
+        threads = []
+        
+        for thread_id, thread_data in self.threads.items():
+            thread = thread_data["thread"]
+            
+            # Get thread status
+            is_alive = thread.is_alive()
+            runtime = time.time() - thread_data["start_time"]
+            
+            threads.append({
+                "thread_id": thread_id,
+                "function_name": thread_data["function_name"],
+                "is_alive": is_alive,
+                "active": thread_data["active"],
+                "runtime": runtime,
+                "has_result": thread_id in self.results
+            })
+        
+        return ToolResult(
+            success=True,
+            data={
+                "threads": threads,
+                "count": len(threads),
+                "active_count": sum(1 for t in threads if t["is_alive"] and t["active"])
+            }
+        )
+    
+    async def _get_thread_result(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Get the result of a thread.
+        
+        Args:
+            params: Parameters for getting thread result
+            
+        Returns:
+            Tool execution result
+        """
+        thread_id = params.get("thread_id")
+        
+        if not thread_id:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Thread ID parameter is required for get_result operation"
+            )
+        
+        # Check if thread exists
+        if thread_id not in self.threads:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Thread with ID '{thread_id}' does not exist"
+            )
+        
+        # Check if result is available
+        if thread_id not in self.results:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Result for thread with ID '{thread_id}' is not available yet"
+            )
+        
+        result = self.results[thread_id]
+        
+        return ToolResult(
+            success=result["success"],
+            data={
+                "thread_id": thread_id,
+                "result": result["result"]
+            },
+            error=result["error"]
+        )
+    
+    def get_capabilities(self) -> List[str]:
+        """
+        Return a list of capabilities provided by this tool.
+        
+        Returns:
+            List of capability descriptions
+        """
+        return [
+            "Run functions in background threads",
+            "Monitor thread status and execution",
+            "Retrieve results from completed threads",
+            "Manage multiple concurrent background tasks"
+        ]

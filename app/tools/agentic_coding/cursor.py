@@ -1,0 +1,294 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""Agentic Coding tools for TorontoAITeamAgent Team AI.
+
+This module provides tools for agentic coding using Cursor."""
+
+from typing import Dict, Any, List, Optional
+import os
+import json
+import asyncio
+import httpx
+from ..base import BaseTool, ToolResult
+
+class CursorTool(BaseTool):
+    """Tool for agentic coding using Cursor API."""
+    
+    name = "cursor"
+    description = "Provides AI-assisted coding capabilities using Cursor API."
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """Initialize the Cursor tool.
+        
+        Args:
+            config: Tool configuration with optional settings"""
+        super().__init__(config)
+        self.api_key = self.config.get("api_key", os.environ.get("CURSOR_API_KEY"))
+        self.api_base = self.config.get("api_base", "https://api.cursor.sh/v1")
+        
+        if not self.api_key:
+            raise ValueError("Cursor API key is required")
+    
+    async def execute(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Execute the Cursor tool with the given parameters.
+        
+        Args:
+            params: Tool parameters including:
+                - operation: Operation to perform (edit, generate, explain, etc.)
+                - files: List of files to edit or analyze
+                - instructions: Instructions for editing or generation
+                - code: Code to explain or analyze
+                - other operation-specific parameters
+                
+        Returns:
+            Tool execution result
+        """
+        operation = params.get("operation")
+        if not operation:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Operation parameter is required"
+            )
+            
+        try:
+            if operation == "edit":
+                return await self._edit_code(params)
+            elif operation == "generate":
+                return await self._generate_code(params)
+            elif operation == "explain":
+                return await self._explain_code(params)
+            else:
+                return ToolResult(
+                    success=False,
+                    data={},
+                    error=f"Unsupported operation: {operation}"
+                )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=str(e)
+            )
+    
+    async def _edit_code(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Edit code using Cursor API.
+        
+        Args:
+            params: Parameters for code editing
+            
+        Returns:
+            Tool execution result
+        """
+        files = params.get("files", [])
+        instructions = params.get("instructions", "")
+        
+        if not files:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Files parameter is required for editing"
+            )
+            
+        if not instructions:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Instructions parameter is required for editing"
+            )
+        
+        # Prepare file data
+        file_data = []
+        for file_info in files:
+            if isinstance(file_info, str):
+                # Just a file path
+                file_path = file_info
+                if os.path.exists(file_path):
+                    with open(file_path, "r") as f:
+                        content = f.read()
+                    file_data.append({
+                        "path": file_path,
+                        "content": content
+                    })
+            else:
+                # Dictionary with path and content
+                file_data.append({
+                    "path": file_info.get("path"),
+                    "content": file_info.get("content")
+                })
+        
+        # Make API request
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.api_base}/edit",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "files": file_data,
+                    "instructions": instructions
+                }
+            )
+            
+            if response.status_code != 200:
+                return ToolResult(
+                    success=False,
+                    data={},
+                    error=f"Cursor API error: {response.text}"
+                )
+                
+            result = response.json()
+            
+            return ToolResult(
+                success=True,
+                data={
+                    "edited_files": result.get("files", []),
+                    "explanation": result.get("explanation", "")
+                }
+            )
+    
+    async def _generate_code(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Generate code using Cursor API.
+        
+        Args:
+            params: Parameters for code generation
+            
+        Returns:
+            Tool execution result
+        """
+        instructions = params.get("instructions", "")
+        context_files = params.get("context_files", [])
+        
+        if not instructions:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Instructions parameter is required for code generation"
+            )
+        
+        # Prepare context file data
+        context_data = []
+        for file_info in context_files:
+            if isinstance(file_info, str):
+                # Just a file path
+                file_path = file_info
+                if os.path.exists(file_path):
+                    with open(file_path, "r") as f:
+                        content = f.read()
+                    context_data.append({
+                        "path": file_path,
+                        "content": content
+                    })
+            else:
+                # Dictionary with path and content
+                context_data.append({
+                    "path": file_info.get("path"),
+                    "content": file_info.get("content")
+                })
+        
+        # Make API request
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.api_base}/generate",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "instructions": instructions,
+                    "context_files": context_data
+                }
+            )
+            
+            if response.status_code != 200:
+                return ToolResult(
+                    success=False,
+                    data={},
+                    error=f"Cursor API error: {response.text}"
+                )
+                
+            result = response.json()
+            
+            return ToolResult(
+                success=True,
+                data={
+                    "generated_code": result.get("code", ""),
+                    "explanation": result.get("explanation", "")
+                }
+            )
+    
+    async def _explain_code(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Explain code using Cursor API.
+        
+        Args:
+            params: Parameters for code explanation
+            
+        Returns:
+            Tool execution result
+        """
+        code = params.get("code", "")
+        
+        if not code:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Code parameter is required for explanation"
+            )
+        
+        # Make API request
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.api_base}/explain",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "code": code
+                }
+            )
+            
+            if response.status_code != 200:
+                return ToolResult(
+                    success=False,
+                    data={},
+                    error=f"Cursor API error: {response.text}"
+                )
+                
+            result = response.json()
+            
+            return ToolResult(
+                success=True,
+                data={
+                    "explanation": result.get("explanation", "")
+                }
+            )
+    
+    def get_capabilities(self) -> List[str]:
+        """Return a list of capabilities provided by this tool.
+        
+        Returns:
+            List of capability descriptions"""
+        return [
+            "AI-assisted code editing",
+            "Code generation based on natural language instructions",
+            "Code explanation and analysis"
+        ]

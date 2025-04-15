@@ -1,0 +1,56 @@
+{
+    "system": {
+        "name": "TORONTO AI Team Agent Team AI",
+        "version": "0.1.0",
+        "environment": "local"
+    },
+    "agents": {
+        "project_manager": {
+            "id": "pm_agent",
+            "role": "project_manager",
+            "model": "gpt-4o",
+            "enabled": true
+        },
+        "product_manager": {
+            "id": "product_agent",
+            "role": "product_manager",
+            "model": "gpt-4o",
+            "enabled": true
+        },
+        "developer": {
+            "id": "dev_agent",
+            "role": "developer",
+            "model": "gpt-4o",
+            "enabled": true
+        },
+        "system_architect": {
+            "id": "arch_agent",
+            "role": "system_architect",
+            "model": "gpt-4o",
+            "enabled": true
+        },
+        "qa_testing_specialist": {
+            "id": "qa_agent",
+            "role": "qa_testing_specialist",
+            "model": "gpt-4o",
+            "enabled": true
+        }
+    },
+    "communication": {
+        "message_timeout": 30,
+        "retry_attempts": 3,
+        "log_level": "INFO",
+        "history_limit": 100
+    },
+    "collaboration": {
+        "session_timeout": 3600,
+        "max_participants": 10,
+        "default_session_type": "general"
+    },
+    "deployment": {
+        "host": "0.0.0.0",
+        "port": 8000,
+        "debug": true,
+        "workers": 4
+    }
+}

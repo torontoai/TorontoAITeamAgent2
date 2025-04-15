@@ -1,0 +1,909 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""Autonomous GitHub Integration for TorontoAITeamAgent Team AI.
+
+This module provides functionality for agents to keep code updated on GitHub without human intervention."""
+
+from typing import Dict, Any, List, Optional
+import os
+import asyncio
+import tempfile
+import json
+import logging
+import time
+from ..tools.base import BaseTool, ToolResult
+from ..tools.registry import registry
+
+logger = logging.getLogger(__name__)
+
+class AutonomousGitHubIntegration:
+    """System for autonomous GitHub integration without human intervention."""
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """Initialize the Autonomous GitHub Integration.
+        
+        Args:
+            config: System configuration with optional settings"""
+        self.config = config or {}
+        self.git_tool = registry.get_tool("gitpython")
+        
+        # Default GitHub configuration
+        self.github_config = self.config.get("github", {
+            "auto_commit": True,
+            "auto_push": True,
+            "commit_message_prefix": "[Auto] ",
+            "default_branch": "main",
+            "commit_interval": 3600,  # 1 hour
+            "max_files_per_commit": 50,
+            "protected_branches": ["main", "production"],
+            "require_tests_before_push": True
+        })
+        
+        # GitHub activity history
+        self.activity_history = []
+        
+        # Active monitoring tasks
+        self.monitoring_tasks = {}
+    
+    async def setup_repository(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Set up a repository for autonomous GitHub integration.
+        
+        Args:
+            params: Repository parameters including:
+                - repo_path: Path to the repository
+                - github_url: GitHub repository URL
+                - github_token: GitHub token for authentication
+                - branch: Branch to work on
+                - auto_commit: Whether to enable auto-commit
+                - auto_push: Whether to enable auto-push
+                
+        Returns:
+            Setup result
+        """
+        repo_path = params.get("repo_path")
+        github_url = params.get("github_url")
+        github_token = params.get("github_token")
+        branch = params.get("branch", self.github_config.get("default_branch"))
+        auto_commit = params.get("auto_commit", self.github_config.get("auto_commit"))
+        auto_push = params.get("auto_push", self.github_config.get("auto_push"))
+        
+        if not repo_path:
+            return {
+                "success": False,
+                "error": "Repository path is required"
+            }
+            
+        if not github_url:
+            return {
+                "success": False,
+                "error": "GitHub URL is required"
+            }
+            
+        if not github_token:
+            return {
+                "success": False,
+                "error": "GitHub token is required"
+            }
+        
+        # Check if repository exists
+        if not os.path.exists(os.path.join(repo_path, ".git")):
+            # Clone repository
+            clone_result = await self._clone_repository(github_url, repo_path, github_token)
+            if not clone_result["success"]:
+                return clone_result
+        else:
+            # Configure remote with token
+            remote_result = await self._configure_remote(repo_path, github_url, github_token)
+            if not remote_result["success"]:
+                return remote_result
+        
+        # Checkout branch
+        checkout_result = await self._checkout_branch(repo_path, branch)
+        if not checkout_result["success"]:
+            return checkout_result
+        
+        # Store repository configuration
+        repo_config = {
+            "repo_path": repo_path,
+            "github_url": github_url,
+            "github_token": github_token,
+            "branch": branch,
+            "auto_commit": auto_commit,
+            "auto_push": auto_push,
+            "last_commit_time": time.time(),
+            "last_push_time": time.time()
+        }
+        
+        # Start monitoring if auto-commit or auto-push is enabled
+        if auto_commit or auto_push:
+            await self.start_monitoring(repo_path, repo_config)
+        
+        return {
+            "success": True,
+            "repo_path": repo_path,
+            "branch": branch,
+            "auto_commit": auto_commit,
+            "auto_push": auto_push,
+            "message": f"Repository set up successfully on branch '{branch}'"
+        }
+    
+    async def commit_changes(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Commit changes to the repository.
+        
+        Args:
+            params: Commit parameters including:
+                - repo_path: Path to the repository
+                - message: Commit message
+                - files: List of files to commit (optional, commits all changes if not specified)
+                - push: Whether to push after commit
+                
+        Returns:
+            Commit result
+        """
+        repo_path = params.get("repo_path")
+        message = params.get("message", f"{self.github_config.get('commit_message_prefix')}Automatic commit")
+        files = params.get("files")
+        push = params.get("push", self.github_config.get("auto_push"))
+        
+        if not repo_path:
+            return {
+                "success": False,
+                "error": "Repository path is required"
+            }
+        
+        # Check if there are changes to commit
+        status_result = await self._get_repo_status(repo_path)
+        if not status_result["success"]:
+            return status_result
+        
+        if not status_result["has_changes"]:
+            return {
+                "success": True,
+                "message": "No changes to commit",
+                "changes": []
+            }
+        
+        # Add files to staging
+        if files:
+            # Add specific files
+            add_result = await self._add_files(repo_path, files)
+        else:
+            # Add all changes
+            add_result = await self._add_all(repo_path)
+        
+        if not add_result["success"]:
+            return add_result
+        
+        # Commit changes
+        commit_result = await self._commit(repo_path, message)
+        if not commit_result["success"]:
+            return commit_result
+        
+        # Record activity
+        activity = {
+            "type": "commit",
+            "timestamp": time.time(),
+            "repo_path": repo_path,
+            "message": message,
+            "commit_id": commit_result.get("commit_id"),
+            "files": add_result.get("files", [])
+        }
+        self.activity_history.append(activity)
+        
+        # Push if requested
+        if push:
+            push_result = await self.push_changes({"repo_path": repo_path})
+            
+            return {
+                "success": push_result["success"],
+                "commit_id": commit_result.get("commit_id"),
+                "message": message,
+                "files": add_result.get("files", []),
+                "pushed": push_result["success"],
+                "push_details": push_result
+            }
+        
+        return {
+            "success": True,
+            "commit_id": commit_result.get("commit_id"),
+            "message": message,
+            "files": add_result.get("files", []),
+            "pushed": False
+        }
+    
+    async def push_changes(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Push changes to GitHub.
+        
+        Args:
+            params: Push parameters including:
+                - repo_path: Path to the repository
+                - branch: Branch to push to (optional, uses current branch if not specified)
+                - force: Whether to force push (optional)
+                
+        Returns:
+            Push result
+        """
+        repo_path = params.get("repo_path")
+        branch = params.get("branch")
+        force = params.get("force", False)
+        
+        if not repo_path:
+            return {
+                "success": False,
+                "error": "Repository path is required"
+            }
+        
+        # Get current branch if not specified
+        if not branch:
+            branch_result = await self._get_current_branch(repo_path)
+            if not branch_result["success"]:
+                return branch_result
+            
+            branch = branch_result["branch"]
+        
+        # Check if branch is protected and tests are required
+        if (branch in self.github_config.get("protected_branches", []) and 
+            self.github_config.get("require_tests_before_push", True) and
+            not force):
+            # Run tests before pushing to protected branch
+            test_result = await self._run_tests(repo_path)
+            if not test_result["success"]:
+                return {
+                    "success": False,
+                    "error": f"Tests failed, not pushing to protected branch '{branch}'",
+                    "test_details": test_result
+                }
+        
+        # Push changes
+        push_result = await self._push(repo_path, branch, force)
+        if not push_result["success"]:
+            return push_result
+        
+        # Record activity
+        activity = {
+            "type": "push",
+            "timestamp": time.time(),
+            "repo_path": repo_path,
+            "branch": branch,
+            "force": force
+        }
+        self.activity_history.append(activity)
+        
+        return {
+            "success": True,
+            "branch": branch,
+            "message": f"Successfully pushed to branch '{branch}'"
+        }
+    
+    async def pull_changes(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Pull changes from GitHub.
+        
+        Args:
+            params: Pull parameters including:
+                - repo_path: Path to the repository
+                - branch: Branch to pull from (optional, uses current branch if not specified)
+                
+        Returns:
+            Pull result
+        """
+        repo_path = params.get("repo_path")
+        branch = params.get("branch")
+        
+        if not repo_path:
+            return {
+                "success": False,
+                "error": "Repository path is required"
+            }
+        
+        # Get current branch if not specified
+        if not branch:
+            branch_result = await self._get_current_branch(repo_path)
+            if not branch_result["success"]:
+                return branch_result
+            
+            branch = branch_result["branch"]
+        
+        # Pull changes
+        pull_result = await self._pull(repo_path, branch)
+        if not pull_result["success"]:
+            return pull_result
+        
+        # Record activity
+        activity = {
+            "type": "pull",
+            "timestamp": time.time(),
+            "repo_path": repo_path,
+            "branch": branch
+        }
+        self.activity_history.append(activity)
+        
+        return {
+            "success": True,
+            "branch": branch,
+            "message": f"Successfully pulled from branch '{branch}'",
+            "changes": pull_result.get("changes", [])
+        }
+    
+    async def start_monitoring(self, repo_path: str, repo_config: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Start monitoring a repository for changes.
+        
+        Args:
+            repo_path: Path to the repository
+            repo_config: Repository configuration (optional)
+            
+        Returns:
+            Monitoring result
+        """
+        if repo_path in self.monitoring_tasks and self.monitoring_tasks[repo_path]["active"]:
+            return {
+                "success": False,
+                "error": f"Repository '{repo_path}' is already being monitored"
+            }
+        
+        # Get repository configuration if not provided
+        if not repo_config:
+            # In a real system, this would retrieve the configuration from a database
+            # For now, we'll use default values
+            repo_config = {
+                "repo_path": repo_path,
+                "branch": self.github_config.get("default_branch"),
+                "auto_commit": self.github_config.get("auto_commit"),
+                "auto_push": self.github_config.get("auto_push"),
+                "commit_interval": self.github_config.get("commit_interval"),
+                "last_commit_time": time.time(),
+                "last_push_time": time.time()
+            }
+        
+        # Create monitoring task
+        task = {
+            "repo_path": repo_path,
+            "config": repo_config,
+            "active": True,
+            "start_time": time.time(),
+            "last_check_time": time.time()
+        }
+        
+        # Store task
+        self.monitoring_tasks[repo_path] = task
+        
+        # In a real system, this would start a background task to monitor the repository
+        # For now, we'll just log it
+        logger.info(f"Started monitoring repository '{repo_path}'")
+        
+        return {
+            "success": True,
+            "repo_path": repo_path,
+            "message": f"Started monitoring repository '{repo_path}'"
+        }
+    
+    async def stop_monitoring(self, repo_path: str) -> Dict[str, Any]:
+        """
+        Stop monitoring a repository.
+        
+        Args:
+            repo_path: Path to the repository
+            
+        Returns:
+            Result
+        """
+        if repo_path not in self.monitoring_tasks:
+            return {
+                "success": False,
+                "error": f"Repository '{repo_path}' is not being monitored"
+            }
+        
+        # Mark task as inactive
+        self.monitoring_tasks[repo_path]["active"] = False
+        
+        # In a real system, this would stop the background task
+        # For now, we'll just log it
+        logger.info(f"Stopped monitoring repository '{repo_path}'")
+        
+        return {
+            "success": True,
+            "repo_path": repo_path,
+            "message": f"Stopped monitoring repository '{repo_path}'",
+            "duration": time.time() - self.monitoring_tasks[repo_path]["start_time"]
+        }
+    
+    async def check_for_changes(self, repo_path: str) -> Dict[str, Any]:
+        """
+        Check for changes in a repository and commit/push if necessary.
+        
+        Args:
+            repo_path: Path to the repository
+            
+        Returns:
+            Check result
+        """
+        if repo_path not in self.monitoring_tasks:
+            return {
+                "success": False,
+                "error": f"Repository '{repo_path}' is not being monitored"
+            }
+        
+        task = self.monitoring_tasks[repo_path]
+        if not task["active"]:
+            return {
+                "success": False,
+                "error": f"Monitoring for repository '{repo_path}' is not active"
+            }
+        
+        # Update last check time
+        task["last_check_time"] = time.time()
+        
+        # Check if there are changes to commit
+        status_result = await self._get_repo_status(repo_path)
+        if not status_result["success"]:
+            return status_result
+        
+        actions = []
+        
+        # Auto-commit if enabled and there are changes
+        if task["config"]["auto_commit"] and status_result["has_changes"]:
+            # Check if commit interval has elapsed
+            time_since_last_commit = time.time() - task["config"]["last_commit_time"]
+            if time_since_last_commit >= task["config"]["commit_interval"]:
+                # Commit changes
+                commit_result = await self.commit_changes({
+                    "repo_path": repo_path,
+                    "message": f"{self.github_config.get('commit_message_prefix')}Automatic commit",
+                    "push": False
+                })
+                
+                if commit_result["success"]:
+                    # Update last commit time
+                    task["config"]["last_commit_time"] = time.time()
+                    actions.append("commit")
+        
+        # Auto-push if enabled
+        if task["config"]["auto_push"]:
+            # Check if there are unpushed commits
+            unpushed_result = await self._get_unpushed_commits(repo_path)
+            if not unpushed_result["success"]:
+                return unpushed_result
+            
+            if unpushed_result["count"] > 0:
+                # Push changes
+                push_result = await self.push_changes({
+                    "repo_path": repo_path
+                })
+                
+                if push_result["success"]:
+                    # Update last push time
+                    task["config"]["last_push_time"] = time.time()
+                    actions.append("push")
+        
+        return {
+            "success": True,
+            "repo_path": repo_path,
+            "has_changes": status_result["has_changes"],
+            "actions": actions,
+            "message": f"Checked repository '{repo_path}' for changes"
+        }
+    
+    async def get_activity_history(self) -> List[Dict[str, Any]]:
+        """
+        Get the GitHub activity history.
+        
+        Returns:
+            List of activity records
+        """
+        return self.activity_history
+    
+    async def get_monitoring_status(self, repo_path: str = None) -> Dict[str, Any]:
+        """
+        Get the status of repository monitoring.
+        
+        Args:
+            repo_path: Specific repository to get status for (optional)
+            
+        Returns:
+            Monitoring status
+        """
+        if repo_path and repo_path in self.monitoring_tasks:
+            return {
+                "repo_path": repo_path,
+                "status": self.monitoring_tasks[repo_path]
+            }
+        
+        return {
+            "repositories": list(self.monitoring_tasks.keys()),
+            "active_count": sum(1 for task in self.monitoring_tasks.values() if task["active"])
+        }
+    
+    async def _clone_repository(self, github_url: str, repo_path: str, github_token: str) -> Dict[str, Any]:
+        """
+        Clone a repository from GitHub.
+        
+        Args:
+            github_url: GitHub repository URL
+            repo_path: Path to clone to
+            github_token: GitHub token for authentication
+            
+        Returns:
+            Clone result
+        """
+        try:
+            # Add token to URL
+            auth_url = github_url.replace("https://", f"https://{github_token}@")
+            
+            result = await self.git_tool.execute({
+                "operation": "clone",
+                "url": auth_url,
+                "path": repo_path
+            })
+            
+            return {
+                "success": result.success,
+                "repo_path": repo_path,
+                "details": result.data
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to clone repository: {str(e)}"
+            }
+    
+    async def _configure_remote(self, repo_path: str, github_url: str, github_token: str) -> Dict[str, Any]:
+        """
+        Configure the remote with authentication token.
+        
+        Args:
+            repo_path: Path to the repository
+            github_url: GitHub repository URL
+            github_token: GitHub token for authentication
+            
+        Returns:
+            Configuration result
+        """
+        try:
+            # Add token to URL
+            auth_url = github_url.replace("https://", f"https://{github_token}@")
+            
+            result = await self.git_tool.execute({
+                "operation": "remote_set_url",
+                "repo_path": repo_path,
+                "name": "origin",
+                "url": auth_url
+            })
+            
+            return {
+                "success": result.success,
+                "repo_path": repo_path,
+                "details": result.data
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to configure remote: {str(e)}"
+            }
+    
+    async def _checkout_branch(self, repo_path: str, branch: str) -> Dict[str, Any]:
+        """
+        Checkout a branch.
+        
+        Args:
+            repo_path: Path to the repository
+            branch: Branch to checkout
+            
+        Returns:
+            Checkout result
+        """
+        try:
+            result = await self.git_tool.execute({
+                "operation": "checkout",
+                "repo_path": repo_path,
+                "branch": branch,
+                "create": True
+            })
+            
+            return {
+                "success": result.success,
+                "branch": branch,
+                "details": result.data
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to checkout branch: {str(e)}"
+            }
+    
+    async def _get_repo_status(self, repo_path: str) -> Dict[str, Any]:
+        """
+        Get the status of a repository.
+        
+        Args:
+            repo_path: Path to the repository
+            
+        Returns:
+            Status result
+        """
+        try:
+            result = await self.git_tool.execute({
+                "operation": "status",
+                "repo_path": repo_path
+            })
+            
+            if not result.success:
+                return {
+                    "success": False,
+                    "error": "Failed to get repository status",
+                    "details": result.data
+                }
+            
+            # Check if there are changes
+            has_changes = (
+                len(result.data.get("modified", [])) > 0 or
+                len(result.data.get("added", [])) > 0 or
+                len(result.data.get("deleted", [])) > 0 or
+                len(result.data.get("untracked", [])) > 0
+            )
+            
+            return {
+                "success": True,
+                "has_changes": has_changes,
+                "modified": result.data.get("modified", []),
+                "added": result.data.get("added", []),
+                "deleted": result.data.get("deleted", []),
+                "untracked": result.data.get("untracked", [])
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to get repository status: {str(e)}"
+            }
+    
+    async def _add_files(self, repo_path: str, files: List[str]) -> Dict[str, Any]:
+        """
+        Add files to staging.
+        
+        Args:
+            repo_path: Path to the repository
+            files: List of files to add
+            
+        Returns:
+            Add result
+        """
+        try:
+            result = await self.git_tool.execute({
+                "operation": "add",
+                "repo_path": repo_path,
+                "files": files
+            })
+            
+            return {
+                "success": result.success,
+                "files": files,
+                "details": result.data
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to add files: {str(e)}"
+            }
+    
+    async def _add_all(self, repo_path: str) -> Dict[str, Any]:
+        """
+        Add all changes to staging.
+        
+        Args:
+            repo_path: Path to the repository
+            
+        Returns:
+            Add result
+        """
+        try:
+            result = await self.git_tool.execute({
+                "operation": "add_all",
+                "repo_path": repo_path
+            })
+            
+            return {
+                "success": result.success,
+                "details": result.data
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to add all changes: {str(e)}"
+            }
+    
+    async def _commit(self, repo_path: str, message: str) -> Dict[str, Any]:
+        """
+        Commit changes.
+        
+        Args:
+            repo_path: Path to the repository
+            message: Commit message
+            
+        Returns:
+            Commit result
+        """
+        try:
+            result = await self.git_tool.execute({
+                "operation": "commit",
+                "repo_path": repo_path,
+                "message": message
+            })
+            
+            return {
+                "success": result.success,
+                "commit_id": result.data.get("commit_id"),
+                "details": result.data
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to commit changes: {str(e)}"
+            }
+    
+    async def _push(self, repo_path: str, branch: str, force: bool = False) -> Dict[str, Any]:
+        """
+        Push changes to GitHub.
+        
+        Args:
+            repo_path: Path to the repository
+            branch: Branch to push to
+            force: Whether to force push
+            
+        Returns:
+            Push result
+        """
+        try:
+            result = await self.git_tool.execute({
+                "operation": "push",
+                "repo_path": repo_path,
+                "remote": "origin",
+                "branch": branch,
+                "force": force
+            })
+            
+            return {
+                "success": result.success,
+                "branch": branch,
+                "details": result.data
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to push changes: {str(e)}"
+            }
+    
+    async def _pull(self, repo_path: str, branch: str) -> Dict[str, Any]:
+        """
+        Pull changes from GitHub.
+        
+        Args:
+            repo_path: Path to the repository
+            branch: Branch to pull from
+            
+        Returns:
+            Pull result
+        """
+        try:
+            result = await self.git_tool.execute({
+                "operation": "pull",
+                "repo_path": repo_path,
+                "remote": "origin",
+                "branch": branch
+            })
+            
+            return {
+                "success": result.success,
+                "branch": branch,
+                "details": result.data
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to pull changes: {str(e)}"
+            }
+    
+    async def _get_current_branch(self, repo_path: str) -> Dict[str, Any]:
+        """
+        Get the current branch.
+        
+        Args:
+            repo_path: Path to the repository
+            
+        Returns:
+            Branch result
+        """
+        try:
+            result = await self.git_tool.execute({
+                "operation": "current_branch",
+                "repo_path": repo_path
+            })
+            
+            return {
+                "success": result.success,
+                "branch": result.data.get("branch"),
+                "details": result.data
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to get current branch: {str(e)}"
+            }
+    
+    async def _get_unpushed_commits(self, repo_path: str) -> Dict[str, Any]:
+        """
+        Get the number of unpushed commits.
+        
+        Args:
+            repo_path: Path to the repository
+            
+        Returns:
+            Unpushed commits result
+        """
+        try:
+            result = await self.git_tool.execute({
+                "operation": "unpushed_commits",
+                "repo_path": repo_path
+            })
+            
+            return {
+                "success": result.success,
+                "count": result.data.get("count", 0),
+                "commits": result.data.get("commits", []),
+                "details": result.data
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to get unpushed commits: {str(e)}"
+            }
+    
+    async def _run_tests(self, repo_path: str) -> Dict[str, Any]:
+        """
+        Run tests before pushing to a protected branch.
+        
+        Args:
+            repo_path: Path to the repository
+            
+        Returns:
+            Test result
+        """
+        try:
+            # Get pytest tool
+            pytest_tool = registry.get_tool("pytest")
+            if not pytest_tool:
+                return {
+                    "success": False,
+                    "error": "Pytest tool not available"
+                }
+            
+            result = await pytest_tool.execute({
+                "operation": "run",
+                "test_path": os.path.join(repo_path, "tests"),
+                "verbose": True
+            })
+            
+            return {
+                "success": result.success,
+                "details": result.data
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to run tests: {str(e)}"
+            }

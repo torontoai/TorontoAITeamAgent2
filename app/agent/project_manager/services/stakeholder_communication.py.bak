@@ -1,0 +1,373 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""
+Stakeholder Communication Service for Project Manager Agent.
+
+This module provides services for communicating with project stakeholders.
+"""
+
+import logging
+import asyncio
+import datetime
+from typing import Dict, Any, List, Optional, Union
+
+from ..models import Stakeholder, MeetingRecord, Project
+
+logger = logging.getLogger(__name__)
+
+class StakeholderCommunicationService:
+    """
+    Service for communicating with project stakeholders.
+    """
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        Initialize the stakeholder communication service.
+        
+        Args:
+            config: Configuration settings
+        """
+        self.config = config or {}
+        self.stakeholders = {}  # In-memory storage for stakeholders
+        self.meetings = {}  # In-memory storage for meeting records
+        self.task_service = None  # Will be set by dependency injection
+        logger.info("Stakeholder communication service initialized")
+    
+    def set_task_service(self, task_service):
+        """Set task service reference."""
+        self.task_service = task_service
+    
+    async def add_stakeholder(self, project_id: str, stakeholder_data: Dict[str, Any]) -> Stakeholder:
+        """
+        Add a stakeholder to a project.
+        
+        Args:
+            project_id: Project ID
+            stakeholder_data: Stakeholder data
+            
+        Returns:
+            Added stakeholder
+        """
+        logger.info(f"Adding stakeholder to project {project_id}: {stakeholder_data.get('name')}")
+        
+        # Create stakeholder from data
+        stakeholder = Stakeholder.from_dict(stakeholder_data)
+        
+        # Add project to stakeholder's projects
+        if project_id not in stakeholder.projects:
+            stakeholder.projects.append(project_id)
+        
+        # Store stakeholder
+        self.stakeholders[stakeholder.id] = stakeholder
+        
+        # Update project if we have access to the project service
+        if self.task_service:
+            try:
+                project = await self.task_service.get_project(project_id)
+                if stakeholder.id not in project.stakeholders:
+                    project.stakeholders.append(stakeholder.id)
+                    project.updated_at = datetime.datetime.now()
+                    await self.task_service.update_project(project_id, {"stakeholders": project.stakeholders})
+            except Exception as e:
+                logger.error(f"Error updating project: {e}")
+        
+        logger.info(f"Stakeholder added: {stakeholder.id}")
+        return stakeholder
+    
+    async def remove_stakeholder(self, project_id: str, stakeholder_id: str) -> bool:
+        """
+        Remove a stakeholder from a project.
+        
+        Args:
+            project_id: Project ID
+            stakeholder_id: Stakeholder ID
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Removing stakeholder {stakeholder_id} from project {project_id}")
+        
+        # Check if stakeholder exists
+        if stakeholder_id not in self.stakeholders:
+            raise ValueError(f"Stakeholder not found: {stakeholder_id}")
+        
+        # Get stakeholder
+        stakeholder = self.stakeholders[stakeholder_id]
+        
+        # Remove project from stakeholder's projects
+        if project_id in stakeholder.projects:
+            stakeholder.projects.remove(project_id)
+            stakeholder.updated_at = datetime.datetime.now()
+        
+        # Update project if we have access to the project service
+        if self.task_service:
+            try:
+                project = await self.task_service.get_project(project_id)
+                if stakeholder_id in project.stakeholders:
+                    project.stakeholders.remove(stakeholder_id)
+                    project.updated_at = datetime.datetime.now()
+                    await self.task_service.update_project(project_id, {"stakeholders": project.stakeholders})
+            except Exception as e:
+                logger.error(f"Error updating project: {e}")
+        
+        # If stakeholder has no more projects, consider removing them
+        if not stakeholder.projects:
+            logger.info(f"Stakeholder {stakeholder_id} has no more projects, considering removal")
+            # For now, we'll keep them in the system
+        
+        logger.info(f"Stakeholder removed from project: {stakeholder_id}")
+        return True
+    
+    async def get_stakeholder(self, stakeholder_id: str) -> Stakeholder:
+        """
+        Get a stakeholder by ID.
+        
+        Args:
+            stakeholder_id: Stakeholder ID
+            
+        Returns:
+            Stakeholder
+        """
+        logger.info(f"Getting stakeholder: {stakeholder_id}")
+        
+        # Check if stakeholder exists
+        if stakeholder_id not in self.stakeholders:
+            raise ValueError(f"Stakeholder not found: {stakeholder_id}")
+        
+        return self.stakeholders[stakeholder_id]
+    
+    async def list_stakeholders(self, project_id: str) -> List[Stakeholder]:
+        """
+        List all stakeholders in a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            List of stakeholders
+        """
+        logger.info(f"Listing all stakeholders in project: {project_id}")
+        
+        # Get project if we have access to the project service
+        project_stakeholders = []
+        if self.task_service:
+            try:
+                project = await self.task_service.get_project(project_id)
+                project_stakeholders = project.stakeholders
+            except Exception as e:
+                logger.error(f"Error getting project: {e}")
+                # Fall back to filtering stakeholders by project
+        
+        # If we have project stakeholders, get those specific stakeholders
+        if project_stakeholders:
+            return [self.stakeholders[s_id] for s_id in project_stakeholders if s_id in self.stakeholders]
+        
+        # Otherwise, filter stakeholders by project
+        return [s for s in self.stakeholders.values() if project_id in s.projects]
+    
+    async def update_stakeholder(self, stakeholder_id: str, stakeholder_data: Dict[str, Any]) -> Stakeholder:
+        """
+        Update a stakeholder.
+        
+        Args:
+            stakeholder_id: Stakeholder ID
+            stakeholder_data: Updated stakeholder data
+            
+        Returns:
+            Updated stakeholder
+        """
+        logger.info(f"Updating stakeholder: {stakeholder_id}")
+        
+        # Check if stakeholder exists
+        if stakeholder_id not in self.stakeholders:
+            raise ValueError(f"Stakeholder not found: {stakeholder_id}")
+        
+        # Get existing stakeholder
+        stakeholder = self.stakeholders[stakeholder_id]
+        
+        # Update stakeholder fields
+        for key, value in stakeholder_data.items():
+            if key == 'id':
+                continue  # Don't update ID
+            elif hasattr(stakeholder, key):
+                setattr(stakeholder, key, value)
+        
+        # Update timestamp
+        stakeholder.updated_at = datetime.datetime.now()
+        
+        # Store updated stakeholder
+        self.stakeholders[stakeholder_id] = stakeholder
+        
+        logger.info(f"Stakeholder updated: {stakeholder_id}")
+        return stakeholder
+    
+    async def send_update(self, project_id: str, update_data: Dict[str, Any]) -> bool:
+        """
+        Send an update to project stakeholders.
+        
+        Args:
+            project_id: Project ID
+            update_data: Update data
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Sending update to stakeholders for project: {project_id}")
+        
+        # Get stakeholders for project
+        stakeholders = await self.list_stakeholders(project_id)
+        
+        if not stakeholders:
+            logger.warning(f"No stakeholders found for project: {project_id}")
+            return False
+        
+        # In a real implementation, this would send emails, notifications, etc.
+        # For now, we'll just log the update
+        
+        # Get project name if available
+        project_name = "Unknown Project"
+        if self.task_service:
+            try:
+                project = await self.task_service.get_project(project_id)
+                project_name = project.name
+            except Exception as e:
+                logger.error(f"Error getting project: {e}")
+        
+        # Log the update
+        logger.info(f"Update for project '{project_name}' ({project_id}):")
+        logger.info(f"Subject: {update_data.get('subject', 'Project Update')}")
+        logger.info(f"Message: {update_data.get('message', 'No message provided')}")
+        logger.info(f"Sent to {len(stakeholders)} stakeholders")
+        
+        # In a real implementation, we would track delivery status
+        return True
+    
+    async def record_meeting(self, project_id: str, meeting_data: Dict[str, Any]) -> MeetingRecord:
+        """
+        Record a project meeting.
+        
+        Args:
+            project_id: Project ID
+            meeting_data: Meeting data
+            
+        Returns:
+            Meeting record
+        """
+        logger.info(f"Recording meeting for project: {project_id}")
+        
+        # Add project ID to meeting data
+        meeting_data['project_id'] = project_id
+        
+        # Create meeting record from data
+        meeting = MeetingRecord.from_dict(meeting_data)
+        
+        # Store meeting record
+        self.meetings[meeting.id] = meeting
+        
+        logger.info(f"Meeting recorded: {meeting.id}")
+        return meeting
+    
+    async def get_meeting(self, meeting_id: str) -> MeetingRecord:
+        """
+        Get a meeting record by ID.
+        
+        Args:
+            meeting_id: Meeting ID
+            
+        Returns:
+            Meeting record
+        """
+        logger.info(f"Getting meeting: {meeting_id}")
+        
+        # Check if meeting exists
+        if meeting_id not in self.meetings:
+            raise ValueError(f"Meeting not found: {meeting_id}")
+        
+        return self.meetings[meeting_id]
+    
+    async def list_meetings(self, project_id: str) -> List[MeetingRecord]:
+        """
+        List all meetings for a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            List of meeting records
+        """
+        logger.info(f"Listing all meetings for project: {project_id}")
+        
+        # Filter meetings by project
+        return [m for m in self.meetings.values() if m.project_id == project_id]
+    
+    async def update_meeting(self, meeting_id: str, meeting_data: Dict[str, Any]) -> MeetingRecord:
+        """
+        Update a meeting record.
+        
+        Args:
+            meeting_id: Meeting ID
+            meeting_data: Updated meeting data
+            
+        Returns:
+            Updated meeting record
+        """
+        logger.info(f"Updating meeting: {meeting_id}")
+        
+        # Check if meeting exists
+        if meeting_id not in self.meetings:
+            raise ValueError(f"Meeting not found: {meeting_id}")
+        
+        # Get existing meeting
+        meeting = self.meetings[meeting_id]
+        
+        # Update meeting fields
+        for key, value in meeting_data.items():
+            if key == 'id' or key == 'project_id':
+                continue  # Don't update ID or project_id
+            elif key == 'date' and value:
+                meeting.date = datetime.datetime.fromisoformat(value) if isinstance(value, str) else value
+            elif hasattr(meeting, key):
+                setattr(meeting, key, value)
+        
+        # Update timestamp
+        meeting.updated_at = datetime.datetime.now()
+        
+        # Store updated meeting
+        self.meetings[meeting_id] = meeting
+        
+        logger.info(f"Meeting updated: {meeting_id}")
+        return meeting
+    
+    async def delete_meeting(self, meeting_id: str) -> bool:
+        """
+        Delete a meeting record.
+        
+        Args:
+            meeting_id: Meeting ID
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Deleting meeting: {meeting_id}")
+        
+        # Check if meeting exists
+        if meeting_id not in self.meetings:
+            raise ValueError(f"Meeting not found: {meeting_id}")
+        
+        # Delete meeting
+        del self.meetings[meeting_id]
+        
+        logger.info(f"Meeting deleted: {meeting_id}")
+        return True

@@ -1,0 +1,753 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""Command Line Interface for TORONTO AI Team Agent Training System.
+
+This module provides a CLI for managing the training system, including knowledge extraction,
+agent adaptation, and certification content management."""
+
+import os
+import sys
+import argparse
+import logging
+import json
+import time
+from typing import Dict, List, Any, Optional
+from pathlib import Path
+import yaml
+import textwrap
+
+from .knowledge_extraction import pipeline as knowledge_pipeline
+from .agent_adaptation import adaptation_layer
+from .certification_content import certification_manager
+from .vector_db import VectorDatabaseFactory
+from .config import load_config, save_config
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(os.path.join(os.path.dirname(__file__), 'training_cli.log'))
+    ]
+)
+logger = logging.getLogger(__name__)
+
+class TrainingCLI:
+    """Command Line Interface for the TORONTO AI Team Agent Training System."""
+    
+    def __init__(self):
+        """Initialize the Training CLI."""
+        self.config = load_config()
+        
+        # Set up argument parser
+        self.parser = argparse.ArgumentParser(
+            description='TORONTO AI Team Agent Training System CLI',
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog=textwrap.dedent('''
+                Examples:
+                  # Extract knowledge from training materials
+                  python -m app.training.cli extract
+                  
+                  # Adapt an agent role with knowledge capabilities
+                  python -m app.training.cli adapt --role project_manager
+                  
+                  # Add certification content
+                  python -m app.training.cli certification add --type google_project_manager --path /path/to/content
+                  
+                  # Query knowledge base
+                  python -m app.training.cli query "project management best practices"
+                  
+                  # Configure the training system
+                  python -m app.training.cli config --vector_db_type chroma
+            ''')
+        )
+        
+        self.subparsers = self.parser.add_subparsers(dest='command', help='Command to execute')
+        
+        # Set up command subparsers
+        self._setup_extract_parser()
+        self._setup_adapt_parser()
+        self._setup_certification_parser()
+        self._setup_query_parser()
+        self._setup_config_parser()
+        self._setup_status_parser()
+        
+        logger.info("Training CLI initialized")
+    
+    def _setup_extract_parser(self):
+        """Set up the parser for the extract command."""
+        extract_parser = self.subparsers.add_parser('extract', help='Extract knowledge from training materials')
+        extract_parser.add_argument('--path', type=str, help='Path to training materials')
+        extract_parser.add_argument('--chunking', type=str, choices=['fixed_size', 'sliding_window', 'semantic'], 
+                                   default='semantic', help='Chunking strategy')
+        extract_parser.add_argument('--chunk_size', type=int, default=1000, help='Chunk size in characters')
+        extract_parser.add_argument('--chunk_overlap', type=int, default=200, help='Chunk overlap in characters')
+        extract_parser.add_argument('--file', type=str, help='Process a single file instead of all materials')
+        extract_parser.add_argument('--enable_images', action='store_true', help='Enable image extraction')
+    
+    def _setup_adapt_parser(self):
+        """Set up the parser for the adapt command."""
+        adapt_parser = self.subparsers.add_parser('adapt', help='Adapt an agent role with knowledge capabilities')
+        adapt_parser.add_argument('--role', type=str, required=True, help='Agent role to adapt')
+        adapt_parser.add_argument('--training_id', type=str, help='Training ID')
+        adapt_parser.add_argument('--preferred_topics', type=str, nargs='+', help='Preferred topics for personalization')
+        adapt_parser.add_argument('--expertise_level', type=str, 
+                                 choices=['beginner', 'intermediate', 'advanced'],
+                                 default='intermediate', help='Expertise level')
+        adapt_parser.add_argument('--learning_style', type=str,
+                                 choices=['visual', 'auditory', 'reading', 'kinesthetic', 'balanced'],
+                                 default='balanced', help='Learning style')
+    
+    def _setup_certification_parser(self):
+        """Set up the parser for the certification command."""
+        cert_parser = self.subparsers.add_parser('certification', help='Manage certification content')
+        cert_subparsers = cert_parser.add_subparsers(dest='cert_command', help='Certification command')
+        
+        # Add certification content
+        add_parser = cert_subparsers.add_parser('add', help='Add certification content')
+        add_parser.add_argument('--type', type=str, required=True,
+                               choices=['google_project_manager', 'ibm_product_manager'],
+                               help='Certification type')
+        add_parser.add_argument('--path', type=str, required=True, help='Path to certification content')
+        add_parser.add_argument('--title', type=str, help='Content title')
+        add_parser.add_argument('--description', type=str, help='Content description')
+        
+        # Update certification content
+        update_parser = cert_subparsers.add_parser('update', help='Update certification content')
+        update_parser.add_argument('--id', type=str, required=True, help='Content ID')
+        update_parser.add_argument('--path', type=str, help='Path to updated content')
+        update_parser.add_argument('--title', type=str, help='Updated title')
+        update_parser.add_argument('--description', type=str, help='Updated description')
+        
+        # Delete certification content
+        delete_parser = cert_subparsers.add_parser('delete', help='Delete certification content')
+        delete_parser.add_argument('--id', type=str, required=True, help='Content ID')
+        
+        # List certification content
+        list_parser = cert_subparsers.add_parser('list', help='List certification content')
+        list_parser.add_argument('--type', type=str,
+                                choices=['google_project_manager', 'ibm_product_manager'],
+                                help='Filter by certification type')
+        
+        # Process certification content
+        process_parser = cert_subparsers.add_parser('process', help='Process certification content')
+        process_parser.add_argument('--id', type=str, required=True, help='Content ID')
+        
+        # Create certification template
+        template_parser = cert_subparsers.add_parser('template', help='Create certification template')
+        template_parser.add_argument('--type', type=str, required=True,
+                                    choices=['google_project_manager', 'ibm_product_manager'],
+                                    help='Certification type')
+        
+        # Version management
+        version_parser = cert_subparsers.add_parser('version', help='Manage content versions')
+        version_subparsers = version_parser.add_subparsers(dest='version_command', help='Version command')
+        
+        # List versions
+        list_version_parser = version_subparsers.add_parser('list', help='List content versions')
+        list_version_parser.add_argument('--id', type=str, required=True, help='Content ID')
+        
+        # Restore version
+        restore_version_parser = version_subparsers.add_parser('restore', help='Restore content version')
+        restore_version_parser.add_argument('--id', type=str, required=True, help='Version ID')
+    
+    def _setup_query_parser(self):
+        """Set up the parser for the query command."""
+        query_parser = self.subparsers.add_parser('query', help='Query knowledge base')
+        query_parser.add_argument('query', type=str, help='Query string')
+        query_parser.add_argument('--role', type=str, help='Filter by role')
+        query_parser.add_argument('--top_k', type=int, default=3, help='Number of results to return')
+        query_parser.add_argument('--hybrid', action='store_true', help='Use hybrid search')
+    
+    def _setup_config_parser(self):
+        """Set up the parser for the config command."""
+        config_parser = self.subparsers.add_parser('config', help='Configure the training system')
+        config_parser.add_argument('--vector_db_type', type=str,
+                                  choices=['in_memory', 'chroma', 'pinecone', 'weaviate', 'milvus', 'faiss'],
+                                  help='Vector database type')
+        config_parser.add_argument('--vector_db_path', type=str, help='Vector database path')
+        config_parser.add_argument('--api_key', type=str, help='OpenAI API key')
+        config_parser.add_argument('--embedding_model', type=str, help='Embedding model name')
+        config_parser.add_argument('--chunking_strategy', type=str,
+                                  choices=['fixed_size', 'sliding_window', 'semantic'],
+                                  help='Default chunking strategy')
+        config_parser.add_argument('--enable_versioning', type=bool, help='Enable content versioning')
+        config_parser.add_argument('--enable_personalization', type=bool, help='Enable agent personalization')
+        config_parser.add_argument('--show', action='store_true', help='Show current configuration')
+    
+    def _setup_status_parser(self):
+        """Set up the parser for the status command."""
+        status_parser = self.subparsers.add_parser('status', help='Show system status')
+        status_parser.add_argument('--detailed', action='store_true', help='Show detailed status')
+    
+    def run(self, args=None):
+        """Run the CLI with the given arguments.
+        
+        Args:
+            args: Command line arguments (defaults to sys.argv[1:])
+            
+        Returns:
+            Command result"""
+        parsed_args = self.parser.parse_args(args)
+        
+        if not parsed_args.command:
+            self.parser.print_help()
+            return {"success": False, "message": "No command specified"}
+        
+        try:
+            # Execute the appropriate command
+            if parsed_args.command == 'extract':
+                return self._handle_extract(parsed_args)
+            elif parsed_args.command == 'adapt':
+                return self._handle_adapt(parsed_args)
+            elif parsed_args.command == 'certification':
+                return self._handle_certification(parsed_args)
+            elif parsed_args.command == 'query':
+                return self._handle_query(parsed_args)
+            elif parsed_args.command == 'config':
+                return self._handle_config(parsed_args)
+            elif parsed_args.command == 'status':
+                return self._handle_status(parsed_args)
+            else:
+                return {"success": False, "message": f"Unknown command: {parsed_args.command}"}
+                
+        except Exception as e:
+            logger.error(f"Error executing command: {str(e)}")
+            return {"success": False, "message": f"Error: {str(e)}"}
+    
+    def _handle_extract(self, args):
+        """Handle the extract command.
+        
+        Args:
+            args: Parsed arguments
+            
+        Returns:
+            Extraction result"""
+        # Update pipeline configuration
+        config = {}
+        
+        if args.path:
+            config["materials_path"] = args.path
+        
+        if args.chunking:
+            config["chunking_strategy"] = args.chunking
+        
+        if args.chunk_size:
+            config["chunk_size"] = args.chunk_size
+        
+        if args.chunk_overlap:
+            config["chunk_overlap"] = args.chunk_overlap
+        
+        if args.enable_images:
+            config["enable_image_extraction"] = True
+        
+        # Apply configuration
+        for key, value in config.items():
+            setattr(knowledge_pipeline, key, value)
+        
+        # Process materials
+        if args.file:
+            # Process single file
+            if not os.path.exists(args.file):
+                return {"success": False, "message": f"File not found: {args.file}"}
+            
+            logger.info(f"Processing file: {args.file}")
+            result = knowledge_pipeline.process_material(args.file)
+            
+            # Print result
+            print(f"Processed file: {args.file}")
+            print(f"Chunks: {result.get('chunk_count', 0)}")
+            print(f"Embeddings: {result.get('embedding_count', 0)}")
+            
+            return {
+                "success": True,
+                "message": f"Successfully processed file: {args.file}",
+                "result": result
+            }
+        else:
+            # Process all materials
+            logger.info("Processing all training materials")
+            result = knowledge_pipeline.process_all_materials()
+            
+            # Print result
+            print(f"Processed {result.get('processed_files', 0)} files")
+            print(f"Total chunks: {result.get('total_chunks', 0)}")
+            print(f"Total embeddings: {result.get('total_embeddings', 0)}")
+            
+            return {
+                "success": True,
+                "message": "Successfully processed all training materials",
+                "result": result
+            }
+    
+    def _handle_adapt(self, args):
+        """Handle the adapt command.
+        
+        Args:
+            args: Parsed arguments
+            
+        Returns:
+            Adaptation result"""
+        # Prepare adaptation parameters
+        params = {
+            "role": args.role,
+            "training_id": args.training_id or f"training_{int(time.time())}",
+            "adaptation_config": {}
+        }
+        
+        if args.preferred_topics:
+            params["adaptation_config"]["preferred_topics"] = args.preferred_topics
+        
+        if args.expertise_level:
+            params["adaptation_config"]["expertise_level"] = args.expertise_level
+        
+        if args.learning_style:
+            params["adaptation_config"]["learning_style"] = args.learning_style
+        
+        # Adapt agent role
+        logger.info(f"Adapting agent role: {args.role}")
+        result = adaptation_layer.adapt_agent_role(params)
+        
+        # Print result
+        if result.get("success", False):
+            print(f"Successfully adapted agent role: {args.role}")
+            print(f"Adaptation ID: {result.get('adaptation_id', '')}")
+        else:
+            print(f"Failed to adapt agent role: {result.get('message', '')}")
+        
+        return result
+    
+    def _handle_certification(self, args):
+        """Handle the certification command.
+        
+        Args:
+            args: Parsed arguments
+            
+        Returns:
+            Certification command result"""
+        if not args.cert_command:
+            return {"success": False, "message": "No certification command specified"}
+        
+        if args.cert_command == 'add':
+            # Prepare metadata
+            metadata = {}
+            
+            if args.title:
+                metadata["title"] = args.title
+            
+            if args.description:
+                metadata["description"] = args.description
+            
+            # Add certification content
+            params = {
+                "certification_type": args.type,
+                "content_path": args.path,
+                "metadata": metadata
+            }
+            
+            logger.info(f"Adding {args.type} certification content from {args.path}")
+            result = certification_manager.add_certification_content(params)
+            
+            # Print result
+            if result.get("success", False):
+                print(f"Successfully added certification content")
+                print(f"Content ID: {result.get('content_id', '')}")
+                
+                # Print validation result if available
+                validation = result.get("validation_result", {})
+                if validation:
+                    print(f"Validation: {'Success' if validation.get('success', False) else 'Failed'}")
+                    if not validation.get("success", False):
+                        print(f"Validation message: {validation.get('message', '')}")
+            else:
+                print(f"Failed to add certification content: {result.get('message', '')}")
+            
+            return result
+            
+        elif args.cert_command == 'update':
+            # Prepare metadata
+            metadata = {}
+            
+            if args.title:
+                metadata["title"] = args.title
+            
+            if args.description:
+                metadata["description"] = args.description
+            
+            # Update certification content
+            params = {
+                "content_id": args.id,
+                "content_path": args.path if args.path else None,
+                "metadata": metadata
+            }
+            
+            logger.info(f"Updating certification content: {args.id}")
+            result = certification_manager.update_certification_content(params)
+            
+            # Print result
+            if result.get("success", False):
+                print(f"Successfully updated certification content: {args.id}")
+                
+                # Print validation result if available
+                validation = result.get("validation_result", {})
+                if validation:
+                    print(f"Validation: {'Success' if validation.get('success', False) else 'Failed'}")
+                    if not validation.get("success", False):
+                        print(f"Validation message: {validation.get('message', '')}")
+            else:
+                print(f"Failed to update certification content: {result.get('message', '')}")
+            
+            return result
+            
+        elif args.cert_command == 'delete':
+            # Delete certification content
+            logger.info(f"Deleting certification content: {args.id}")
+            result = certification_manager.delete_certification_content(args.id)
+            
+            # Print result
+            if result.get("success", False):
+                print(f"Successfully deleted certification content: {args.id}")
+            else:
+                print(f"Failed to delete certification content: {result.get('message', '')}")
+            
+            return result
+            
+        elif args.cert_command == 'list':
+            # List certification content
+            logger.info(f"Listing certification content")
+            result = certification_manager.list_certification_content(args.type)
+            
+            # Print result
+            if result.get("success", False):
+                certifications = result.get("certifications", {})
+                print(f"Found {len(certifications)} certification content items")
+                
+                if certifications:
+                    print("\nCertification Content:")
+                    for content_id, content in certifications.items():
+                        metadata = content.get("metadata", {})
+                        print(f"  ID: {content_id}")
+                        print(f"  Type: {content.get('type', '')}")
+                        print(f"  Title: {metadata.get('title', 'Untitled')}")
+                        print(f"  Status: {content.get('status', '')}")
+                        print(f"  Added: {time.ctime(metadata.get('added_at', 0))}")
+                        print("")
+            else:
+                print(f"Failed to list certification content: {result.get('message', '')}")
+            
+            return result
+            
+        elif args.cert_command == 'process':
+            # Process certification content
+            logger.info(f"Processing certification content: {args.id}")
+            result = certification_manager.process_certification_content(args.id)
+            
+            # Print result
+            if result.get("success", False):
+                print(f"Successfully processed certification content: {args.id}")
+                
+                # Print processing results
+                processing_results = result.get("results", {})
+                if processing_results:
+                    print(f"Files processed: {processing_results.get('file_count', 0)}")
+                    print(f"Successful files: {processing_results.get('success_count', 0)}")
+                    print(f"Total chunks: {processing_results.get('total_chunks', 0)}")
+                    print(f"Total embeddings: {processing_results.get('total_embeddings', 0)}")
+            else:
+                print(f"Failed to process certification content: {result.get('message', '')}")
+            
+            return result
+            
+        elif args.cert_command == 'template':
+            # Create certification template
+            logger.info(f"Creating {args.type} certification template")
+            result = certification_manager.create_certification_template(args.type)
+            
+            # Print result
+            if result.get("success", False):
+                print(f"Successfully created {args.type} certification template")
+                print(f"Template ID: {result.get('template_id', '')}")
+                print(f"Template path: {result.get('template_path', '')}")
+            else:
+                print(f"Failed to create certification template: {result.get('message', '')}")
+            
+            return result
+            
+        elif args.cert_command == 'version':
+            if not args.version_command:
+                return {"success": False, "message": "No version command specified"}
+            
+            if args.version_command == 'list':
+                # List version history
+                logger.info(f"Listing version history for content: {args.id}")
+                result = certification_manager.get_version_history(args.id)
+                
+                # Print result
+                if result.get("success", False):
+                    versions = result.get("versions", [])
+                    print(f"Found {len(versions)} versions for content {args.id}")
+                    
+                    if versions:
+                        print("\nVersion History:")
+                        for version in versions:
+                            print(f"  Version ID: {version.get('version_id', '')}")
+                            print(f"  Created: {time.ctime(version.get('created_at', 0))}")
+                            print(f"  Reason: {version.get('reason', '')}")
+                            print("")
+                else:
+                    print(f"Failed to list version history: {result.get('message', '')}")
+                
+                return result
+                
+            elif args.version_command == 'restore':
+                # Restore version
+                logger.info(f"Restoring version: {args.id}")
+                result = certification_manager.restore_version(args.id)
+                
+                # Print result
+                if result.get("success", False):
+                    print(f"Successfully restored version: {args.id}")
+                    print(f"Content ID: {result.get('content_id', '')}")
+                else:
+                    print(f"Failed to restore version: {result.get('message', '')}")
+                
+                return result
+            
+            else:
+                return {"success": False, "message": f"Unknown version command: {args.version_command}"}
+        
+        else:
+            return {"success": False, "message": f"Unknown certification command: {args.cert_command}"}
+    
+    def _handle_query(self, args):
+        """Handle the query command.
+        
+        Args:
+            args: Parsed arguments
+            
+        Returns:
+            Query result"""
+        # Query knowledge base
+        logger.info(f"Querying knowledge base: {args.query}")
+        results = knowledge_pipeline.query_knowledge(
+            query=args.query,
+            role=args.role,
+            top_k=args.top_k
+        )
+        
+        # Print results
+        if results:
+            print(f"Found {len(results)} results for query: {args.query}")
+            
+            for i, result in enumerate(results):
+                document = result.get("document", {})
+                print(f"\nResult {i+1}:")
+                print(f"  Title: {document.get('title', '')}")
+                print(f"  Role: {document.get('role', '')}")
+                print(f"  Source: {document.get('source', '')}")
+                print(f"  Score: {result.get('score', 0):.4f}")
+                print(f"  Content: {document.get('content', '')[:200]}...")
+        else:
+            print(f"No results found for query: {args.query}")
+        
+        return {
+            "success": True,
+            "message": f"Query executed successfully",
+            "results": results
+        }
+    
+    def _handle_config(self, args):
+        """Handle the config command.
+        
+        Args:
+            args: Parsed arguments
+            
+        Returns:
+            Configuration result"""
+        if args.show:
+            # Show current configuration
+            print("Current Configuration:")
+            for key, value in self.config.items():
+                print(f"  {key}: {value}")
+            
+            return {
+                "success": True,
+                "message": "Configuration displayed",
+                "config": self.config
+            }
+        
+        # Update configuration
+        updated = False
+        
+        if args.vector_db_type:
+            self.config["vector_db_type"] = args.vector_db_type
+            updated = True
+        
+        if args.vector_db_path:
+            self.config["vector_db_path"] = args.vector_db_path
+            updated = True
+        
+        if args.api_key:
+            self.config["openai_api_key"] = args.api_key
+            updated = True
+        
+        if args.embedding_model:
+            self.config["embedding_model"] = args.embedding_model
+            updated = True
+        
+        if args.chunking_strategy:
+            self.config["chunking_strategy"] = args.chunking_strategy
+            updated = True
+        
+        if args.enable_versioning is not None:
+            self.config["enable_versioning"] = args.enable_versioning
+            updated = True
+        
+        if args.enable_personalization is not None:
+            self.config["enable_personalization"] = args.enable_personalization
+            updated = True
+        
+        if updated:
+            # Save configuration
+            save_config(self.config)
+            
+            # Apply configuration to components
+            self._apply_config_to_components()
+            
+            print("Configuration updated successfully")
+            
+            return {
+                "success": True,
+                "message": "Configuration updated successfully",
+                "config": self.config
+            }
+        else:
+            print("No configuration changes specified")
+            
+            return {
+                "success": False,
+                "message": "No configuration changes specified"
+            }
+    
+    def _apply_config_to_components(self):
+        """Apply configuration to system components."""
+        # Apply to knowledge pipeline
+        for key in ["chunking_strategy", "chunk_size", "chunk_overlap", "embedding_model", "openai_api_key"]:
+            if key in self.config:
+                setattr(knowledge_pipeline, key, self.config[key])
+        
+        # Apply to certification manager
+        for key in ["enable_versioning", "enable_metadata_extraction"]:
+            if key in self.config:
+                setattr(certification_manager, key, self.config[key])
+        
+        # Apply to adaptation layer
+        for key in ["enable_personalization", "enable_multi_agent_sharing"]:
+            if key in self.config:
+                setattr(adaptation_layer, key, self.config[key])
+        
+        logger.info("Applied configuration to system components")
+    
+    def _handle_status(self, args):
+        """Handle the status command.
+        
+        Args:
+            args: Parsed arguments
+            
+        Returns:
+            Status result"""
+        # Get system status
+        status = {
+            "vector_db": {
+                "type": knowledge_pipeline.vector_db.__class__.__name__,
+                "connection": "Connected" if hasattr(knowledge_pipeline.vector_db, "is_connected") and 
+                              knowledge_pipeline.vector_db.is_connected else "Unknown"
+            },
+            "knowledge_pipeline": {
+                "chunking_strategy": knowledge_pipeline.chunking_strategy,
+                "chunk_size": knowledge_pipeline.chunk_size,
+                "chunk_overlap": knowledge_pipeline.chunk_overlap,
+                "embedding_model": knowledge_pipeline.embedding_model
+            },
+            "certification_manager": {
+                "versioning_enabled": certification_manager.enable_versioning,
+                "auto_validation_enabled": certification_manager.enable_auto_validation,
+                "metadata_extraction_enabled": certification_manager.enable_metadata_extraction
+            },
+            "adaptation_layer": {
+                "personalization_enabled": adaptation_layer.enable_personalization,
+                "knowledge_feedback_enabled": adaptation_layer.enable_knowledge_feedback,
+                "multi_agent_sharing_enabled": adaptation_layer.enable_multi_agent_sharing
+            }
+        }
+        
+        # Print status
+        print("TORONTO AI Team Agent Training System Status:")
+        print(f"Vector Database: {status['vector_db']['type']} ({status['vector_db']['connection']})")
+        print(f"Knowledge Pipeline: {status['knowledge_pipeline']['chunking_strategy']} chunking")
+        print(f"Certification Manager: Versioning {'Enabled' if status['certification_manager']['versioning_enabled'] else 'Disabled'}")
+        print(f"Adaptation Layer: Personalization {'Enabled' if status['adaptation_layer']['personalization_enabled'] else 'Disabled'}")
+        
+        if args.detailed:
+            # Get detailed status
+            
+            # Get certification content count
+            cert_result = certification_manager.list_certification_content()
+            cert_count = len(cert_result.get("certifications", {})) if cert_result.get("success", False) else 0
+            
+            # Get knowledge stats
+            knowledge_stats = adaptation_layer.get_knowledge_stats()
+            
+            # Print detailed status
+            print("\nDetailed Status:")
+            print(f"Certification Content Items: {cert_count}")
+            print(f"Knowledge Queries: {knowledge_stats.get('total_queries', 0)}")
+            print(f"Successful Retrievals: {knowledge_stats.get('successful_retrievals', 0)}")
+            print(f"Positive Feedback: {knowledge_stats.get('feedback', {}).get('positive', 0)}")
+            print(f"Negative Feedback: {knowledge_stats.get('feedback', {}).get('negative', 0)}")
+            
+            # Print adapted roles
+            roles = knowledge_stats.get("by_role", {}).keys()
+            if roles:
+                print(f"Adapted Roles: {', '.join(roles)}")
+            else:
+                print("Adapted Roles: None")
+            
+            # Add detailed info to status
+            status["detailed"] = {
+                "certification_count": cert_count,
+                "knowledge_stats": knowledge_stats
+            }
+        
+        return {
+            "success": True,
+            "message": "Status retrieved successfully",
+            "status": status
+        }
+
+
+def main():
+    """Main entry point for the CLI."""
+    cli = TrainingCLI()
+    result = cli.run()
+    
+    # Exit with appropriate code
+    sys.exit(0 if result.get("success", False) else 1)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,324 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""
+Training Orchestration Layer for coordinating the agent training process.
+
+This module provides functionality for orchestrating the entire agent training process,
+from content integration to model training and agent adaptation.
+"""
+
+from typing import Dict, Any, List, Optional
+import logging
+import os
+import json
+import uuid
+import datetime
+import importlib
+import sys
+
+from app.training.knowledge_integration import KnowledgeIntegrationLayer
+from app.training.model_training import ModelTrainingLayer
+from app.training.agent_adaptation import AgentAdaptationLayer
+
+logger = logging.getLogger(__name__)
+
+class TrainingOrchestrationLayer:
+    """
+    Training Orchestration Layer for coordinating the agent training process.
+    
+    This class provides functionality for orchestrating the entire agent training process,
+    from content integration to model training and agent adaptation.
+    """
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        Initialize the Training Orchestration Layer.
+        
+        Args:
+            config: Configuration settings
+        """
+        self.config = config or {}
+        
+        # Set paths
+        self.knowledge_base_path = self.config.get("knowledge_base_path", "data/knowledge_base")
+        self.models_path = self.config.get("models_path", "data/models")
+        
+        # Ensure directories exist
+        os.makedirs(self.knowledge_base_path, exist_ok=True)
+        os.makedirs(self.models_path, exist_ok=True)
+        
+        # Initialize sub-layers
+        self.knowledge_layer = KnowledgeIntegrationLayer(config)
+        self.model_layer = ModelTrainingLayer(config)
+        self.adaptation_layer = AgentAdaptationLayer(config)
+        
+        logger.info("Training Orchestration Layer initialized")
+    
+    def train_agent_from_certification(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Train an agent from certification content in a single orchestrated process.
+        
+        Args:
+            params: Training parameters including role, content_path, certification_name,
+                   training_config, and adaptation_config
+            
+        Returns:
+            Training result
+        """
+        role = params.get("role")
+        content_path = params.get("content_path")
+        certification_name = params.get("certification_name")
+        training_config = params.get("training_config", {})
+        adaptation_config = params.get("adaptation_config", {})
+        
+        if not role:
+            return {
+                "success": False,
+                "message": "Role is required"
+            }
+        
+        if not content_path:
+            return {
+                "success": False,
+                "message": "Content path is required"
+            }
+        
+        if not certification_name:
+            return {
+                "success": False,
+                "message": "Certification name is required"
+            }
+        
+        # Generate training ID
+        training_id = f"train_{role}_{uuid.uuid4().hex[:8]}"
+        
+        # Create training directory
+        training_dir = os.path.join(self.models_path, "orchestration", training_id)
+        os.makedirs(training_dir, exist_ok=True)
+        
+        # Save training config
+        config_path = os.path.join(training_dir, "orchestration_config.json")
+        
+        with open(config_path, "w") as f:
+            json.dump({
+                "role": role,
+                "content_path": content_path,
+                "certification_name": certification_name,
+                "training_config": training_config,
+                "adaptation_config": adaptation_config,
+                "created_at": datetime.datetime.now().isoformat(),
+                "status": "started"
+            }, f, indent=2)
+        
+        # Step 1: Process certification content
+        logger.info(f"Step 1: Processing certification content for {certification_name}")
+        
+        content_result = self.knowledge_layer.process_certification_content({
+            "content_path": content_path,
+            "certification_name": certification_name,
+            "role": role
+        })
+        
+        if not content_result["success"]:
+            self._update_orchestration_status(training_id, "failed", content_result["message"])
+            return {
+                "success": False,
+                "message": f"Content processing failed: {content_result['message']}",
+                "training_id": training_id
+            }
+        
+        content_id = content_result["content_id"]
+        
+        # Step 2: Train model
+        logger.info(f"Step 2: Training model for role {role}")
+        
+        model_result = self.model_layer.train_agent_model({
+            "role": role,
+            "content_ids": [content_id],
+            "training_config": training_config
+        })
+        
+        if not model_result["success"]:
+            self._update_orchestration_status(training_id, "failed", model_result["message"])
+            return {
+                "success": False,
+                "message": f"Model training failed: {model_result['message']}",
+                "training_id": training_id,
+                "content_id": content_id
+            }
+        
+        model_training_id = model_result["training_id"]
+        
+        # Step 3: Adapt agent
+        logger.info(f"Step 3: Adapting agent for role {role}")
+        
+        adaptation_result = self.adaptation_layer.adapt_agent_role({
+            "role": role,
+            "training_id": model_training_id,
+            "adaptation_config": adaptation_config
+        })
+        
+        if not adaptation_result["success"]:
+            self._update_orchestration_status(training_id, "failed", adaptation_result["message"])
+            return {
+                "success": False,
+                "message": f"Agent adaptation failed: {adaptation_result['message']}",
+                "training_id": training_id,
+                "content_id": content_id,
+                "model_training_id": model_training_id
+            }
+        
+        adaptation_id = adaptation_result["adaptation_id"]
+        
+        # Update orchestration status
+        self._update_orchestration_status(training_id, "completed")
+        
+        logger.info(f"Completed training orchestration for role {role} with certification {certification_name}")
+        
+        return {
+            "success": True,
+            "message": f"Successfully trained agent for role {role} with certification {certification_name}",
+            "training_id": training_id,
+            "content_id": content_id,
+            "model_training_id": model_training_id,
+            "adaptation_id": adaptation_id,
+            "role": role,
+            "certification_name": certification_name
+        }
+    
+    def get_training_status(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get the status of a training orchestration.
+        
+        Args:
+            params: Query parameters including training_id
+            
+        Returns:
+            Training status
+        """
+        training_id = params.get("training_id")
+        
+        if not training_id:
+            return {
+                "success": False,
+                "message": "Training ID is required"
+            }
+        
+        # Load orchestration registry
+        registry = self._load_orchestration_registry()
+        
+        # Check if training exists
+        if training_id not in registry:
+            return {
+                "success": False,
+                "message": f"Training ID not found: {training_id}"
+            }
+        
+        training_info = registry[training_id]
+        
+        return {
+            "success": True,
+            "message": f"Found training orchestration: {training_id}",
+            "training": training_info
+        }
+    
+    def list_trainings(self, params: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        List all training orchestrations.
+        
+        Args:
+            params: Query parameters including role and status
+            
+        Returns:
+            List of training orchestrations
+        """
+        params = params or {}
+        role = params.get("role")
+        status = params.get("status")
+        
+        # Load orchestration registry
+        registry = self._load_orchestration_registry()
+        
+        # Filter trainings
+        filtered_trainings = {}
+        
+        for training_id, training in registry.items():
+            if role and training.get("role") != role:
+                continue
+            
+            if status and training.get("status") != status:
+                continue
+            
+            filtered_trainings[training_id] = training
+        
+        return {
+            "success": True,
+            "message": f"Found {len(filtered_trainings)} training orchestrations",
+            "trainings": filtered_trainings
+        }
+    
+    def _update_orchestration_status(self, training_id: str, status: str, message: str = None) -> None:
+        """
+        Update the status of a training orchestration.
+        
+        Args:
+            training_id: Training ID
+            status: New status
+            message: Status message
+        """
+        # Load orchestration registry
+        registry = self._load_orchestration_registry()
+        
+        # Check if training exists
+        if training_id not in registry:
+            logger.error(f"Training ID not found: {training_id}")
+            return
+        
+        # Update status
+        registry[training_id]["status"] = status
+        
+        if message:
+            registry[training_id]["status_message"] = message
+        
+        registry[training_id]["updated_at"] = datetime.datetime.now().isoformat()
+        
+        # Save registry
+        registry_path = os.path.join(self.models_path, "orchestration_registry.json")
+        
+        try:
+            with open(registry_path, "w") as f:
+                json.dump(registry, f, indent=2)
+        except Exception as e:
+            logger.error(f"Error saving orchestration registry: {str(e)}")
+    
+    def _load_orchestration_registry(self) -> Dict[str, Any]:
+        """
+        Load the orchestration registry.
+        
+        Returns:
+            Orchestration registry
+        """
+        registry_path = os.path.join(self.models_path, "orchestration_registry.json")
+        
+        if os.path.exists(registry_path):
+            try:
+                with open(registry_path, "r") as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.error(f"Error loading orchestration registry: {str(e)}")
+                return {}
+        else:
+            return {}

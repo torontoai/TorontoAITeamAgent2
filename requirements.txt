@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+
+"""
+Requirements file for TORONTO AI TEAM AGENT.
+This file specifies all dependencies with pinned versions for reproducibility.
+"""
+
+# Core dependencies
+pydantic>=2.0.0,<3.0.0
+fastapi>=0.100.0,<0.110.0
+uvicorn>=0.22.0,<0.30.0
+python-dotenv>=1.0.0,<2.0.0
+requests>=2.31.0,<3.0.0
+aiohttp>=3.8.5,<4.0.0
+websockets>=11.0.3,<12.0.0
+pyjwt>=2.8.0,<3.0.0
+cryptography>=41.0.0,<42.0.0
+
+# Vector database dependencies
+chromadb>=0.4.18,<0.5.0
+pinecone-client>=2.2.4,<3.0.0
+weaviate-client>=3.25.0,<4.0.0
+pymilvus>=2.3.0,<3.0.0
+faiss-cpu>=1.7.4,<2.0.0
+
+# Machine learning dependencies
+numpy>=1.24.0,<2.0.0
+pandas>=2.0.0,<3.0.0
+scikit-learn>=1.3.0,<2.0.0
+torch>=2.0.0,<3.0.0
+transformers>=4.35.0,<5.0.0
+sentence-transformers>=2.2.2,<3.0.0
+
+# Multimodal processing dependencies
+pillow>=10.0.0,<11.0.0
+opencv-python>=4.8.0,<5.0.0
+librosa>=0.10.0,<0.11.0
+ffmpeg-python>=0.2.0,<0.3.0
+
+# Agent orchestration dependencies
+autogen>=0.2.0,<0.3.0
+langchain>=0.0.300,<0.1.0
+
+# Code generation dependencies
+deepseek-coder>=0.1.0,<0.2.0
+agentiq>=0.1.0,<0.2.0
+
+# Integration dependencies
+atlassian-python-api>=3.41.0,<4.0.0
+coursera-api>=0.1.0,<0.2.0
+
+# Testing dependencies
+pytest>=7.4.0,<8.0.0
+pytest-cov>=4.1.0,<5.0.0
+pytest-asyncio>=0.21.0,<0.22.0
+
+# Development dependencies
+black>=23.7.0,<24.0.0
+flake8>=6.1.0,<7.0.0
+mypy>=1.5.0,<2.0.0
+pyright>=1.1.350,<2.0.0
+bandit>=1.7.5,<2.0.0
+
+# UI dependencies
+gradio>=3.40.0,<4.0.0
+
+# Deployment dependencies
+docker>=6.1.0,<7.0.0
+gitpython>=3.1.40,<4.0.0

@@ -1,0 +1,249 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""Optimized Vector Database Repository
+
+This module provides an optimized implementation of the vector database repository
+with caching and connection pooling for improved performance."""
+
+import logging
+import time
+import threading
+import json
+from typing import Dict, Any, List, Optional, Tuple, Union, Set
+
+from app.core.cache import cached, get_default_cache, Cache
+from app.core.connection_pool import get_pool_manager
+from app.training.vector_db.interface import VectorDatabase, QueryResult
+from app.training.vector_db.models import Document, Embedding, Metadata, SearchParams
+
+logger = logging.getLogger(__name__)
+
+class OptimizedVectorRepository:
+    """Optimized repository for vector database operations with caching and connection pooling."""
+    
+    def __init__(self, vector_db: VectorDatabase, cache: Cache = None):
+        """Initialize the optimized vector repository.
+        
+        Args:
+            vector_db: Vector database implementation
+            cache: Cache instance (None for default)"""
+        self.vector_db = vector_db
+        self.cache = cache or get_default_cache()
+        self._setup_connection_pool()
+        logger.info(f"Initialized optimized vector repository with {vector_db.__class__.__name__}")
+    
+    def _setup_connection_pool(self):
+        """Set up connection pool for the vector database."""
+        # Create connection pool for the vector database if it supports connection pooling
+        if hasattr(self.vector_db, 'create_connection'):
+            try:
+                pool_manager = get_pool_manager()
+                pool_manager.create_pool(
+                    name=f"vector_db_{id(self.vector_db)}",
+                    factory=self.vector_db.create_connection,
+                    validator=getattr(self.vector_db, 'validate_connection', None),
+                    cleanup=getattr(self.vector_db, 'close_connection', None),
+                    min_size=2,
+                    max_size=10
+                )
+                logger.info("Created connection pool for vector database")
+            except Exception as e:
+                logger.warning(f"Failed to create connection pool for vector database: {str(e)}")
+    
+    @cached(ttl=300)
+    def get_document(self, doc_id: str) -> Optional[Document]:
+        """Get a document by ID with caching.
+        
+        Args:
+            doc_id: Document ID
+            
+        Returns:
+            Document or None if not found"""
+        return self.vector_db.get_document(doc_id)
+    
+    def add_document(self, document: Document) -> str:
+        """Add a document to the vector database.
+        
+        Args:
+            document: Document to add
+            
+        Returns:
+            Document ID"""
+        # Add document to vector database
+        doc_id = self.vector_db.add_document(document)
+        
+        # Invalidate relevant caches
+        self._invalidate_collection_caches(document.collection)
+        
+        return doc_id
+    
+    def add_documents(self, documents: List[Document]) -> List[str]:
+        """Add multiple documents to the vector database.
+        
+        Args:
+            documents: Documents to add
+            
+        Returns:
+            List of document IDs"""
+        # Add documents to vector database
+        doc_ids = self.vector_db.add_documents(documents)
+        
+        # Invalidate relevant caches
+        collections = {doc.collection for doc in documents}
+        for collection in collections:
+            self._invalidate_collection_caches(collection)
+        
+        return doc_ids
+    
+    def update_document(self, doc_id: str, document: Document) -> bool:
+        """Update a document in the vector database.
+        
+        Args:
+            doc_id: Document ID
+            document: Updated document
+            
+        Returns:
+            True if successful, False otherwise"""
+        # Update document in vector database
+        result = self.vector_db.update_document(doc_id, document)
+        
+        # Invalidate caches
+        self.cache.delete(f"get_document:{doc_id}")
+        self._invalidate_collection_caches(document.collection)
+        
+        return result
+    
+    def delete_document(self, doc_id: str) -> bool:
+        """Delete a document from the vector database.
+        
+        Args:
+            doc_id: Document ID
+            
+        Returns:
+            True if successful, False otherwise"""
+        # Get document to determine collection
+        document = self.get_document(doc_id)
+        
+        # Delete document from vector database
+        result = self.vector_db.delete_document(doc_id)
+        
+        # Invalidate caches
+        self.cache.delete(f"get_document:{doc_id}")
+        if document:
+            self._invalidate_collection_caches(document.collection)
+        
+        return result
+    
+    @cached(ttl=60)
+    def get_document_count(self, collection: str = None) -> int:
+        """Get the number of documents in the vector database.
+        
+        Args:
+            collection: Collection name (None for all collections)
+            
+        Returns:
+            Number of documents"""
+        return self.vector_db.get_document_count(collection)
+    
+    @cached(ttl=60)
+    def list_collections(self) -> List[str]:
+        """List all collections in the vector database.
+        
+        Returns:
+            List of collection names"""
+        return self.vector_db.list_collections()
+    
+    def search(self, query: Union[str, List[float]], params: SearchParams = None) -> List[QueryResult]:
+        """Search the vector database.
+        
+        Args:
+            query: Query string or embedding
+            params: Search parameters
+            
+        Returns:
+            List of query results"""
+        # Search is not cached by default as it's highly variable
+        # For specific search patterns, consider adding a custom cache key function
+        return self.vector_db.search(query, params)
+    
+    @cached(ttl=300)
+    def search_by_metadata(self, metadata_filter: Dict[str, Any], params: SearchParams = None) -> List[QueryResult]:
+        """Search the vector database by metadata.
+        
+        Args:
+            metadata_filter: Metadata filter
+            params: Search parameters
+            
+        Returns:
+            List of query results"""
+        return self.vector_db.search_by_metadata(metadata_filter, params)
+    
+    def hybrid_search(self, query: str, metadata_filter: Dict[str, Any] = None, params: SearchParams = None) -> List[QueryResult]:
+        """Perform hybrid search (vector + metadata).
+        
+        Args:
+            query: Query string
+            metadata_filter: Metadata filter
+            params: Search parameters
+            
+        Returns:
+            List of query results"""
+        # Hybrid search is not cached by default as it's highly variable
+        return self.vector_db.hybrid_search(query, metadata_filter, params)
+    
+    def _invalidate_collection_caches(self, collection: str):
+        """Invalidate caches related to a collection.
+        
+        Args:
+            collection: Collection name"""
+        self.cache.delete(f"get_document_count:{collection}")
+        self.cache.delete("get_document_count:None")
+        self.cache.delete("list_collections")
+    
+    def optimize(self):
+        """Optimize the vector database."""
+        if hasattr(self.vector_db, 'optimize'):
+            self.vector_db.optimize()
+    
+    def clear_cache(self):
+        """Clear all caches."""
+        self.cache.clear()
+        logger.info("Cleared vector repository cache")
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get repository statistics.
+        
+        Returns:
+            Repository statistics"""
+        stats = {
+            "cache": self.cache.stats(),
+            "collections": self.list_collections(),
+            "document_count": self.get_document_count()
+        }
+        
+        # Add vector database stats if available
+        if hasattr(self.vector_db, 'get_stats'):
+            stats["vector_db"] = self.vector_db.get_stats()
+        
+        # Add connection pool stats if available
+        try:
+            pool_manager = get_pool_manager()
+            pool_stats = pool_manager.stats()
+            if f"vector_db_{id(self.vector_db)}" in pool_stats:
+                stats["connection_pool"] = pool_stats[f"vector_db_{id(self.vector_db)}"]
+        except Exception:
+            pass
+        
+        return stats

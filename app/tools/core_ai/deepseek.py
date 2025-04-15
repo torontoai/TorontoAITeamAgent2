@@ -1,0 +1,156 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""Core AI/LLM tools for TorontoAITeamAgent Team AI.
+
+This module provides tools for interacting with DeepSeek API."""
+
+from typing import Dict, Any, List, Optional
+import os
+import json
+import asyncio
+from ..base import BaseTool, ToolResult
+
+class DeepSeekTool(BaseTool):
+    """Tool for interacting with DeepSeek API."""
+    
+    name = "deepseek"
+    description = "Provides access to DeepSeek models for text generation and other AI capabilities."
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """Initialize the DeepSeek tool.
+        
+        Args:
+            config: Tool configuration with optional API key and model settings"""
+        super().__init__(config)
+        self.api_key = self.config.get("api_key", os.environ.get("DEEPSEEK_API_KEY"))
+        self.default_model = self.config.get("default_model", "deepseek-chat")
+        self.api_base = self.config.get("api_base", "https://api.deepseek.com/v1")
+        
+        if not self.api_key:
+            raise ValueError("DeepSeek API key is required")
+            
+        # Import here to avoid dependency issues
+        try:
+            import openai
+            self.client = openai.OpenAI(api_key=self.api_key, base_url=self.api_base)
+        except ImportError:
+            raise ImportError("OpenAI package is not installed. Install it with 'pip install openai>=1.0.0'")
+    
+    async def execute(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Execute the DeepSeek tool with the given parameters.
+        
+        Args:
+            params: Tool parameters including:
+                - operation: Operation to perform (chat, embedding, etc.)
+                - model: Model to use (optional, defaults to config)
+                - messages: Messages for chat completion
+                - other operation-specific parameters
+                
+        Returns:
+            Tool execution result
+        """
+        operation = params.get("operation")
+        if not operation:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Operation parameter is required"
+            )
+            
+        try:
+            if operation == "chat":
+                return await self._chat_completion(params)
+            else:
+                return ToolResult(
+                    success=False,
+                    data={},
+                    error=f"Unsupported operation: {operation}"
+                )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=str(e)
+            )
+    
+    async def _chat_completion(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Create a chat completion using DeepSeek.
+        
+        Args:
+            params: Parameters for chat completion
+            
+        Returns:
+            Tool execution result
+        """
+        model = params.get("model", self.default_model)
+        messages = params.get("messages", [])
+        temperature = params.get("temperature", 0.7)
+        max_tokens = params.get("max_tokens", 1024)
+        
+        if not messages:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Messages parameter is required for chat completion"
+            )
+        
+        # Run in a separate thread to avoid blocking
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+        )
+        
+        return ToolResult(
+            success=True,
+            data={
+                "id": response.id,
+                "model": response.model,
+                "choices": [
+                    {
+                        "message": {
+                            "role": choice.message.role,
+                            "content": choice.message.content
+                        },
+                        "finish_reason": choice.finish_reason
+                    }
+                    for choice in response.choices
+                ],
+                "usage": {
+                    "prompt_tokens": response.usage.prompt_tokens,
+                    "completion_tokens": response.usage.completion_tokens,
+                    "total_tokens": response.usage.total_tokens
+                }
+            }
+        )
+    
+    def get_capabilities(self) -> List[str]:
+        """Return a list of capabilities provided by this tool.
+        
+        Returns:
+            List of capability descriptions"""
+        return [
+            "Text generation with DeepSeek models",
+            "Contextual conversation with message history",
+            "Access to specialized DeepSeek models for various tasks"
+        ]

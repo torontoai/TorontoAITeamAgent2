@@ -1,0 +1,168 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""
+Core AI/LLM tools for TorontoAITeamAgent Team AI.
+
+This module provides tools for interacting with Claude API.
+"""
+
+from typing import Dict, Any, List, Optional
+import os
+import json
+import asyncio
+from ..base import BaseTool, ToolResult
+
+class ClaudeTool(BaseTool):
+    """Tool for interacting with Anthropic's Claude API."""
+    
+    name = "claude"
+    description = "Provides access to Claude models for text generation and other AI capabilities."
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        Initialize the Claude tool.
+        
+        Args:
+            config: Tool configuration with optional API key and model settings
+        """
+        super().__init__(config)
+        self.api_key = self.config.get("api_key", os.environ.get("ANTHROPIC_API_KEY"))
+        self.default_model = self.config.get("default_model", "claude-3-opus-20240229")
+        
+        if not self.api_key:
+            raise ValueError("Anthropic API key is required")
+            
+        # Import here to avoid dependency issues
+        try:
+            import anthropic
+            self.client = anthropic.Anthropic(api_key=self.api_key)
+        except ImportError:
+            raise ImportError("Anthropic package is not installed. Install it with 'pip install anthropic>=0.5.0'")
+    
+    async def execute(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Execute the Claude tool with the given parameters.
+        
+        Args:
+            params: Tool parameters including:
+                - operation: Operation to perform (currently only 'messages' is supported)
+                - model: Model to use (optional, defaults to config)
+                - messages: Messages for completion
+                - system: System prompt (optional)
+                - max_tokens: Maximum tokens to generate (optional)
+                - temperature: Temperature for generation (optional)
+                
+        Returns:
+            Tool execution result
+        """
+        operation = params.get("operation")
+        if not operation:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Operation parameter is required"
+            )
+            
+        try:
+            if operation == "messages":
+                return await self._create_message(params)
+            else:
+                return ToolResult(
+                    success=False,
+                    data={},
+                    error=f"Unsupported operation: {operation}"
+                )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=str(e)
+            )
+    
+    async def _create_message(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Create a message using Claude.
+        
+        Args:
+            params: Parameters for message creation
+            
+        Returns:
+            Tool execution result
+        """
+        model = params.get("model", self.default_model)
+        messages = params.get("messages", [])
+        system = params.get("system")
+        max_tokens = params.get("max_tokens", 1024)
+        temperature = params.get("temperature", 0.7)
+        
+        if not messages:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Messages parameter is required for message creation"
+            )
+        
+        # Prepare request parameters
+        request_params = {
+            "model": model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature
+        }
+        
+        if system:
+            request_params["system"] = system
+        
+        # Run in a separate thread to avoid blocking
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: self.client.messages.create(**request_params)
+        )
+        
+        return ToolResult(
+            success=True,
+            data={
+                "id": response.id,
+                "model": response.model,
+                "type": response.type,
+                "role": response.role,
+                "content": [
+                    {
+                        "type": content.type,
+                        "text": content.text if hasattr(content, "text") else None
+                    }
+                    for content in response.content
+                ],
+                "usage": {
+                    "input_tokens": response.usage.input_tokens,
+                    "output_tokens": response.usage.output_tokens
+                }
+            }
+        )
+    
+    def get_capabilities(self) -> List[str]:
+        """
+        Return a list of capabilities provided by this tool.
+        
+        Returns:
+            List of capability descriptions
+        """
+        return [
+            "Text generation with Claude models",
+            "Contextual conversation with message history",
+            "System prompting for specialized behaviors"
+        ]

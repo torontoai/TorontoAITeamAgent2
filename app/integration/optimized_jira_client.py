@@ -1,0 +1,463 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""Optimized Jira Client
+
+This module provides an optimized implementation of the Jira client
+with caching and connection pooling for improved performance."""
+
+import logging
+import time
+import json
+import asyncio
+from typing import Dict, Any, List, Optional, Union, Set
+from datetime import datetime, timedelta
+
+from app.core.cache import cached, get_default_cache, Cache
+from app.core.connection_pool import get_pool_manager, ConnectionPool
+from app.integration.auth import AuthenticationManager
+from app.integration.models import JiraProject, JiraIssue, JiraComment, JiraUser, JiraAttachment
+
+logger = logging.getLogger(__name__)
+
+class OptimizedJiraClient:
+    """Optimized Jira client with caching and connection pooling."""
+    
+    def __init__(self, base_url: str, auth_manager: AuthenticationManager, cache: Cache = None):
+        """Initialize the optimized Jira client.
+        
+        Args:
+            base_url: Jira API base URL
+            auth_manager: Authentication manager
+            cache: Cache instance (None for default)"""
+        self.base_url = base_url
+        self.auth_manager = auth_manager
+        self.cache = cache or get_default_cache()
+        self._setup_connection_pool()
+        logger.info(f"Initialized optimized Jira client for {base_url}")
+    
+    def _setup_connection_pool(self):
+        """Set up connection pool for Jira API connections."""
+        try:
+            pool_manager = get_pool_manager()
+            
+            # Create connection factory
+            def create_connection():
+                import requests
+                session = requests.Session()
+                # Add authentication headers
+                headers = self.auth_manager.get_jira_auth_headers()
+                session.headers.update(headers)
+                return session
+            
+            # Create connection validator
+            def validate_connection(session):
+                try:
+                    # Make a lightweight request to validate the connection
+                    response = session.get(f"{self.base_url}/rest/api/2/myself", timeout=5)
+                    return response.status_code == 200
+                except Exception:
+                    return False
+            
+            # Create connection cleanup
+            def cleanup_connection(session):
+                session.close()
+            
+            # Create connection pool
+            self.connection_pool = pool_manager.create_pool(
+                name=f"jira_{self.base_url}",
+                factory=create_connection,
+                validator=validate_connection,
+                cleanup=cleanup_connection,
+                min_size=2,
+                max_size=10
+            )
+            
+            logger.info("Created connection pool for Jira API")
+        except Exception as e:
+            logger.warning(f"Failed to create connection pool for Jira API: {str(e)}")
+            self.connection_pool = None
+    
+    def _get_connection(self):
+        """Get a connection from the pool or create a new session.
+        
+        Returns:
+            Requests session"""
+        if self.connection_pool:
+            try:
+                return self.connection_pool.get_connection()
+            except Exception as e:
+                logger.warning(f"Failed to get connection from pool: {str(e)}")
+        
+        # Fallback to creating a new session
+        import requests
+        session = requests.Session()
+        headers = self.auth_manager.get_jira_auth_headers()
+        session.headers.update(headers)
+        return session
+    
+    def _return_connection(self, session):
+        """Return a connection to the pool or close it.
+        
+        Args:
+            session: Requests session"""
+        if self.connection_pool:
+            try:
+                self.connection_pool.return_connection(session)
+                return
+            except Exception as e:
+                logger.warning(f"Failed to return connection to pool: {str(e)}")
+        
+        # Fallback to closing the session
+        session.close()
+    
+    @cached(ttl=300)
+    async def get_projects(self) -> List[JiraProject]:
+        """
+        Get all projects with caching.
+        
+        Returns:
+            List of Jira projects
+        """
+        session = self._get_connection()
+        try:
+            response = session.get(f"{self.base_url}/rest/api/2/project")
+            response.raise_for_status()
+            
+            projects_data = response.json()
+            projects = [JiraProject.from_dict(data) for data in projects_data]
+            
+            return projects
+        except Exception as e:
+            logger.error(f"Error getting projects: {str(e)}")
+            raise
+        finally:
+            self._return_connection(session)
+    
+    @cached(ttl=300)
+    async def get_project(self, project_key: str) -> Optional[JiraProject]:
+        """
+        Get a project by key with caching.
+        
+        Args:
+            project_key: Project key
+            
+        Returns:
+            Jira project or None if not found
+        """
+        session = self._get_connection()
+        try:
+            response = session.get(f"{self.base_url}/rest/api/2/project/{project_key}")
+            
+            if response.status_code == 404:
+                return None
+            
+            response.raise_for_status()
+            
+            project_data = response.json()
+            project = JiraProject.from_dict(project_data)
+            
+            return project
+        except Exception as e:
+            logger.error(f"Error getting project {project_key}: {str(e)}")
+            raise
+        finally:
+            self._return_connection(session)
+    
+    @cached(ttl=60)
+    async def search_issues(self, jql: str, max_results: int = 50, start_at: int = 0) -> Dict[str, Any]:
+        """
+        Search issues with caching.
+        
+        Args:
+            jql: JQL query
+            max_results: Maximum number of results
+            start_at: Start index
+            
+        Returns:
+            Search results
+        """
+        session = self._get_connection()
+        try:
+            params = {
+                "jql": jql,
+                "maxResults": max_results,
+                "startAt": start_at,
+                "fields": "summary,description,status,assignee,reporter,created,updated,issuetype,priority,project"
+            }
+            
+            response = session.get(f"{self.base_url}/rest/api/2/search", params=params)
+            response.raise_for_status()
+            
+            search_data = response.json()
+            
+            # Convert issues to model objects
+            issues = []
+            for issue_data in search_data.get("issues", []):
+                issues.append(JiraIssue.from_dict(issue_data))
+            
+            return {
+                "issues": issues,
+                "total": search_data.get("total", 0),
+                "start_at": search_data.get("startAt", 0),
+                "max_results": search_data.get("maxResults", 0)
+            }
+        except Exception as e:
+            logger.error(f"Error searching issues with JQL {jql}: {str(e)}")
+            raise
+        finally:
+            self._return_connection(session)
+    
+    @cached(ttl=300)
+    async def get_issue(self, issue_key: str) -> Optional[JiraIssue]:
+        """
+        Get an issue by key with caching.
+        
+        Args:
+            issue_key: Issue key
+            
+        Returns:
+            Jira issue or None if not found
+        """
+        session = self._get_connection()
+        try:
+            response = session.get(f"{self.base_url}/rest/api/2/issue/{issue_key}")
+            
+            if response.status_code == 404:
+                return None
+            
+            response.raise_for_status()
+            
+            issue_data = response.json()
+            issue = JiraIssue.from_dict(issue_data)
+            
+            return issue
+        except Exception as e:
+            logger.error(f"Error getting issue {issue_key}: {str(e)}")
+            raise
+        finally:
+            self._return_connection(session)
+    
+    async def create_issue(self, issue_data: Dict[str, Any]) -> JiraIssue:
+        """
+        Create a new issue.
+        
+        Args:
+            issue_data: Issue data
+            
+        Returns:
+            Created Jira issue
+        """
+        session = self._get_connection()
+        try:
+            response = session.post(
+                f"{self.base_url}/rest/api/2/issue",
+                json=issue_data
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            
+            # Get the created issue
+            issue_key = result.get("key")
+            issue = await self.get_issue(issue_key)
+            
+            # Invalidate relevant caches
+            self._invalidate_issue_caches(issue)
+            
+            return issue
+        except Exception as e:
+            logger.error(f"Error creating issue: {str(e)}")
+            raise
+        finally:
+            self._return_connection(session)
+    
+    async def update_issue(self, issue_key: str, issue_data: Dict[str, Any]) -> bool:
+        """
+        Update an issue.
+        
+        Args:
+            issue_key: Issue key
+            issue_data: Issue data
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        session = self._get_connection()
+        try:
+            response = session.put(
+                f"{self.base_url}/rest/api/2/issue/{issue_key}",
+                json=issue_data
+            )
+            
+            if response.status_code == 404:
+                return False
+            
+            response.raise_for_status()
+            
+            # Invalidate caches
+            self.cache.delete(f"get_issue:{issue_key}")
+            self._invalidate_search_caches()
+            
+            return True
+        except Exception as e:
+            logger.error(f"Error updating issue {issue_key}: {str(e)}")
+            raise
+        finally:
+            self._return_connection(session)
+    
+    @cached(ttl=300)
+    async def get_comments(self, issue_key: str) -> List[JiraComment]:
+        """
+        Get comments for an issue with caching.
+        
+        Args:
+            issue_key: Issue key
+            
+        Returns:
+            List of Jira comments
+        """
+        session = self._get_connection()
+        try:
+            response = session.get(f"{self.base_url}/rest/api/2/issue/{issue_key}/comment")
+            
+            if response.status_code == 404:
+                return []
+            
+            response.raise_for_status()
+            
+            comments_data = response.json()
+            comments = [JiraComment.from_dict(data) for data in comments_data.get("comments", [])]
+            
+            return comments
+        except Exception as e:
+            logger.error(f"Error getting comments for issue {issue_key}: {str(e)}")
+            raise
+        finally:
+            self._return_connection(session)
+    
+    async def add_comment(self, issue_key: str, comment: str) -> Optional[JiraComment]:
+        """
+        Add a comment to an issue.
+        
+        Args:
+            issue_key: Issue key
+            comment: Comment text
+            
+        Returns:
+            Created Jira comment or None if failed
+        """
+        session = self._get_connection()
+        try:
+            response = session.post(
+                f"{self.base_url}/rest/api/2/issue/{issue_key}/comment",
+                json={"body": comment}
+            )
+            
+            if response.status_code == 404:
+                return None
+            
+            response.raise_for_status()
+            
+            comment_data = response.json()
+            comment = JiraComment.from_dict(comment_data)
+            
+            # Invalidate caches
+            self.cache.delete(f"get_comments:{issue_key}")
+            
+            return comment
+        except Exception as e:
+            logger.error(f"Error adding comment to issue {issue_key}: {str(e)}")
+            raise
+        finally:
+            self._return_connection(session)
+    
+    @cached(ttl=3600)
+    async def get_user(self, username: str) -> Optional[JiraUser]:
+        """
+        Get a user by username with caching.
+        
+        Args:
+            username: Username
+            
+        Returns:
+            Jira user or None if not found
+        """
+        session = self._get_connection()
+        try:
+            response = session.get(f"{self.base_url}/rest/api/2/user", params={"username": username})
+            
+            if response.status_code == 404:
+                return None
+            
+            response.raise_for_status()
+            
+            user_data = response.json()
+            user = JiraUser.from_dict(user_data)
+            
+            return user
+        except Exception as e:
+            logger.error(f"Error getting user {username}: {str(e)}")
+            raise
+        finally:
+            self._return_connection(session)
+    
+    def _invalidate_issue_caches(self, issue: JiraIssue):
+        """Invalidate caches related to an issue.
+        
+        Args:
+            issue: Jira issue"""
+        if issue and issue.key:
+            self.cache.delete(f"get_issue:{issue.key}")
+            self.cache.delete(f"get_comments:{issue.key}")
+        
+        self._invalidate_search_caches()
+    
+    def _invalidate_search_caches(self):
+        """Invalidate search caches."""
+        # This is a simplistic approach; in a real implementation,
+        # we would need a more sophisticated cache invalidation strategy
+        keys_to_delete = []
+        for key in dir(self.cache):
+            if key.startswith("search_issues:"):
+                keys_to_delete.append(key)
+        
+        for key in keys_to_delete:
+            self.cache.delete(key)
+    
+    def clear_cache(self):
+        """Clear all caches."""
+        self.cache.clear()
+        logger.info("Cleared Jira client cache")
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get client statistics.
+        
+        Returns:
+            Client statistics"""
+        stats = {
+            "cache": self.cache.stats()
+        }
+        
+        # Add connection pool stats if available
+        if self.connection_pool:
+            try:
+                pool_manager = get_pool_manager()
+                pool_stats = pool_manager.stats()
+                if f"jira_{self.base_url}" in pool_stats:
+                    stats["connection_pool"] = pool_stats[f"jira_{self.base_url}"]
+            except Exception:
+                pass
+        
+        return stats

@@ -1,0 +1,135 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""Technical Capabilities Module - Main Entry Point
+
+This module serves as the main entry point for the technical capabilities module,
+integrating all the specialized services into a cohesive interface."""
+
+import os
+import sys
+import logging
+import time
+from typing import Dict, List, Any, Optional
+
+from .models.data_models import (
+    CodeGenerationRequest,
+    CodeGenerationResult,
+    CodeReviewRequest,
+    CodeReviewResult,
+    TestGenerationRequest,
+    TestGenerationResult,
+    DocumentationGenerationRequest,
+    DocumentationGenerationResult,
+    APIDesignRequest,
+    APIDesignResult
+)
+
+from .services.code_generation import CodeGenerationService
+from .services.code_review import CodeReviewService
+from .services.test_generation import TestGenerationService
+from .services.documentation_generation import DocumentationGenerationService
+from .services.api_design import APIDesignService
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class TechnicalCapabilitiesModule:
+    """Main entry point for the technical capabilities module.
+    
+    This class integrates all the specialized services and provides a unified interface
+    for accessing technical capabilities."""
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """Initialize the technical capabilities module.
+        
+        Args:
+            config: Configuration settings"""
+        self.config = config or {}
+        logger.info("Initializing technical capabilities module")
+        
+        # Initialize services
+        self.code_generation_service = CodeGenerationService(self.config.get('code_generation', {}))
+        self.code_review_service = CodeReviewService(self.config.get('code_review', {}))
+        self.test_generation_service = TestGenerationService(self.config.get('test_generation', {}))
+        self.documentation_generation_service = DocumentationGenerationService(self.config.get('documentation_generation', {}))
+        self.api_design_service = APIDesignService(self.config.get('api_design', {}))
+        
+        logger.info("Technical capabilities module initialized")
+    
+    async def generate_code(self, request: CodeGenerationRequest) -> CodeGenerationResult:
+        """
+        Generate code based on requirements.
+        
+        Args:
+            request: Code generation request
+            
+        Returns:
+            Code generation result
+        """
+        logger.info(f"Generating code for project: {request.project_id}")
+        return await self.code_generation_service.generate_code(request)
+    
+    async def review_code(self, request: CodeReviewRequest) -> CodeReviewResult:
+        """
+        Review code for quality and issues.
+        
+        Args:
+            request: Code review request
+            
+        Returns:
+            Code review result
+        """
+        logger.info(f"Reviewing code for project: {request.project_id}")
+        return await self.code_review_service.review_code(request)
+    
+    async def generate_tests(self, request: TestGenerationRequest) -> TestGenerationResult:
+        """
+        Generate tests based on code files.
+        
+        Args:
+            request: Test generation request
+            
+        Returns:
+            Test generation result
+        """
+        logger.info(f"Generating tests for project: {request.project_id}")
+        return await self.test_generation_service.generate_tests(request)
+    
+    async def generate_documentation(self, request: DocumentationGenerationRequest) -> DocumentationGenerationResult:
+        """
+        Generate documentation based on code files.
+        
+        Args:
+            request: Documentation generation request
+            
+        Returns:
+            Documentation generation result
+        """
+        logger.info(f"Generating documentation for project: {request.project_id}")
+        return await self.documentation_generation_service.generate_documentation(request)
+    
+    async def design_api(self, request: APIDesignRequest) -> APIDesignResult:
+        """
+        Design API based on project requirements.
+        
+        Args:
+            request: API design request
+            
+        Returns:
+            API design result
+        """
+        logger.info(f"Designing API for project: {request.project_id}")
+        return await self.api_design_service.design_api(request)

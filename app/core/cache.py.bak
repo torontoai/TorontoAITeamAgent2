@@ -1,0 +1,382 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""
+Cache Module
+
+This module provides caching mechanisms for improving performance of database operations and API calls.
+"""
+
+import logging
+import time
+import threading
+import json
+import pickle
+import os
+from typing import Dict, Any, Optional, Callable, Tuple, List, Union, TypeVar, Generic
+from functools import wraps
+from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
+
+T = TypeVar('T')  # Generic type for cache values
+
+class CacheEntry(Generic[T]):
+    """
+    Cache entry with value and metadata.
+    """
+    
+    def __init__(self, value: T, expiry: Optional[float] = None):
+        """
+        Initialize a cache entry.
+        
+        Args:
+            value: Cached value
+            expiry: Expiry timestamp (None for no expiry)
+        """
+        self.value = value
+        self.expiry = expiry
+        self.created_at = time.time()
+        self.last_accessed = self.created_at
+        self.access_count = 0
+    
+    def is_expired(self) -> bool:
+        """
+        Check if the cache entry is expired.
+        
+        Returns:
+            True if expired, False otherwise
+        """
+        if self.expiry is None:
+            return False
+        return time.time() > self.expiry
+    
+    def access(self) -> None:
+        """
+        Record an access to the cache entry.
+        """
+        self.last_accessed = time.time()
+        self.access_count += 1
+
+class Cache:
+    """
+    In-memory cache with expiry and eviction policies.
+    """
+    
+    def __init__(self, max_size: int = 1000, cleanup_interval: int = 60):
+        """
+        Initialize the cache.
+        
+        Args:
+            max_size: Maximum number of entries in the cache
+            cleanup_interval: Interval in seconds for cleanup of expired entries
+        """
+        self._cache: Dict[str, CacheEntry] = {}
+        self._max_size = max_size
+        self._cleanup_interval = cleanup_interval
+        self._lock = threading.RLock()
+        self._last_cleanup = time.time()
+        logger.info(f"Initialized cache with max_size={max_size}, cleanup_interval={cleanup_interval}")
+    
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        Get a value from the cache.
+        
+        Args:
+            key: Cache key
+            default: Default value if key not found or expired
+            
+        Returns:
+            Cached value or default
+        """
+        with self._lock:
+            # Check if cleanup is needed
+            self._maybe_cleanup()
+            
+            # Check if key exists
+            if key not in self._cache:
+                return default
+            
+            entry = self._cache[key]
+            
+            # Check if entry is expired
+            if entry.is_expired():
+                del self._cache[key]
+                return default
+            
+            # Record access
+            entry.access()
+            
+            return entry.value
+    
+    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+        """
+        Set a value in the cache.
+        
+        Args:
+            key: Cache key
+            value: Value to cache
+            ttl: Time to live in seconds (None for no expiry)
+        """
+        with self._lock:
+            # Check if cleanup is needed
+            self._maybe_cleanup()
+            
+            # Calculate expiry
+            expiry = None
+            if ttl is not None:
+                expiry = time.time() + ttl
+            
+            # Create entry
+            entry = CacheEntry(value, expiry)
+            
+            # Check if cache is full
+            if len(self._cache) >= self._max_size and key not in self._cache:
+                self._evict()
+            
+            # Set entry
+            self._cache[key] = entry
+    
+    def delete(self, key: str) -> bool:
+        """
+        Delete a value from the cache.
+        
+        Args:
+            key: Cache key
+            
+        Returns:
+            True if key was found and deleted, False otherwise
+        """
+        with self._lock:
+            if key in self._cache:
+                del self._cache[key]
+                return True
+            return False
+    
+    def clear(self) -> None:
+        """
+        Clear the cache.
+        """
+        with self._lock:
+            self._cache.clear()
+            logger.info("Cache cleared")
+    
+    def _maybe_cleanup(self) -> None:
+        """
+        Perform cleanup if needed.
+        """
+        now = time.time()
+        if now - self._last_cleanup > self._cleanup_interval:
+            self._cleanup()
+            self._last_cleanup = now
+    
+    def _cleanup(self) -> None:
+        """
+        Clean up expired entries.
+        """
+        keys_to_delete = []
+        for key, entry in self._cache.items():
+            if entry.is_expired():
+                keys_to_delete.append(key)
+        
+        for key in keys_to_delete:
+            del self._cache[key]
+        
+        if keys_to_delete:
+            logger.debug(f"Cleaned up {len(keys_to_delete)} expired cache entries")
+    
+    def _evict(self) -> None:
+        """
+        Evict entries based on policy.
+        """
+        # Find least recently used entry
+        lru_key = None
+        lru_time = float('inf')
+        
+        for key, entry in self._cache.items():
+            if entry.last_accessed < lru_time:
+                lru_key = key
+                lru_time = entry.last_accessed
+        
+        if lru_key:
+            del self._cache[lru_key]
+            logger.debug(f"Evicted cache entry: {lru_key}")
+    
+    def stats(self) -> Dict[str, Any]:
+        """
+        Get cache statistics.
+        
+        Returns:
+            Cache statistics
+        """
+        with self._lock:
+            return {
+                "size": len(self._cache),
+                "max_size": self._max_size,
+                "cleanup_interval": self._cleanup_interval,
+                "last_cleanup": self._last_cleanup,
+                "hit_count": sum(entry.access_count for entry in self._cache.values()),
+                "oldest_entry": min((entry.created_at for entry in self._cache.values()), default=None),
+                "newest_entry": max((entry.created_at for entry in self._cache.values()), default=None)
+            }
+
+class PersistentCache(Cache):
+    """
+    Persistent cache that saves to disk.
+    """
+    
+    def __init__(self, cache_dir: str, max_size: int = 1000, cleanup_interval: int = 60):
+        """
+        Initialize the persistent cache.
+        
+        Args:
+            cache_dir: Directory to store cache files
+            max_size: Maximum number of entries in the cache
+            cleanup_interval: Interval in seconds for cleanup of expired entries
+        """
+        super().__init__(max_size, cleanup_interval)
+        self._cache_dir = cache_dir
+        
+        # Create cache directory if it doesn't exist
+        os.makedirs(cache_dir, exist_ok=True)
+        
+        # Load cache from disk
+        self._load()
+        
+        logger.info(f"Initialized persistent cache in {cache_dir}")
+    
+    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+        """
+        Set a value in the cache.
+        
+        Args:
+            key: Cache key
+            value: Value to cache
+            ttl: Time to live in seconds (None for no expiry)
+        """
+        super().set(key, value, ttl)
+        self._save()
+    
+    def delete(self, key: str) -> bool:
+        """
+        Delete a value from the cache.
+        
+        Args:
+            key: Cache key
+            
+        Returns:
+            True if key was found and deleted, False otherwise
+        """
+        result = super().delete(key)
+        if result:
+            self._save()
+        return result
+    
+    def clear(self) -> None:
+        """
+        Clear the cache.
+        """
+        super().clear()
+        self._save()
+    
+    def _save(self) -> None:
+        """
+        Save the cache to disk.
+        """
+        try:
+            cache_file = os.path.join(self._cache_dir, "cache.pickle")
+            with open(cache_file, "wb") as f:
+                pickle.dump(self._cache, f)
+            logger.debug("Cache saved to disk")
+        except Exception as e:
+            logger.error(f"Error saving cache to disk: {str(e)}")
+    
+    def _load(self) -> None:
+        """
+        Load the cache from disk.
+        """
+        try:
+            cache_file = os.path.join(self._cache_dir, "cache.pickle")
+            if os.path.exists(cache_file):
+                with open(cache_file, "rb") as f:
+                    self._cache = pickle.load(f)
+                logger.info(f"Loaded {len(self._cache)} cache entries from disk")
+        except Exception as e:
+            logger.error(f"Error loading cache from disk: {str(e)}")
+            self._cache = {}
+
+def cached(ttl: Optional[int] = None, key_fn: Optional[Callable] = None, cache_instance: Optional[Cache] = None):
+    """
+    Decorator for caching function results.
+    
+    Args:
+        ttl: Time to live in seconds (None for no expiry)
+        key_fn: Function to generate cache key from function arguments
+        cache_instance: Cache instance to use (None for default)
+        
+    Returns:
+        Decorated function
+    """
+    # Use default cache if not specified
+    if cache_instance is None:
+        cache_instance = _default_cache
+    
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Generate cache key
+            if key_fn:
+                key = key_fn(*args, **kwargs)
+            else:
+                # Default key generation
+                key = f"{func.__module__}.{func.__name__}:{hash(str(args) + str(sorted(kwargs.items())))}"
+            
+            # Try to get from cache
+            cached_value = cache_instance.get(key)
+            if cached_value is not None:
+                return cached_value
+            
+            # Call function
+            result = func(*args, **kwargs)
+            
+            # Cache result
+            cache_instance.set(key, result, ttl)
+            
+            return result
+        return wrapper
+    return decorator
+
+# Default cache instance
+_default_cache = Cache()
+
+def get_default_cache() -> Cache:
+    """
+    Get the default cache instance.
+    
+    Returns:
+        Default cache instance
+    """
+    return _default_cache
+
+def create_persistent_cache(cache_dir: str) -> PersistentCache:
+    """
+    Create a persistent cache.
+    
+    Args:
+        cache_dir: Directory to store cache files
+        
+    Returns:
+        Persistent cache instance
+    """
+    return PersistentCache(cache_dir)

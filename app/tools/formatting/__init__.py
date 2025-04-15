@@ -1,0 +1,31 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""Formatting/Style tools initialization for TorontoAITeamAgent Team AI.
+
+This module initializes all Formatting/Style tools."""
+
+from .black import BlackTool
+from .flake8 import Flake8Tool
+from ..registry import registry
+
+# Register all Formatting/Style tools
+registry.register(BlackTool)
+registry.register(Flake8Tool)
+
+__all__ = [
+    "BlackTool",
+    "Flake8Tool"
+]

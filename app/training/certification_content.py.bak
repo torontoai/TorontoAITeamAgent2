@@ -1,0 +1,1891 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""
+Enhanced Certification Content Mechanism for TORONTO AI Team Agent.
+
+This module provides a sophisticated mechanism for integrating certification content
+into the agent training system, with support for Google Project Manager and IBM
+Product Manager certifications.
+"""
+
+import os
+import logging
+from typing import Dict, List, Any, Optional, Tuple, Union
+import json
+import time
+import uuid
+import hashlib
+import re
+from pathlib import Path
+import shutil
+import yaml
+
+from .knowledge_extraction import pipeline as knowledge_pipeline
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class CertificationContentManager:
+    """
+    Enhanced mechanism for managing and integrating certification content.
+    """
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        Initialize the Certification Content Manager.
+        
+        Args:
+            config: Configuration settings
+        """
+        self.config = config or {}
+        
+        # Default configuration values
+        self.certifications_path = self.config.get("certifications_path", "./app/training/certifications")
+        self.enable_auto_validation = self.config.get("enable_auto_validation", True)
+        self.enable_versioning = self.config.get("enable_versioning", True)
+        self.enable_metadata_extraction = self.config.get("enable_metadata_extraction", True)
+        self.max_versions_to_keep = self.config.get("max_versions_to_keep", 5)
+        
+        # Initialize certifications directory
+        self._initialize_certifications_directory()
+        
+        # Load certification registry
+        self.registry = self._load_registry()
+        
+        logger.info("Enhanced Certification Content Manager initialized")
+    
+    def _initialize_certifications_directory(self) -> None:
+        """
+        Initialize the certifications directory structure.
+        """
+        try:
+            # Create main certifications directory
+            os.makedirs(self.certifications_path, exist_ok=True)
+            
+            # Create subdirectories for each certification type
+            os.makedirs(os.path.join(self.certifications_path, "google_project_manager"), exist_ok=True)
+            os.makedirs(os.path.join(self.certifications_path, "ibm_product_manager"), exist_ok=True)
+            
+            # Create versions directory if versioning is enabled
+            if self.enable_versioning:
+                os.makedirs(os.path.join(self.certifications_path, "versions"), exist_ok=True)
+            
+            # Create registry file if it doesn't exist
+            registry_path = os.path.join(self.certifications_path, "registry.json")
+            if not os.path.exists(registry_path):
+                with open(registry_path, "w") as f:
+                    json.dump({
+                        "certifications": {},
+                        "last_updated": time.time(),
+                        "version": "1.0"
+                    }, f, indent=2)
+            
+            logger.info(f"Initialized certifications directory at {self.certifications_path}")
+            
+        except Exception as e:
+            logger.error(f"Error initializing certifications directory: {str(e)}")
+    
+    def _load_registry(self) -> Dict[str, Any]:
+        """
+        Load the certification registry.
+        
+        Returns:
+            Certification registry
+        """
+        try:
+            registry_path = os.path.join(self.certifications_path, "registry.json")
+            
+            if os.path.exists(registry_path):
+                with open(registry_path, "r") as f:
+                    registry = json.load(f)
+                
+                logger.info(f"Loaded certification registry with {len(registry.get('certifications', {}))} entries")
+                return registry
+            else:
+                # Create default registry
+                registry = {
+                    "certifications": {},
+                    "last_updated": time.time(),
+                    "version": "1.0"
+                }
+                
+                # Save registry
+                with open(registry_path, "w") as f:
+                    json.dump(registry, f, indent=2)
+                
+                logger.info("Created new certification registry")
+                return registry
+                
+        except Exception as e:
+            logger.error(f"Error loading certification registry: {str(e)}")
+            return {
+                "certifications": {},
+                "last_updated": time.time(),
+                "version": "1.0"
+            }
+    
+    def _save_registry(self) -> bool:
+        """
+        Save the certification registry.
+        
+        Returns:
+            Success status
+        """
+        try:
+            registry_path = os.path.join(self.certifications_path, "registry.json")
+            
+            # Update timestamp
+            self.registry["last_updated"] = time.time()
+            
+            # Save registry
+            with open(registry_path, "w") as f:
+                json.dump(self.registry, f, indent=2)
+            
+            logger.info("Saved certification registry")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error saving certification registry: {str(e)}")
+            return False
+    
+    def add_certification_content(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Add new certification content.
+        
+        Args:
+            params: Content parameters including certification_type, content_path, and metadata
+            
+        Returns:
+            Addition result
+        """
+        certification_type = params.get("certification_type")
+        content_path = params.get("content_path")
+        metadata = params.get("metadata", {})
+        
+        if not certification_type:
+            return {
+                "success": False,
+                "message": "Certification type is required"
+            }
+        
+        if not content_path:
+            return {
+                "success": False,
+                "message": "Content path is required"
+            }
+        
+        # Validate certification type
+        if certification_type not in ["google_project_manager", "ibm_product_manager"]:
+            return {
+                "success": False,
+                "message": f"Invalid certification type: {certification_type}"
+            }
+        
+        # Validate content path
+        if not os.path.exists(content_path):
+            return {
+                "success": False,
+                "message": f"Content path does not exist: {content_path}"
+            }
+        
+        try:
+            # Generate content ID
+            content_id = f"{certification_type}_{uuid.uuid4().hex[:8]}"
+            
+            # Create target directory
+            target_dir = os.path.join(self.certifications_path, certification_type, content_id)
+            os.makedirs(target_dir, exist_ok=True)
+            
+            # Copy content
+            if os.path.isdir(content_path):
+                # Copy directory contents
+                for item in os.listdir(content_path):
+                    source_item = os.path.join(content_path, item)
+                    target_item = os.path.join(target_dir, item)
+                    
+                    if os.path.isdir(source_item):
+                        shutil.copytree(source_item, target_item)
+                    else:
+                        shutil.copy2(source_item, target_item)
+            else:
+                # Copy single file
+                shutil.copy2(content_path, os.path.join(target_dir, os.path.basename(content_path)))
+            
+            # Extract additional metadata if enabled
+            if self.enable_metadata_extraction:
+                extracted_metadata = self._extract_metadata(target_dir, certification_type)
+                metadata.update(extracted_metadata)
+            
+            # Add timestamp
+            metadata["added_at"] = time.time()
+            metadata["updated_at"] = time.time()
+            
+            # Create content entry
+            content_entry = {
+                "id": content_id,
+                "type": certification_type,
+                "path": target_dir,
+                "metadata": metadata,
+                "status": "added",
+                "version": "1.0"
+            }
+            
+            # Add to registry
+            self.registry["certifications"][content_id] = content_entry
+            self._save_registry()
+            
+            # Create initial version if versioning is enabled
+            if self.enable_versioning:
+                self._create_version(content_id, "initial_import")
+            
+            # Validate content if auto-validation is enabled
+            validation_result = None
+            if self.enable_auto_validation:
+                validation_result = self._validate_content(content_id)
+                
+                # Update status based on validation
+                if validation_result.get("success", False):
+                    content_entry["status"] = "validated"
+                else:
+                    content_entry["status"] = "validation_failed"
+                
+                # Update registry
+                self._save_registry()
+            
+            logger.info(f"Added certification content: {content_id}")
+            
+            return {
+                "success": True,
+                "message": f"Successfully added certification content",
+                "content_id": content_id,
+                "validation_result": validation_result
+            }
+            
+        except Exception as e:
+            logger.error(f"Error adding certification content: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error adding certification content: {str(e)}"
+            }
+    
+    def _extract_metadata(self, content_dir: str, certification_type: str) -> Dict[str, Any]:
+        """
+        Extract metadata from certification content.
+        
+        Args:
+            content_dir: Content directory
+            certification_type: Certification type
+            
+        Returns:
+            Extracted metadata
+        """
+        metadata = {}
+        
+        try:
+            # Look for metadata files
+            metadata_files = [
+                os.path.join(content_dir, "metadata.json"),
+                os.path.join(content_dir, "metadata.yaml"),
+                os.path.join(content_dir, "metadata.yml")
+            ]
+            
+            for metadata_file in metadata_files:
+                if os.path.exists(metadata_file):
+                    # Load metadata from file
+                    with open(metadata_file, "r") as f:
+                        if metadata_file.endswith(".json"):
+                            file_metadata = json.load(f)
+                        else:
+                            file_metadata = yaml.safe_load(f)
+                    
+                    metadata.update(file_metadata)
+                    break
+            
+            # If no metadata file found, extract from content
+            if not metadata:
+                # Find markdown files
+                markdown_files = []
+                for root, _, files in os.walk(content_dir):
+                    for file in files:
+                        if file.endswith(".md"):
+                            markdown_files.append(os.path.join(root, file))
+                
+                if markdown_files:
+                    # Extract from first markdown file
+                    with open(markdown_files[0], "r") as f:
+                        content = f.read()
+                    
+                    # Extract title
+                    title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
+                    if title_match:
+                        metadata["title"] = title_match.group(1).strip()
+                    
+                    # Extract description
+                    desc_match = re.search(r'^##\s+Description\s*\n\s*(.+?)(?=\n##|\Z)', content, re.DOTALL | re.MULTILINE)
+                    if desc_match:
+                        metadata["description"] = desc_match.group(1).strip()
+                    
+                    # Extract topics
+                    topics = []
+                    topic_matches = re.findall(r'^###\s+(.+)$', content, re.MULTILINE)
+                    if topic_matches:
+                        topics = [topic.strip() for topic in topic_matches]
+                    
+                    if topics:
+                        metadata["topics"] = topics
+            
+            # Add certification-specific metadata
+            if certification_type == "google_project_manager":
+                metadata["provider"] = "Google"
+                metadata["certification_name"] = "Project Manager"
+                if "topics" not in metadata:
+                    metadata["topics"] = ["Project Planning", "Risk Management", "Team Leadership"]
+            elif certification_type == "ibm_product_manager":
+                metadata["provider"] = "IBM"
+                metadata["certification_name"] = "Product Manager"
+                if "topics" not in metadata:
+                    metadata["topics"] = ["Product Strategy", "Market Analysis", "User Experience"]
+            
+            # Add file count
+            file_count = 0
+            for root, _, files in os.walk(content_dir):
+                file_count += len(files)
+            
+            metadata["file_count"] = file_count
+            
+            return metadata
+            
+        except Exception as e:
+            logger.error(f"Error extracting metadata: {str(e)}")
+            return {}
+    
+    def _validate_content(self, content_id: str) -> Dict[str, Any]:
+        """
+        Validate certification content.
+        
+        Args:
+            content_id: Content ID
+            
+        Returns:
+            Validation result
+        """
+        if content_id not in self.registry["certifications"]:
+            return {
+                "success": False,
+                "message": f"Content not found: {content_id}"
+            }
+        
+        content_entry = self.registry["certifications"][content_id]
+        content_path = content_entry["path"]
+        
+        try:
+            validation_results = {
+                "success": True,
+                "message": "Content validation successful",
+                "checks": []
+            }
+            
+            # Check 1: Directory exists
+            if not os.path.exists(content_path):
+                validation_results["success"] = False
+                validation_results["checks"].append({
+                    "name": "directory_exists",
+                    "success": False,
+                    "message": f"Content directory does not exist: {content_path}"
+                })
+                return validation_results
+            else:
+                validation_results["checks"].append({
+                    "name": "directory_exists",
+                    "success": True,
+                    "message": "Content directory exists"
+                })
+            
+            # Check 2: Contains markdown files
+            markdown_files = []
+            for root, _, files in os.walk(content_path):
+                for file in files:
+                    if file.endswith(".md"):
+                        markdown_files.append(os.path.join(root, file))
+            
+            if not markdown_files:
+                validation_results["success"] = False
+                validation_results["checks"].append({
+                    "name": "contains_markdown",
+                    "success": False,
+                    "message": "No markdown files found"
+                })
+            else:
+                validation_results["checks"].append({
+                    "name": "contains_markdown",
+                    "success": True,
+                    "message": f"Found {len(markdown_files)} markdown files"
+                })
+            
+            # Check 3: Markdown files have proper structure
+            valid_structure_count = 0
+            for md_file in markdown_files:
+                with open(md_file, "r") as f:
+                    content = f.read()
+                
+                # Check for headings
+                if re.search(r'^#\s+.+$', content, re.MULTILINE):
+                    valid_structure_count += 1
+            
+            if valid_structure_count < len(markdown_files):
+                validation_results["checks"].append({
+                    "name": "markdown_structure",
+                    "success": False,
+                    "message": f"Only {valid_structure_count} of {len(markdown_files)} markdown files have proper structure"
+                })
+                validation_results["success"] = False
+            else:
+                validation_results["checks"].append({
+                    "name": "markdown_structure",
+                    "success": True,
+                    "message": "All markdown files have proper structure"
+                })
+            
+            # Check 4: Metadata is complete
+            metadata = content_entry.get("metadata", {})
+            required_fields = ["title", "provider", "certification_name"]
+            
+            missing_fields = [field for field in required_fields if field not in metadata]
+            
+            if missing_fields:
+                validation_results["checks"].append({
+                    "name": "metadata_complete",
+                    "success": False,
+                    "message": f"Missing metadata fields: {', '.join(missing_fields)}"
+                })
+                validation_results["success"] = False
+            else:
+                validation_results["checks"].append({
+                    "name": "metadata_complete",
+                    "success": True,
+                    "message": "Metadata is complete"
+                })
+            
+            return validation_results
+            
+        except Exception as e:
+            logger.error(f"Error validating content: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error validating content: {str(e)}"
+            }
+    
+    def _create_version(self, content_id: str, reason: str) -> Dict[str, Any]:
+        """
+        Create a version of certification content.
+        
+        Args:
+            content_id: Content ID
+            reason: Reason for creating version
+            
+        Returns:
+            Version creation result
+        """
+        if not self.enable_versioning:
+            return {
+                "success": False,
+                "message": "Versioning is disabled"
+            }
+        
+        if content_id not in self.registry["certifications"]:
+            return {
+                "success": False,
+                "message": f"Content not found: {content_id}"
+            }
+        
+        content_entry = self.registry["certifications"][content_id]
+        content_path = content_entry["path"]
+        
+        try:
+            # Generate version ID
+            version_id = f"{content_id}_v{int(time.time())}"
+            
+            # Create version directory
+            version_dir = os.path.join(self.certifications_path, "versions", version_id)
+            os.makedirs(version_dir, exist_ok=True)
+            
+            # Copy content
+            if os.path.isdir(content_path):
+                # Copy directory contents
+                for item in os.listdir(content_path):
+                    source_item = os.path.join(content_path, item)
+                    target_item = os.path.join(version_dir, item)
+                    
+                    if os.path.isdir(source_item):
+                        shutil.copytree(source_item, target_item)
+                    else:
+                        shutil.copy2(source_item, target_item)
+            
+            # Create version entry
+            version_entry = {
+                "id": version_id,
+                "content_id": content_id,
+                "path": version_dir,
+                "created_at": time.time(),
+                "reason": reason,
+                "metadata": content_entry.get("metadata", {}).copy()
+            }
+            
+            # Add to registry
+            if "versions" not in self.registry:
+                self.registry["versions"] = {}
+            
+            self.registry["versions"][version_id] = version_entry
+            
+            # Add version reference to content entry
+            if "version_history" not in content_entry:
+                content_entry["version_history"] = []
+            
+            content_entry["version_history"].append({
+                "version_id": version_id,
+                "created_at": time.time(),
+                "reason": reason
+            })
+            
+            # Limit version history
+            if len(content_entry["version_history"]) > self.max_versions_to_keep:
+                # Get oldest versions to remove
+                versions_to_remove = sorted(
+                    content_entry["version_history"],
+                    key=lambda x: x["created_at"]
+                )[:-self.max_versions_to_keep]
+                
+                # Remove old versions
+                for version in versions_to_remove:
+                    old_version_id = version["version_id"]
+                    
+                    # Remove from registry
+                    if old_version_id in self.registry["versions"]:
+                        old_version_path = self.registry["versions"][old_version_id]["path"]
+                        
+                        # Remove directory
+                        if os.path.exists(old_version_path):
+                            shutil.rmtree(old_version_path)
+                        
+                        # Remove from registry
+                        del self.registry["versions"][old_version_id]
+                
+                # Update version history
+                content_entry["version_history"] = content_entry["version_history"][-self.max_versions_to_keep:]
+            
+            # Save registry
+            self._save_registry()
+            
+            logger.info(f"Created version {version_id} for content {content_id}")
+            
+            return {
+                "success": True,
+                "message": f"Created version {version_id}",
+                "version_id": version_id
+            }
+            
+        except Exception as e:
+            logger.error(f"Error creating version: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error creating version: {str(e)}"
+            }
+    
+    def update_certification_content(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Update existing certification content.
+        
+        Args:
+            params: Update parameters including content_id, content_path, and metadata
+            
+        Returns:
+            Update result
+        """
+        content_id = params.get("content_id")
+        content_path = params.get("content_path")
+        metadata = params.get("metadata", {})
+        
+        if not content_id:
+            return {
+                "success": False,
+                "message": "Content ID is required"
+            }
+        
+        if content_id not in self.registry["certifications"]:
+            return {
+                "success": False,
+                "message": f"Content not found: {content_id}"
+            }
+        
+        content_entry = self.registry["certifications"][content_id]
+        target_dir = content_entry["path"]
+        
+        try:
+            # Create version before updating if versioning is enabled
+            if self.enable_versioning:
+                self._create_version(content_id, "pre_update_backup")
+            
+            # Update content if path provided
+            if content_path:
+                # Validate content path
+                if not os.path.exists(content_path):
+                    return {
+                        "success": False,
+                        "message": f"Content path does not exist: {content_path}"
+                    }
+                
+                # Clear target directory
+                for item in os.listdir(target_dir):
+                    item_path = os.path.join(target_dir, item)
+                    if os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+                    else:
+                        os.remove(item_path)
+                
+                # Copy new content
+                if os.path.isdir(content_path):
+                    # Copy directory contents
+                    for item in os.listdir(content_path):
+                        source_item = os.path.join(content_path, item)
+                        target_item = os.path.join(target_dir, item)
+                        
+                        if os.path.isdir(source_item):
+                            shutil.copytree(source_item, target_item)
+                        else:
+                            shutil.copy2(source_item, target_item)
+                else:
+                    # Copy single file
+                    shutil.copy2(content_path, os.path.join(target_dir, os.path.basename(content_path)))
+                
+                # Extract additional metadata if enabled
+                if self.enable_metadata_extraction:
+                    extracted_metadata = self._extract_metadata(target_dir, content_entry["type"])
+                    metadata.update(extracted_metadata)
+            
+            # Update metadata
+            if metadata:
+                if "metadata" not in content_entry:
+                    content_entry["metadata"] = {}
+                
+                content_entry["metadata"].update(metadata)
+            
+            # Update timestamp
+            content_entry["metadata"]["updated_at"] = time.time()
+            
+            # Update status
+            content_entry["status"] = "updated"
+            
+            # Save registry
+            self._save_registry()
+            
+            # Validate content if auto-validation is enabled
+            validation_result = None
+            if self.enable_auto_validation:
+                validation_result = self._validate_content(content_id)
+                
+                # Update status based on validation
+                if validation_result.get("success", False):
+                    content_entry["status"] = "validated"
+                else:
+                    content_entry["status"] = "validation_failed"
+                
+                # Save registry
+                self._save_registry()
+            
+            logger.info(f"Updated certification content: {content_id}")
+            
+            return {
+                "success": True,
+                "message": f"Successfully updated certification content",
+                "content_id": content_id,
+                "validation_result": validation_result
+            }
+            
+        except Exception as e:
+            logger.error(f"Error updating certification content: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error updating certification content: {str(e)}"
+            }
+    
+    def delete_certification_content(self, content_id: str) -> Dict[str, Any]:
+        """
+        Delete certification content.
+        
+        Args:
+            content_id: Content ID
+            
+        Returns:
+            Deletion result
+        """
+        if not content_id:
+            return {
+                "success": False,
+                "message": "Content ID is required"
+            }
+        
+        if content_id not in self.registry["certifications"]:
+            return {
+                "success": False,
+                "message": f"Content not found: {content_id}"
+            }
+        
+        content_entry = self.registry["certifications"][content_id]
+        content_path = content_entry["path"]
+        
+        try:
+            # Create final version before deleting if versioning is enabled
+            if self.enable_versioning:
+                self._create_version(content_id, "pre_deletion_backup")
+            
+            # Remove content directory
+            if os.path.exists(content_path):
+                shutil.rmtree(content_path)
+            
+            # Remove from registry
+            del self.registry["certifications"][content_id]
+            
+            # Save registry
+            self._save_registry()
+            
+            logger.info(f"Deleted certification content: {content_id}")
+            
+            return {
+                "success": True,
+                "message": f"Successfully deleted certification content: {content_id}"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error deleting certification content: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error deleting certification content: {str(e)}"
+            }
+    
+    def get_certification_content(self, content_id: str) -> Dict[str, Any]:
+        """
+        Get certification content details.
+        
+        Args:
+            content_id: Content ID
+            
+        Returns:
+            Content details
+        """
+        if not content_id:
+            return {
+                "success": False,
+                "message": "Content ID is required"
+            }
+        
+        if content_id not in self.registry["certifications"]:
+            return {
+                "success": False,
+                "message": f"Content not found: {content_id}"
+            }
+        
+        content_entry = self.registry["certifications"][content_id]
+        
+        return {
+            "success": True,
+            "message": f"Retrieved certification content: {content_id}",
+            "content": content_entry
+        }
+    
+    def list_certification_content(self, certification_type: Optional[str] = None) -> Dict[str, Any]:
+        """
+        List certification content.
+        
+        Args:
+            certification_type: Optional certification type filter
+            
+        Returns:
+            List of certification content
+        """
+        try:
+            certifications = self.registry["certifications"]
+            
+            if certification_type:
+                # Filter by certification type
+                filtered_certifications = {
+                    k: v for k, v in certifications.items()
+                    if v.get("type") == certification_type
+                }
+                
+                return {
+                    "success": True,
+                    "message": f"Retrieved {len(filtered_certifications)} {certification_type} certifications",
+                    "certifications": filtered_certifications
+                }
+            else:
+                return {
+                    "success": True,
+                    "message": f"Retrieved {len(certifications)} certifications",
+                    "certifications": certifications
+                }
+                
+        except Exception as e:
+            logger.error(f"Error listing certification content: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error listing certification content: {str(e)}"
+            }
+    
+    def process_certification_content(self, content_id: str) -> Dict[str, Any]:
+        """
+        Process certification content for knowledge extraction.
+        
+        Args:
+            content_id: Content ID
+            
+        Returns:
+            Processing result
+        """
+        if not content_id:
+            return {
+                "success": False,
+                "message": "Content ID is required"
+            }
+        
+        if content_id not in self.registry["certifications"]:
+            return {
+                "success": False,
+                "message": f"Content not found: {content_id}"
+            }
+        
+        content_entry = self.registry["certifications"][content_id]
+        content_path = content_entry["path"]
+        
+        try:
+            # Find all markdown files
+            markdown_files = []
+            for root, _, files in os.walk(content_path):
+                for file in files:
+                    if file.endswith(".md"):
+                        markdown_files.append(os.path.join(root, file))
+            
+            if not markdown_files:
+                return {
+                    "success": False,
+                    "message": "No markdown files found for processing"
+                }
+            
+            # Process each file
+            processing_results = []
+            
+            for md_file in markdown_files:
+                # Process file
+                result = knowledge_pipeline.process_material(md_file)
+                processing_results.append(result)
+            
+            # Update content entry
+            content_entry["status"] = "processed"
+            content_entry["processed_at"] = time.time()
+            content_entry["processing_results"] = {
+                "file_count": len(processing_results),
+                "success_count": sum(1 for r in processing_results if r.get("success", False)),
+                "total_chunks": sum(r.get("chunk_count", 0) for r in processing_results),
+                "total_embeddings": sum(r.get("embedding_count", 0) for r in processing_results)
+            }
+            
+            # Save registry
+            self._save_registry()
+            
+            logger.info(f"Processed certification content: {content_id}")
+            
+            return {
+                "success": True,
+                "message": f"Successfully processed certification content",
+                "content_id": content_id,
+                "results": content_entry["processing_results"]
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing certification content: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error processing certification content: {str(e)}"
+            }
+    
+    def restore_version(self, version_id: str) -> Dict[str, Any]:
+        """
+        Restore a previous version of certification content.
+        
+        Args:
+            version_id: Version ID
+            
+        Returns:
+            Restoration result
+        """
+        if not self.enable_versioning:
+            return {
+                "success": False,
+                "message": "Versioning is disabled"
+            }
+        
+        if "versions" not in self.registry or version_id not in self.registry["versions"]:
+            return {
+                "success": False,
+                "message": f"Version not found: {version_id}"
+            }
+        
+        version_entry = self.registry["versions"][version_id]
+        content_id = version_entry["content_id"]
+        
+        if content_id not in self.registry["certifications"]:
+            return {
+                "success": False,
+                "message": f"Content not found: {content_id}"
+            }
+        
+        content_entry = self.registry["certifications"][content_id]
+        content_path = content_entry["path"]
+        version_path = version_entry["path"]
+        
+        try:
+            # Create version before restoring
+            self._create_version(content_id, "pre_restore_backup")
+            
+            # Clear target directory
+            for item in os.listdir(content_path):
+                item_path = os.path.join(content_path, item)
+                if os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+                else:
+                    os.remove(item_path)
+            
+            # Copy version content
+            for item in os.listdir(version_path):
+                source_item = os.path.join(version_path, item)
+                target_item = os.path.join(content_path, item)
+                
+                if os.path.isdir(source_item):
+                    shutil.copytree(source_item, target_item)
+                else:
+                    shutil.copy2(source_item, target_item)
+            
+            # Update metadata
+            content_entry["metadata"] = version_entry["metadata"].copy()
+            content_entry["metadata"]["updated_at"] = time.time()
+            content_entry["metadata"]["restored_from"] = version_id
+            
+            # Update status
+            content_entry["status"] = "restored"
+            
+            # Save registry
+            self._save_registry()
+            
+            # Validate content if auto-validation is enabled
+            if self.enable_auto_validation:
+                validation_result = self._validate_content(content_id)
+                
+                # Update status based on validation
+                if validation_result.get("success", False):
+                    content_entry["status"] = "validated"
+                else:
+                    content_entry["status"] = "validation_failed"
+                
+                # Save registry
+                self._save_registry()
+            
+            logger.info(f"Restored version {version_id} for content {content_id}")
+            
+            return {
+                "success": True,
+                "message": f"Successfully restored version {version_id}",
+                "content_id": content_id
+            }
+            
+        except Exception as e:
+            logger.error(f"Error restoring version: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error restoring version: {str(e)}"
+            }
+    
+    def get_version_history(self, content_id: str) -> Dict[str, Any]:
+        """
+        Get version history for certification content.
+        
+        Args:
+            content_id: Content ID
+            
+        Returns:
+            Version history
+        """
+        if not self.enable_versioning:
+            return {
+                "success": False,
+                "message": "Versioning is disabled"
+            }
+        
+        if content_id not in self.registry["certifications"]:
+            return {
+                "success": False,
+                "message": f"Content not found: {content_id}"
+            }
+        
+        content_entry = self.registry["certifications"][content_id]
+        
+        if "version_history" not in content_entry:
+            return {
+                "success": True,
+                "message": f"No version history for content {content_id}",
+                "versions": []
+            }
+        
+        return {
+            "success": True,
+            "message": f"Retrieved version history for content {content_id}",
+            "versions": content_entry["version_history"]
+        }
+    
+    def create_certification_template(self, certification_type: str) -> Dict[str, Any]:
+        """
+        Create a template for certification content.
+        
+        Args:
+            certification_type: Certification type
+            
+        Returns:
+            Template creation result
+        """
+        if certification_type not in ["google_project_manager", "ibm_product_manager"]:
+            return {
+                "success": False,
+                "message": f"Invalid certification type: {certification_type}"
+            }
+        
+        try:
+            # Generate template ID
+            template_id = f"{certification_type}_template_{uuid.uuid4().hex[:8]}"
+            
+            # Create template directory
+            template_dir = os.path.join(self.certifications_path, certification_type, template_id)
+            os.makedirs(template_dir, exist_ok=True)
+            
+            # Create template files
+            if certification_type == "google_project_manager":
+                self._create_google_pm_template(template_dir)
+            elif certification_type == "ibm_product_manager":
+                self._create_ibm_pm_template(template_dir)
+            
+            # Create metadata
+            metadata = {
+                "title": f"{certification_type.replace('_', ' ').title()} Template",
+                "description": f"Template for {certification_type.replace('_', ' ').title()} certification content",
+                "created_at": time.time(),
+                "updated_at": time.time(),
+                "is_template": True
+            }
+            
+            # Add certification-specific metadata
+            if certification_type == "google_project_manager":
+                metadata.update({
+                    "provider": "Google",
+                    "certification_name": "Project Manager",
+                    "topics": ["Project Planning", "Risk Management", "Team Leadership"]
+                })
+            elif certification_type == "ibm_product_manager":
+                metadata.update({
+                    "provider": "IBM",
+                    "certification_name": "Product Manager",
+                    "topics": ["Product Strategy", "Market Analysis", "User Experience"]
+                })
+            
+            # Save metadata
+            with open(os.path.join(template_dir, "metadata.json"), "w") as f:
+                json.dump(metadata, f, indent=2)
+            
+            # Add to registry
+            content_entry = {
+                "id": template_id,
+                "type": certification_type,
+                "path": template_dir,
+                "metadata": metadata,
+                "status": "template",
+                "version": "1.0"
+            }
+            
+            self.registry["certifications"][template_id] = content_entry
+            self._save_registry()
+            
+            logger.info(f"Created {certification_type} template: {template_id}")
+            
+            return {
+                "success": True,
+                "message": f"Successfully created {certification_type} template",
+                "template_id": template_id,
+                "template_path": template_dir
+            }
+            
+        except Exception as e:
+            logger.error(f"Error creating template: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error creating template: {str(e)}"
+            }
+    
+    def _create_google_pm_template(self, template_dir: str) -> None:
+        """
+        Create Google Project Manager certification template.
+        
+        Args:
+            template_dir: Template directory
+        """
+        # Create README
+        readme_content = """# Google Project Manager Certification
+
+## Description
+This template provides a structure for adding Google Project Manager certification content.
+
+## Structure
+- `01_project_initiation.md`: Project Initiation and Planning
+- `02_risk_management.md`: Risk Management and Mitigation
+- `03_team_leadership.md`: Team Leadership and Communication
+- `04_project_execution.md`: Project Execution and Monitoring
+- `05_project_closure.md`: Project Closure and Evaluation
+
+## Usage
+1. Fill in the content for each section
+2. Update metadata.json with your specific details
+3. Process the content using the certification content manager
+"""
+        
+        with open(os.path.join(template_dir, "README.md"), "w") as f:
+            f.write(readme_content)
+        
+        # Create section files
+        sections = [
+            {
+                "filename": "01_project_initiation.md",
+                "content": """# Project Initiation and Planning
+
+## Description
+This section covers the fundamentals of project initiation and planning according to Google's project management methodology.
+
+## Key Concepts
+
+### Project Charter
+A project charter is a formal document that officially authorizes the existence of a project and provides the project manager with the authority to apply organizational resources to project activities.
+
+### Stakeholder Analysis
+Stakeholder analysis is the process of identifying the individuals or groups that may affect or be affected by a project and documenting relevant information regarding their interests, involvement, and impact on project success.
+
+### Project Scope
+Project scope defines the boundaries of a project, establishing what will be included and excluded from the project deliverables.
+
+## Best Practices
+
+1. Clearly define project objectives and success criteria
+2. Identify all stakeholders and their requirements
+3. Create a detailed work breakdown structure (WBS)
+4. Establish realistic timelines and milestones
+5. Define resource requirements and constraints
+
+## Templates
+
+### Project Charter Template
+```
+Project Name: [Name]
+Project Sponsor: [Sponsor]
+Project Manager: [Manager]
+Date: [Date]
+
+Project Purpose: [Brief description of why the project exists]
+
+Objectives: [Specific, measurable objectives]
+
+Scope: [What is included and excluded]
+
+Stakeholders: [Key stakeholders]
+
+Timeline: [Major milestones and deadlines]
+
+Budget: [High-level budget information]
+
+Risks: [Initial identified risks]
+
+Approval: [Signatures]
+```
+
+### Stakeholder Analysis Matrix
+```
+| Stakeholder | Role | Interest | Influence | Engagement Strategy |
+|-------------|------|----------|-----------|---------------------|
+| [Name]      | [Role] | [High/Medium/Low] | [High/Medium/Low] | [Strategy] |
+```
+
+## Additional Resources
+- Google Project Management Certificate Course
+- PMI PMBOK Guide
+- Agile Project Management Resources
+"""
+            },
+            {
+                "filename": "02_risk_management.md",
+                "content": """# Risk Management and Mitigation
+
+## Description
+This section covers risk management processes and strategies according to Google's project management methodology.
+
+## Key Concepts
+
+### Risk Identification
+Risk identification is the process of determining which risks might affect the project and documenting their characteristics.
+
+### Risk Assessment
+Risk assessment involves analyzing the probability of occurrence and potential impact of identified risks.
+
+### Risk Response Planning
+Risk response planning is the process of developing options and actions to enhance opportunities and reduce threats to project objectives.
+
+### Risk Monitoring
+Risk monitoring involves tracking identified risks, monitoring residual risks, identifying new risks, and evaluating risk process effectiveness throughout the project.
+
+## Best Practices
+
+1. Create and maintain a risk register
+2. Regularly review and update risk assessments
+3. Develop contingency plans for high-priority risks
+4. Assign risk owners for accountability
+5. Communicate risk status to stakeholders
+
+## Templates
+
+### Risk Register Template
+```
+| Risk ID | Description | Category | Probability | Impact | Priority | Response Strategy | Owner | Status |
+|---------|-------------|----------|------------|--------|----------|-------------------|-------|--------|
+| R001    | [Description] | [Category] | [H/M/L] | [H/M/L] | [H/M/L] | [Strategy] | [Name] | [Status] |
+```
+
+### Risk Response Strategies
+- **Avoid**: Eliminate the threat by eliminating the cause
+- **Mitigate**: Reduce the probability or impact of the risk
+- **Transfer**: Shift the impact of the risk to a third party
+- **Accept**: Acknowledge the risk but take no proactive action
+
+## Additional Resources
+- Google Risk Management Framework
+- PMI Risk Management Professional (PMI-RMP)
+- ISO 31000 Risk Management Guidelines
+"""
+            },
+            {
+                "filename": "03_team_leadership.md",
+                "content": """# Team Leadership and Communication
+
+## Description
+This section covers effective team leadership and communication strategies according to Google's project management methodology.
+
+## Key Concepts
+
+### Team Formation
+Team formation involves identifying and acquiring the human resources needed for project completion.
+
+### Team Development
+Team development focuses on improving the competencies, team interaction, and overall team environment to enhance project performance.
+
+### Communication Planning
+Communication planning determines the information and communication needs of the stakeholders: who needs what information, when they need it, and how it will be provided.
+
+### Conflict Resolution
+Conflict resolution addresses disagreements and disputes that arise during project execution.
+
+## Best Practices
+
+1. Establish clear roles and responsibilities
+2. Create a communication management plan
+3. Hold regular team meetings and status updates
+4. Provide constructive feedback and recognition
+5. Address conflicts promptly and professionally
+
+## Templates
+
+### RACI Matrix Template
+```
+| Task | Responsible | Accountable | Consulted | Informed |
+|------|-------------|-------------|-----------|----------|
+| [Task] | [Person] | [Person] | [Person(s)] | [Person(s)] |
+```
+
+### Communication Plan Template
+```
+| Stakeholder | Information Needs | Frequency | Method | Responsible |
+|-------------|-------------------|-----------|--------|-------------|
+| [Stakeholder] | [Information] | [Frequency] | [Method] | [Person] |
+```
+
+## Additional Resources
+- Google's Team Effectiveness Discussion Guide
+- Situational Leadership Model
+- Emotional Intelligence in Project Management
+"""
+            },
+            {
+                "filename": "04_project_execution.md",
+                "content": """# Project Execution and Monitoring
+
+## Description
+This section covers project execution, monitoring, and control processes according to Google's project management methodology.
+
+## Key Concepts
+
+### Performance Measurement
+Performance measurement involves collecting and analyzing project performance data to assess progress.
+
+### Change Management
+Change management addresses how changes to the project scope, schedule, or resources are requested, evaluated, and implemented.
+
+### Quality Control
+Quality control monitors specific project results to determine if they comply with relevant quality standards and identifies ways to eliminate causes of unsatisfactory performance.
+
+### Progress Reporting
+Progress reporting communicates project status, accomplishments, and forecasts to stakeholders.
+
+## Best Practices
+
+1. Establish key performance indicators (KPIs)
+2. Implement a formal change control process
+3. Conduct regular quality reviews
+4. Use earned value management for performance tracking
+5. Maintain an issues log and action item tracker
+
+## Templates
+
+### Change Request Form
+```
+Change Request #: [Number]
+Requested by: [Name]
+Date Submitted: [Date]
+
+Description of Change: [Description]
+
+Justification: [Justification]
+
+Impact Assessment:
+- Schedule Impact: [Impact]
+- Cost Impact: [Impact]
+- Scope Impact: [Impact]
+- Quality Impact: [Impact]
+- Risk Impact: [Impact]
+
+Alternatives Considered: [Alternatives]
+
+Decision: [Approved/Rejected/Deferred]
+Decision Date: [Date]
+Approver: [Name]
+```
+
+### Status Report Template
+```
+Project Name: [Name]
+Reporting Period: [Period]
+Report Date: [Date]
+
+Overall Status: [Green/Yellow/Red]
+
+Accomplishments: [Key accomplishments]
+
+Planned Activities: [Upcoming activities]
+
+Issues/Risks: [Current issues and risks]
+
+Decisions Needed: [Decisions required]
+
+Key Metrics: [Metrics and performance indicators]
+```
+
+## Additional Resources
+- Google Project Management Tools
+- Earned Value Management Guidelines
+- Agile Metrics and Reporting
+"""
+            },
+            {
+                "filename": "05_project_closure.md",
+                "content": """# Project Closure and Evaluation
+
+## Description
+This section covers project closure processes and evaluation methods according to Google's project management methodology.
+
+## Key Concepts
+
+### Administrative Closure
+Administrative closure involves completing and settling all project activities, including documentation of project outcomes.
+
+### Lessons Learned
+Lessons learned is the knowledge gained during a project that shows how project events were addressed or should be addressed in the future.
+
+### Project Evaluation
+Project evaluation assesses the project's success in meeting its objectives and delivering the expected benefits.
+
+### Knowledge Transfer
+Knowledge transfer ensures that project knowledge is properly documented and transferred to the appropriate stakeholders.
+
+## Best Practices
+
+1. Conduct a formal project closure meeting
+2. Complete all deliverables and obtain formal acceptance
+3. Document lessons learned through a retrospective
+4. Archive project documentation
+5. Celebrate project achievements and recognize team contributions
+
+## Templates
+
+### Project Closure Report
+```
+Project Name: [Name]
+Project Manager: [Manager]
+Closure Date: [Date]
+
+Project Summary: [Brief summary]
+
+Objectives Achievement:
+- [Objective 1]: [Status]
+- [Objective 2]: [Status]
+
+Deliverables Status:
+- [Deliverable 1]: [Status]
+- [Deliverable 2]: [Status]
+
+Budget Summary:
+- Planned Budget: [Amount]
+- Actual Cost: [Amount]
+- Variance: [Amount]
+
+Schedule Summary:
+- Planned Duration: [Duration]
+- Actual Duration: [Duration]
+- Variance: [Duration]
+
+Key Lessons Learned: [Lessons]
+
+Outstanding Items: [Items]
+
+Recommendations: [Recommendations]
+
+Approvals: [Signatures]
+```
+
+### Lessons Learned Template
+```
+| Category | What Went Well | What Could Be Improved | Recommendations |
+|----------|----------------|------------------------|-----------------|
+| [Category] | [Successes] | [Challenges] | [Recommendations] |
+```
+
+## Additional Resources
+- Google Project Retrospective Guide
+- Project Closure Checklists
+- Post-Implementation Review Guidelines
+"""
+            }
+        ]
+        
+        for section in sections:
+            with open(os.path.join(template_dir, section["filename"]), "w") as f:
+                f.write(section["content"])
+    
+    def _create_ibm_pm_template(self, template_dir: str) -> None:
+        """
+        Create IBM Product Manager certification template.
+        
+        Args:
+            template_dir: Template directory
+        """
+        # Create README
+        readme_content = """# IBM Product Manager Certification
+
+## Description
+This template provides a structure for adding IBM Product Manager certification content.
+
+## Structure
+- `01_product_strategy.md`: Product Strategy and Vision
+- `02_market_analysis.md`: Market Analysis and Research
+- `03_user_experience.md`: User Experience and Design Thinking
+- `04_product_development.md`: Product Development and Roadmapping
+- `05_product_metrics.md`: Product Metrics and Analytics
+
+## Usage
+1. Fill in the content for each section
+2. Update metadata.json with your specific details
+3. Process the content using the certification content manager
+"""
+        
+        with open(os.path.join(template_dir, "README.md"), "w") as f:
+            f.write(readme_content)
+        
+        # Create section files
+        sections = [
+            {
+                "filename": "01_product_strategy.md",
+                "content": """# Product Strategy and Vision
+
+## Description
+This section covers the fundamentals of product strategy and vision according to IBM's product management methodology.
+
+## Key Concepts
+
+### Product Vision
+Product vision is a clear, concise statement that describes the desired future state of a product and serves as a north star for the product team.
+
+### Value Proposition
+Value proposition is a statement that clearly communicates the benefits that customers can expect from using a product or service.
+
+### Product Positioning
+Product positioning defines how a product is different from and better than competing solutions in the market.
+
+### Strategic Alignment
+Strategic alignment ensures that product decisions support the overall business strategy and objectives.
+
+## Best Practices
+
+1. Create a compelling product vision that inspires the team
+2. Develop a clear value proposition that resonates with target customers
+3. Align product strategy with company goals and objectives
+4. Regularly review and adjust strategy based on market changes
+5. Communicate strategy effectively to all stakeholders
+
+## Templates
+
+### Product Vision Statement Template
+```
+For [target customer]
+Who [customer need or opportunity]
+The [product name] is a [product category]
+That [key benefit, compelling reason to buy]
+Unlike [primary competitive alternative]
+Our product [statement of primary differentiation]
+```
+
+### Value Proposition Canvas
+```
+Customer Profile:
+- Jobs to be done: [Tasks customers are trying to complete]
+- Pains: [Negative experiences, risks, and obstacles]
+- Gains: [Benefits customers expect, desire, or would be surprised by]
+
+Value Map:
+- Products & Services: [What you offer]
+- Pain Relievers: [How your offering alleviates customer pains]
+- Gain Creators: [How your offering creates customer gains]
+```
+
+## Additional Resources
+- IBM Design Thinking Framework
+- Business Model Canvas
+- Jobs To Be Done Framework
+"""
+            },
+            {
+                "filename": "02_market_analysis.md",
+                "content": """# Market Analysis and Research
+
+## Description
+This section covers market analysis and research methodologies according to IBM's product management approach.
+
+## Key Concepts
+
+### Market Segmentation
+Market segmentation is the process of dividing a market into distinct groups of buyers who have different needs, characteristics, or behaviors.
+
+### Competitive Analysis
+Competitive analysis involves identifying and evaluating competitors' strengths and weaknesses in relation to your own product or service.
+
+### Customer Research
+Customer research encompasses various methods for gathering insights about customer needs, preferences, and behaviors.
+
+### Market Sizing
+Market sizing estimates the potential revenue opportunity for a product within a specific market.
+
+## Best Practices
+
+1. Use both qualitative and quantitative research methods
+2. Develop detailed customer personas based on research
+3. Conduct regular competitive analysis
+4. Validate market assumptions through customer interviews
+5. Use data to identify market trends and opportunities
+
+## Templates
+
+### Competitive Analysis Matrix
+```
+| Feature/Attribute | Your Product | Competitor A | Competitor B | Competitor C |
+|-------------------|--------------|--------------|--------------|--------------|
+| [Feature 1]       | [Rating]     | [Rating]     | [Rating]     | [Rating]     |
+| [Feature 2]       | [Rating]     | [Rating]     | [Rating]     | [Rating]     |
+| Pricing           | [Price]      | [Price]      | [Price]      | [Price]      |
+| Market Share      | [Share]      | [Share]      | [Share]      | [Share]      |
+| Strengths         | [Strengths]  | [Strengths]  | [Strengths]  | [Strengths]  |
+| Weaknesses        | [Weaknesses] | [Weaknesses] | [Weaknesses] | [Weaknesses] |
+```
+
+### Customer Persona Template
+```
+Name: [Persona name]
+Photo: [Representative image]
+
+Demographics:
+- Age: [Age range]
+- Gender: [Gender]
+- Location: [Location]
+- Education: [Education level]
+- Occupation: [Job title/role]
+- Income: [Income range]
+
+Psychographics:
+- Goals: [Primary goals]
+- Challenges: [Key challenges]
+- Values: [Important values]
+- Fears: [Concerns and fears]
+
+Behavior:
+- Technology usage: [Usage patterns]
+- Purchase behavior: [How they buy]
+- Information sources: [Where they get information]
+
+Product Usage:
+- Use cases: [How they use the product]
+- Feature priorities: [Most important features]
+- Pain points: [Problems with current solutions]
+```
+
+## Additional Resources
+- IBM Market Research Methodologies
+- PESTLE Analysis Framework
+- Porter's Five Forces Model
+"""
+            },
+            {
+                "filename": "03_user_experience.md",
+                "content": """# User Experience and Design Thinking
+
+## Description
+This section covers user experience principles and design thinking methodologies according to IBM's approach.
+
+## Key Concepts
+
+### Design Thinking
+Design thinking is a human-centered approach to innovation that integrates the needs of people, the possibilities of technology, and the requirements for business success.
+
+### User Journey Mapping
+User journey mapping visualizes the process that a person goes through to accomplish a goal, showing their experiences, emotions, and pain points.
+
+### Usability Testing
+Usability testing evaluates a product by testing it with representative users to identify usability problems and areas for improvement.
+
+### Accessibility
+Accessibility ensures that products and services can be used by people with a wide range of abilities and disabilities.
+
+## Best Practices
+
+1. Involve users throughout the design process
+2. Create and validate user personas
+3. Map user journeys to identify pain points and opportunities
+4. Conduct regular usability testing
+5. Design for accessibility from the beginning
+
+## Templates
+
+### User Journey Map Template
+```
+| Stage       | Actions                | Thoughts                | Emotions               | Opportunities          |
+|-------------|------------------------|-------------------------|------------------------|------------------------|
+| Awareness   | [What user does]       | [What user thinks]      | [How user feels]       | [Improvement areas]    |
+| Consideration| [What user does]      | [What user thinks]      | [How user feels]       | [Improvement areas]    |
+| Decision    | [What user does]       | [What user thinks]      | [How user feels]       | [Improvement areas]    |
+| Onboarding  | [What user does]       | [What user thinks]      | [How user feels]       | [Improvement areas]    |
+| Usage       | [What user does]       | [What user thinks]      | [How user feels]       | [Improvement areas]    |
+| Retention   | [What user does]       | [What user thinks]      | [How user feels]       | [Improvement areas]    |
+```
+
+### Usability Test Plan Template
+```
+Test Objectives: [What you want to learn]
+
+Methodology:
+- Test type: [Moderated/Unmoderated]
+- Location: [Remote/In-person]
+- Duration: [Time per session]
+
+Participants:
+- Number: [Participant count]
+- Profile: [Participant characteristics]
+
+Tasks:
+1. [Task description]
+2. [Task description]
+
+Metrics:
+- [Success rate]
+- [Time on task]
+- [Error rate]
+- [Satisfaction score]
+
+Questions:
+- [Pre-test questions]
+- [Post-task questions]
+- [Post-test questions]
+```
+
+## Additional Resources
+- IBM Design Thinking Toolkit
+- Nielsen Norman Group UX Guidelines
+- Web Content Accessibility Guidelines (WCAG)
+"""
+            },
+            {
+                "filename": "04_product_development.md",
+                "content": """# Product Development and Roadmapping
+
+## Description
+This section covers product development processes and roadmapping techniques according to IBM's product management methodology.
+
+## Key Concepts
+
+### Product Roadmap
+A product roadmap is a high-level visual summary that maps out the vision and direction of a product offering over time.
+
+### Prioritization Frameworks
+Prioritization frameworks help product managers decide which features or initiatives to focus on based on strategic value and effort.
+
+### Agile Development
+Agile development is an iterative approach to software delivery that builds software incrementally from the start of the project, rather than trying to deliver it all at once near the end.
+
+### Release Planning
+Release planning determines the content, timing, and communication strategy for product releases.
+
+## Best Practices
+
+1. Create a flexible roadmap that communicates product direction
+2. Use data-driven prioritization frameworks
+3. Break down large initiatives into manageable increments
+4. Align development cycles with business objectives
+5. Regularly communicate roadmap updates to stakeholders
+
+## Templates
+
+### Product Roadmap Template
+```
+| Timeline    | Theme        | Initiatives                | Goals/Metrics            | Status      |
+|-------------|--------------|----------------------------|--------------------------|-------------|
+| Q1 2023     | [Theme]      | - [Initiative 1]           | [Goals for this theme]   | [Status]    |
+|             |              | - [Initiative 2]           |                          |             |
+| Q2 2023     | [Theme]      | - [Initiative 3]           | [Goals for this theme]   | [Status]    |
+|             |              | - [Initiative 4]           |                          |             |
+```
+
+### Feature Prioritization Matrix (RICE)
+```
+| Feature     | Reach        | Impact (1-5)  | Confidence (0-100%)  | Effort (person-months) | RICE Score  |
+|-------------|--------------|---------------|----------------------|------------------------|-------------|
+| [Feature 1] | [Users]      | [Impact]      | [Confidence]         | [Effort]               | [Score]     |
+| [Feature 2] | [Users]      | [Impact]      | [Confidence]         | [Effort]               | [Score]     |
+```
+
+## Additional Resources
+- IBM Agile Development Framework
+- Product Roadmap Templates
+- RICE, Kano, and MoSCoW Prioritization Methods
+"""
+            },
+            {
+                "filename": "05_product_metrics.md",
+                "content": """# Product Metrics and Analytics
+
+## Description
+This section covers product metrics, analytics, and data-driven decision making according to IBM's product management approach.
+
+## Key Concepts
+
+### Key Performance Indicators (KPIs)
+KPIs are measurable values that demonstrate how effectively a product is achieving key business objectives.
+
+### North Star Metric
+A North Star Metric is the single metric that best captures the core value that your product delivers to customers.
+
+### Funnel Analysis
+Funnel analysis tracks user flow through a series of steps toward a defined goal, such as conversion or purchase.
+
+### Cohort Analysis
+Cohort analysis groups users based on shared characteristics and tracks their behavior over time to identify patterns.
+
+## Best Practices
+
+1. Define clear metrics aligned with business objectives
+2. Establish a North Star Metric for the product
+3. Create a balanced scorecard of leading and lagging indicators
+4. Set up regular reporting and review cadences
+5. Use data to inform product decisions and measure success
+
+## Templates
+
+### Product Metrics Framework
+```
+| Metric Category | Metric Name | Definition | Target | Current | Trend |
+|-----------------|-------------|------------|--------|---------|-------|
+| Acquisition     | [Metric]    | [Definition] | [Target] | [Current] | [Trend] |
+| Activation      | [Metric]    | [Definition] | [Target] | [Current] | [Trend] |
+| Retention       | [Metric]    | [Definition] | [Target] | [Current] | [Trend] |
+| Revenue         | [Metric]    | [Definition] | [Target] | [Current] | [Trend] |
+| Referral        | [Metric]    | [Definition] | [Target] | [Current] | [Trend] |
+```
+
+### A/B Test Plan Template
+```
+Test Name: [Name]
+Hypothesis: [Hypothesis statement]
+
+Variations:
+- Control: [Description]
+- Variation A: [Description]
+- Variation B: [Description]
+
+Success Metrics:
+- Primary: [Metric]
+- Secondary: [Metrics]
+
+Test Parameters:
+- Duration: [Time period]
+- Sample Size: [Number of users]
+- Segment: [User segment]
+
+Expected Impact:
+- [Predicted outcome]
+
+Implementation Plan:
+- [Technical requirements]
+- [Timeline]
+```
+
+## Additional Resources
+- IBM Analytics Platform
+- AARRR (Pirate Metrics) Framework
+- Google Analytics for Product Managers
+"""
+            }
+        ]
+        
+        for section in sections:
+            with open(os.path.join(template_dir, section["filename"]), "w") as f:
+                f.write(section["content"])
+
+
+# Create a singleton instance
+certification_manager = CertificationContentManager()

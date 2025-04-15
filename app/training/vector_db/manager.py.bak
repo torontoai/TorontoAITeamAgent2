@@ -1,0 +1,508 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""
+Vector Database Manager for TORONTO AI Team Agent.
+
+This module provides a high-level manager for vector database operations,
+including caching, metrics tracking, and error handling.
+"""
+
+import logging
+import time
+from typing import Dict, List, Any, Optional, Union, Tuple
+from functools import wraps
+
+from .interface import VectorDBInterface
+from .factory import VectorDatabaseFactory
+from .models import Document, QueryResult, SearchParams
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def timed_operation(func):
+    """
+    Decorator to time database operations and log performance metrics.
+    """
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        start_time = time.time()
+        try:
+            result = func(self, *args, **kwargs)
+            elapsed_time = time.time() - start_time
+            
+            # Log performance metrics
+            operation_name = func.__name__
+            self._record_operation_metrics(operation_name, elapsed_time, True)
+            
+            return result
+        except Exception as e:
+            elapsed_time = time.time() - start_time
+            operation_name = func.__name__
+            self._record_operation_metrics(operation_name, elapsed_time, False)
+            logger.error(f"Error in {operation_name}: {str(e)}")
+            raise
+    
+    return wrapper
+
+class VectorDBManager:
+    """
+    High-level manager for vector database operations.
+    
+    Provides caching, metrics tracking, and error handling for vector database operations.
+    """
+    
+    def __init__(self, config: Dict[str, Any]):
+        """
+        Initialize the vector database manager.
+        
+        Args:
+            config: Configuration settings
+        """
+        self.config = config
+        self.db = VectorDatabaseFactory.create_vector_db(config)
+        
+        # Initialize cache
+        self.cache_enabled = config.get('cache_enabled', True)
+        self.cache_ttl = config.get('cache_ttl', 300)  # 5 minutes
+        self.cache: Dict[str, Dict[str, Any]] = {}
+        self.cache_timestamps: Dict[str, float] = {}
+        
+        # Initialize metrics
+        self.metrics: Dict[str, Dict[str, Any]] = {
+            'operations': {},
+            'cache': {
+                'hits': 0,
+                'misses': 0
+            }
+        }
+        
+        logger.info("Initialized vector database manager")
+    
+    @timed_operation
+    def create_collection(self, collection_name: str) -> bool:
+        """
+        Create a new collection in the vector database.
+        
+        Args:
+            collection_name: Name of the collection to create
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        # Clear cache for this collection
+        self._clear_collection_cache(collection_name)
+        
+        return self.db.create_collection(collection_name)
+    
+    @timed_operation
+    def delete_collection(self, collection_name: str) -> bool:
+        """
+        Delete a collection from the vector database.
+        
+        Args:
+            collection_name: Name of the collection to delete
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        # Clear cache for this collection
+        self._clear_collection_cache(collection_name)
+        
+        return self.db.delete_collection(collection_name)
+    
+    @timed_operation
+    def list_collections(self) -> List[str]:
+        """
+        List all collections in the vector database.
+        
+        Returns:
+            List of collection names
+        """
+        cache_key = 'list_collections'
+        
+        # Check cache
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            return cached_result
+        
+        # Get from database
+        result = self.db.list_collections()
+        
+        # Update cache
+        self._add_to_cache(cache_key, result)
+        
+        return result
+    
+    @timed_operation
+    def collection_exists(self, collection_name: str) -> bool:
+        """
+        Check if a collection exists in the vector database.
+        
+        Args:
+            collection_name: Name of the collection to check
+            
+        Returns:
+            True if the collection exists, False otherwise
+        """
+        cache_key = f'collection_exists:{collection_name}'
+        
+        # Check cache
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            return cached_result
+        
+        # Get from database
+        result = self.db.collection_exists(collection_name)
+        
+        # Update cache
+        self._add_to_cache(cache_key, result)
+        
+        return result
+    
+    @timed_operation
+    def add_documents(self, collection_name: str, documents: List[Document]) -> List[str]:
+        """
+        Add documents to a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            documents: List of documents to add
+            
+        Returns:
+            List of document IDs
+        """
+        # Clear cache for this collection
+        self._clear_collection_cache(collection_name)
+        
+        return self.db.add_documents(collection_name, documents)
+    
+    @timed_operation
+    def get_document(self, collection_name: str, document_id: str) -> Optional[Document]:
+        """
+        Get a document by ID.
+        
+        Args:
+            collection_name: Name of the collection
+            document_id: ID of the document to retrieve
+            
+        Returns:
+            Document if found, None otherwise
+        """
+        cache_key = f'get_document:{collection_name}:{document_id}'
+        
+        # Check cache
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            return cached_result
+        
+        # Get from database
+        result = self.db.get_document(collection_name, document_id)
+        
+        # Update cache
+        self._add_to_cache(cache_key, result)
+        
+        return result
+    
+    @timed_operation
+    def delete_document(self, collection_name: str, document_id: str) -> bool:
+        """
+        Delete a document by ID.
+        
+        Args:
+            collection_name: Name of the collection
+            document_id: ID of the document to delete
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        # Clear cache for this document and collection
+        self._clear_document_cache(collection_name, document_id)
+        
+        return self.db.delete_document(collection_name, document_id)
+    
+    @timed_operation
+    def search(self, collection_name: str, query: str, params: SearchParams) -> List[QueryResult]:
+        """
+        Search for documents in a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            query: Query string
+            params: Search parameters
+            
+        Returns:
+            List of query results
+        """
+        # Generate cache key based on query and params
+        cache_key = f'search:{collection_name}:{query}:{self._params_to_cache_key(params)}'
+        
+        # Check cache
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            return cached_result
+        
+        # Get from database
+        result = self.db.search(collection_name, query, params)
+        
+        # Update cache
+        self._add_to_cache(cache_key, result)
+        
+        return result
+    
+    @timed_operation
+    def search_by_vector(self, collection_name: str, vector: List[float], params: SearchParams) -> List[QueryResult]:
+        """
+        Search for documents in a collection using a vector.
+        
+        Args:
+            collection_name: Name of the collection
+            vector: Query vector
+            params: Search parameters
+            
+        Returns:
+            List of query results
+        """
+        # Vector searches are not cached due to the size of the vector
+        return self.db.search_by_vector(collection_name, vector, params)
+    
+    @timed_operation
+    def hybrid_search(self, collection_name: str, query: str, vector: List[float], params: SearchParams) -> List[QueryResult]:
+        """
+        Perform a hybrid search combining vector similarity and keyword matching.
+        
+        Args:
+            collection_name: Name of the collection
+            query: Query string
+            vector: Query vector
+            params: Search parameters
+            
+        Returns:
+            List of query results
+        """
+        # Hybrid searches are not cached due to the size of the vector
+        return self.db.hybrid_search(collection_name, query, vector, params)
+    
+    @timed_operation
+    def count_documents(self, collection_name: str) -> int:
+        """
+        Count the number of documents in a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            
+        Returns:
+            Number of documents
+        """
+        cache_key = f'count_documents:{collection_name}'
+        
+        # Check cache
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            return cached_result
+        
+        # Get from database
+        result = self.db.count_documents(collection_name)
+        
+        # Update cache
+        self._add_to_cache(cache_key, result)
+        
+        return result
+    
+    @timed_operation
+    def get_stats(self, collection_name: str) -> Dict[str, Any]:
+        """
+        Get statistics for a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            
+        Returns:
+            Dictionary of statistics
+        """
+        cache_key = f'get_stats:{collection_name}'
+        
+        # Check cache
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            return cached_result
+        
+        # Get from database
+        result = self.db.get_stats(collection_name)
+        
+        # Update cache
+        self._add_to_cache(cache_key, result)
+        
+        return result
+    
+    @timed_operation
+    def clear(self) -> bool:
+        """
+        Clear all data from the vector database.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        # Clear all cache
+        self.cache.clear()
+        self.cache_timestamps.clear()
+        
+        return self.db.clear()
+    
+    @timed_operation
+    def close(self) -> None:
+        """
+        Close the connection to the vector database.
+        """
+        self.db.close()
+    
+    def get_metrics(self) -> Dict[str, Any]:
+        """
+        Get performance metrics for the vector database.
+        
+        Returns:
+            Dictionary of metrics
+        """
+        return self.metrics
+    
+    def clear_cache(self) -> None:
+        """
+        Clear the cache.
+        """
+        self.cache.clear()
+        self.cache_timestamps.clear()
+        logger.info("Cleared vector database cache")
+    
+    def _add_to_cache(self, key: str, value: Any) -> None:
+        """
+        Add a value to the cache.
+        
+        Args:
+            key: Cache key
+            value: Value to cache
+        """
+        if not self.cache_enabled:
+            return
+        
+        self.cache[key] = value
+        self.cache_timestamps[key] = time.time()
+    
+    def _get_from_cache(self, key: str) -> Optional[Any]:
+        """
+        Get a value from the cache.
+        
+        Args:
+            key: Cache key
+            
+        Returns:
+            Cached value if found and not expired, None otherwise
+        """
+        if not self.cache_enabled or key not in self.cache:
+            self.metrics['cache']['misses'] += 1
+            return None
+        
+        # Check if cache entry has expired
+        timestamp = self.cache_timestamps.get(key, 0)
+        if time.time() - timestamp > self.cache_ttl:
+            # Remove expired entry
+            del self.cache[key]
+            del self.cache_timestamps[key]
+            self.metrics['cache']['misses'] += 1
+            return None
+        
+        self.metrics['cache']['hits'] += 1
+        return self.cache[key]
+    
+    def _clear_collection_cache(self, collection_name: str) -> None:
+        """
+        Clear cache entries related to a collection.
+        
+        Args:
+            collection_name: Name of the collection
+        """
+        if not self.cache_enabled:
+            return
+        
+        # Find keys related to this collection
+        keys_to_remove = [key for key in self.cache if collection_name in key]
+        
+        # Remove from cache
+        for key in keys_to_remove:
+            del self.cache[key]
+            del self.cache_timestamps[key]
+    
+    def _clear_document_cache(self, collection_name: str, document_id: str) -> None:
+        """
+        Clear cache entries related to a document.
+        
+        Args:
+            collection_name: Name of the collection
+            document_id: ID of the document
+        """
+        if not self.cache_enabled:
+            return
+        
+        # Clear specific document cache
+        doc_key = f'get_document:{collection_name}:{document_id}'
+        if doc_key in self.cache:
+            del self.cache[doc_key]
+            del self.cache_timestamps[doc_key]
+        
+        # Clear collection-level caches that might include this document
+        self._clear_collection_cache(collection_name)
+    
+    def _params_to_cache_key(self, params: SearchParams) -> str:
+        """
+        Convert search parameters to a cache key.
+        
+        Args:
+            params: Search parameters
+            
+        Returns:
+            String representation for cache key
+        """
+        return f"limit={params.limit},offset={params.offset},filters={sorted(params.filters.items())},include_metadata={params.include_metadata},include_embeddings={params.include_embeddings},min_score={params.min_score},max_distance={params.max_distance},hybrid_alpha={params.hybrid_alpha}"
+    
+    def _record_operation_metrics(self, operation: str, elapsed_time: float, success: bool) -> None:
+        """
+        Record metrics for a database operation.
+        
+        Args:
+            operation: Name of the operation
+            elapsed_time: Time taken to complete the operation
+            success: Whether the operation was successful
+        """
+        if operation not in self.metrics['operations']:
+            self.metrics['operations'][operation] = {
+                'count': 0,
+                'success_count': 0,
+                'failure_count': 0,
+                'total_time': 0,
+                'min_time': float('inf'),
+                'max_time': 0,
+                'avg_time': 0
+            }
+        
+        metrics = self.metrics['operations'][operation]
+        metrics['count'] += 1
+        metrics['total_time'] += elapsed_time
+        metrics['min_time'] = min(metrics['min_time'], elapsed_time)
+        metrics['max_time'] = max(metrics['max_time'], elapsed_time)
+        metrics['avg_time'] = metrics['total_time'] / metrics['count']
+        
+        if success:
+            metrics['success_count'] += 1
+        else:
+            metrics['failure_count'] += 1

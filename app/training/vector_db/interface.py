@@ -1,0 +1,185 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""Vector Database Interface for TORONTO AI Team Agent.
+
+This module defines the interface that all vector database implementations must follow."""
+
+import logging
+from abc import ABC, abstractmethod
+from typing import Dict, List, Any, Optional, Union, Tuple
+
+from .models import Document, QueryResult, SearchParams
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class VectorDBInterface(ABC):
+    """Abstract base class defining the interface for all vector database implementations.
+    
+    All vector database backends must implement this interface to ensure
+    consistent behavior across different implementations."""
+    
+    @abstractmethod
+    def create_collection(self, collection_name: str) -> bool:
+        """Create a new collection in the vector database.
+        
+        Args:
+            collection_name: Name of the collection to create
+            
+        Returns:
+            True if successful, False otherwise"""
+        pass
+    
+    @abstractmethod
+    def delete_collection(self, collection_name: str) -> bool:
+        """Delete a collection from the vector database.
+        
+        Args:
+            collection_name: Name of the collection to delete
+            
+        Returns:
+            True if successful, False otherwise"""
+        pass
+    
+    @abstractmethod
+    def list_collections(self) -> List[str]:
+        """List all collections in the vector database.
+        
+        Returns:
+            List of collection names"""
+        pass
+    
+    @abstractmethod
+    def collection_exists(self, collection_name: str) -> bool:
+        """Check if a collection exists in the vector database.
+        
+        Args:
+            collection_name: Name of the collection to check
+            
+        Returns:
+            True if the collection exists, False otherwise"""
+        pass
+    
+    @abstractmethod
+    def add_documents(self, collection_name: str, documents: List[Document]) -> List[str]:
+        """Add documents to a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            documents: List of documents to add
+            
+        Returns:
+            List of document IDs"""
+        pass
+    
+    @abstractmethod
+    def get_document(self, collection_name: str, document_id: str) -> Optional[Document]:
+        """Get a document by ID.
+        
+        Args:
+            collection_name: Name of the collection
+            document_id: ID of the document to retrieve
+            
+        Returns:
+            Document if found, None otherwise"""
+        pass
+    
+    @abstractmethod
+    def delete_document(self, collection_name: str, document_id: str) -> bool:
+        """Delete a document by ID.
+        
+        Args:
+            collection_name: Name of the collection
+            document_id: ID of the document to delete
+            
+        Returns:
+            True if successful, False otherwise"""
+        pass
+    
+    @abstractmethod
+    def search(self, collection_name: str, query: str, params: SearchParams) -> List[QueryResult]:
+        """Search for documents in a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            query: Query string
+            params: Search parameters
+            
+        Returns:
+            List of query results"""
+        pass
+    
+    @abstractmethod
+    def search_by_vector(self, collection_name: str, vector: List[float], params: SearchParams) -> List[QueryResult]:
+        """Search for documents in a collection using a vector.
+        
+        Args:
+            collection_name: Name of the collection
+            vector: Query vector
+            params: Search parameters
+            
+        Returns:
+            List of query results"""
+        pass
+    
+    @abstractmethod
+    def hybrid_search(self, collection_name: str, query: str, vector: List[float], params: SearchParams) -> List[QueryResult]:
+        """Perform a hybrid search combining vector similarity and keyword matching.
+        
+        Args:
+            collection_name: Name of the collection
+            query: Query string
+            vector: Query vector
+            params: Search parameters
+            
+        Returns:
+            List of query results"""
+        pass
+    
+    @abstractmethod
+    def count_documents(self, collection_name: str) -> int:
+        """Count the number of documents in a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            
+        Returns:
+            Number of documents"""
+        pass
+    
+    @abstractmethod
+    def get_stats(self, collection_name: str) -> Dict[str, Any]:
+        """Get statistics for a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            
+        Returns:
+            Dictionary of statistics"""
+        pass
+    
+    @abstractmethod
+    def clear(self) -> bool:
+        """Clear all data from the vector database.
+        
+        Returns:
+            True if successful, False otherwise"""
+        pass
+    
+    @abstractmethod
+    def close(self) -> None:
+        """Close the connection to the vector database."""
+        pass

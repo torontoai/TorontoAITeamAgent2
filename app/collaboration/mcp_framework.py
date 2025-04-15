@@ -1,0 +1,1046 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""Multi-agent Conversational Protocols (MCP) Framework.
+
+This module implements the core MCP framework that enables structured conversations
+between agents using formal protocols and state machines."""
+
+from typing import Dict, Any, List, Optional, Union, Callable, Type
+import logging
+import asyncio
+import uuid
+from datetime import datetime
+import json
+
+logger = logging.getLogger(__name__)
+
+class ProtocolState:
+    """Represents a state in a conversation protocol.
+    
+    A protocol state defines what messages are valid in a particular
+    stage of a conversation and how to transition to other states."""
+    
+    def __init__(self, state_id: str, description: str, is_initial: bool = False, is_terminal: bool = False):
+        """Initialize a protocol state.
+        
+        Args:
+            state_id: Unique identifier for the state
+            description: Human-readable description of the state
+            is_initial: Whether this is an initial state
+            is_terminal: Whether this is a terminal state"""
+        self.state_id = state_id
+        self.description = description
+        self.is_initial = is_initial
+        self.is_terminal = is_terminal
+        self.valid_message_types = []
+        self.transitions = {}
+        
+    def add_valid_message_type(self, message_type: str) -> None:
+        """Add a valid message type for this state.
+        
+        Args:
+            message_type: Type of message that is valid in this state"""
+        if message_type not in self.valid_message_types:
+            self.valid_message_types.append(message_type)
+            
+    def add_transition(self, message_type: str, next_state_id: str, condition: Optional[Callable] = None) -> None:
+        """Add a transition to another state.
+        
+        Args:
+            message_type: Type of message that triggers this transition
+            next_state_id: ID of the state to transition to
+            condition: Optional function that must return True for the transition to occur"""
+        self.transitions[message_type] = {
+            "next_state_id": next_state_id,
+            "condition": condition
+        }
+        
+        # Ensure the message type is valid for this state
+        self.add_valid_message_type(message_type)
+        
+    def is_message_valid(self, message_type: str) -> bool:
+        """Check if a message type is valid for this state.
+        
+        Args:
+            message_type: Type of message to check
+            
+        Returns:
+            Whether the message type is valid"""
+        return message_type in self.valid_message_types
+        
+    def get_next_state_id(self, message_type: str, message: Dict[str, Any]) -> Optional[str]:
+        """Get the next state ID based on a message.
+        
+        Args:
+            message_type: Type of message
+            message: Full message object
+            
+        Returns:
+            ID of the next state, or None if no valid transition"""
+        if message_type not in self.transitions:
+            return None
+            
+        transition = self.transitions[message_type]
+        
+        # Check condition if present
+        if transition["condition"] is not None and not transition["condition"](message):
+            return None
+            
+        return transition["next_state_id"]
+        
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the state to a dictionary.
+        
+        Returns:
+            Dictionary representation of the state"""
+        return {
+            "state_id": self.state_id,
+            "description": self.description,
+            "is_initial": self.is_initial,
+            "is_terminal": self.is_terminal,
+            "valid_message_types": self.valid_message_types,
+            "transitions": {
+                msg_type: {
+                    "next_state_id": trans["next_state_id"],
+                    "has_condition": trans["condition"] is not None
+                } for msg_type, trans in self.transitions.items()
+            }
+        }
+
+class ConversationProtocol:
+    """Base class for all conversation protocols.
+    
+    A conversation protocol defines the structure and rules for a conversation
+    between agents, including valid states, transitions, and message formats."""
+    
+    def __init__(self, protocol_id: str, version: str, description: str):
+        """Initialize a conversation protocol.
+        
+        Args:
+            protocol_id: Unique identifier for the protocol
+            version: Version string
+            description: Human-readable description of the protocol"""
+        self.protocol_id = protocol_id
+        self.version = version
+        self.description = description
+        self.states: Dict[str, ProtocolState] = {}
+        self.initial_state_id = None
+        self.terminal_state_ids = []
+        
+    def add_state(self, state: ProtocolState) -> None:
+        """Add a state to the protocol.
+        
+        Args:
+            state: State to add"""
+        self.states[state.state_id] = state
+        
+        if state.is_initial:
+            self.initial_state_id = state.state_id
+            
+        if state.is_terminal:
+            self.terminal_state_ids.append(state.state_id)
+            
+    def get_state(self, state_id: str) -> Optional[ProtocolState]:
+        """Get a state by ID.
+        
+        Args:
+            state_id: ID of the state to get
+            
+        Returns:
+            The state, or None if not found"""
+        return self.states.get(state_id)
+        
+    def get_initial_state(self) -> Optional[ProtocolState]:
+        """Get the initial state of the protocol.
+        
+        Returns:
+            The initial state, or None if not defined"""
+        if self.initial_state_id is None:
+            return None
+            
+        return self.states.get(self.initial_state_id)
+        
+    def is_terminal_state(self, state_id: str) -> bool:
+        """Check if a state is terminal.
+        
+        Args:
+            state_id: ID of the state to check
+            
+        Returns:
+            Whether the state is terminal"""
+        return state_id in self.terminal_state_ids
+        
+    def validate_message(self, message: Dict[str, Any], current_state_id: str) -> bool:
+        """Validate a message against the current state.
+        
+        Args:
+            message: Message to validate
+            current_state_id: ID of the current state
+            
+        Returns:
+            Whether the message is valid"""
+        state = self.get_state(current_state_id)
+        if state is None:
+            return False
+            
+        message_type = message.get("content", {}).get("type")
+        if message_type is None:
+            return False
+            
+        return state.is_message_valid(message_type)
+        
+    def get_next_state_id(self, message: Dict[str, Any], current_state_id: str) -> Optional[str]:
+        """Determine the next state based on a message.
+        
+        Args:
+            message: Message to process
+            current_state_id: ID of the current state
+            
+        Returns:
+            ID of the next state, or None if no valid transition"""
+        state = self.get_state(current_state_id)
+        if state is None:
+            return None
+            
+        message_type = message.get("content", {}).get("type")
+        if message_type is None:
+            return None
+            
+        return state.get_next_state_id(message_type, message)
+        
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the protocol to a dictionary.
+        
+        Returns:
+            Dictionary representation of the protocol"""
+        return {
+            "protocol_id": self.protocol_id,
+            "version": self.version,
+            "description": self.description,
+            "states": {state_id: state.to_dict() for state_id, state in self.states.items()},
+            "initial_state_id": self.initial_state_id,
+            "terminal_state_ids": self.terminal_state_ids
+        }
+        
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'ConversationProtocol':
+        """Create a protocol from a dictionary.
+        
+        Args:
+            data: Dictionary representation of the protocol
+            
+        Returns:
+            The created protocol"""
+        protocol = cls(
+            protocol_id=data["protocol_id"],
+            version=data["version"],
+            description=data["description"]
+        )
+        
+        # Create states
+        for state_id, state_data in data["states"].items():
+            state = ProtocolState(
+                state_id=state_data["state_id"],
+                description=state_data["description"],
+                is_initial=state_data["is_initial"],
+                is_terminal=state_data["is_terminal"]
+            )
+            
+            # Add valid message types
+            for msg_type in state_data["valid_message_types"]:
+                state.add_valid_message_type(msg_type)
+                
+            # Add transitions (without conditions)
+            for msg_type, trans_data in state_data["transitions"].items():
+                state.add_transition(
+                    message_type=msg_type,
+                    next_state_id=trans_data["next_state_id"]
+                )
+                
+            protocol.add_state(state)
+            
+        return protocol
+
+class ConversationContext:
+    """Manages the context for a conversation.
+    
+    A conversation context tracks the state and history of a conversation
+    between agents using a specific protocol."""
+    
+    def __init__(self, conversation_id: str, protocol: ConversationProtocol, participants: List[Dict[str, str]]):
+        """Initialize a conversation context.
+        
+        Args:
+            conversation_id: Unique identifier for the conversation
+            protocol: Protocol being used for the conversation
+            participants: List of participant information (id, role)"""
+        self.conversation_id = conversation_id
+        self.protocol = protocol
+        self.participants = participants
+        self.current_state_id = protocol.initial_state_id
+        self.history = []
+        self.metadata = {}
+        self.created_at = datetime.now().isoformat()
+        self.updated_at = datetime.now().isoformat()
+        self.status = "active"
+        
+    def add_message(self, message: Dict[str, Any]) -> bool:
+        """Add a message to the conversation history.
+        
+        Args:
+            message: Message to add
+            
+        Returns:
+            Whether the message was successfully added"""
+        # Validate message against current state
+        if not self.protocol.validate_message(message, self.current_state_id):
+            return False
+            
+        # Add message to history
+        message_record = {
+            "message_id": message["message_id"],
+            "sender": message["sender"]["id"],
+            "timestamp": message.get("metadata", {}).get("created_at", datetime.now().isoformat()),
+            "state": self.current_state_id,
+            "content_summary": self._summarize_content(message["content"])
+        }
+        
+        self.history.append(message_record)
+        
+        # Update conversation state
+        next_state_id = self.protocol.get_next_state_id(message, self.current_state_id)
+        if next_state_id is not None:
+            self.current_state_id = next_state_id
+            
+        # Update metadata
+        self.updated_at = datetime.now().isoformat()
+        
+        # Check if we've reached a terminal state
+        if self.protocol.is_terminal_state(self.current_state_id):
+            self.status = "completed"
+            
+        return True
+        
+    def _summarize_content(self, content: Dict[str, Any]) -> str:
+        """Create a summary of message content.
+        
+        Args:
+            content: Message content
+            
+        Returns:
+            Summary string"""
+        content_type = content.get("type", "unknown")
+        subject = content.get("subject", "")
+        
+        if content_type == "request":
+            return f"Requested information about {subject}"
+        elif content_type == "response":
+            return f"Provided information about {subject}"
+        elif content_type == "clarification":
+            return f"Asked for clarification about {subject}"
+        elif content_type == "proposal":
+            return f"Made proposal regarding {subject}"
+        elif content_type == "counter_proposal":
+            return f"Made counter-proposal regarding {subject}"
+        elif content_type == "acceptance":
+            return f"Accepted proposal regarding {subject}"
+        elif content_type == "rejection":
+            return f"Rejected proposal regarding {subject}"
+        else:
+            return f"{content_type.capitalize()} message about {subject}"
+        
+    def get_context_summary(self) -> Dict[str, Any]:
+        """Get a summary of the conversation context.
+        
+        Returns:
+            Summary dictionary"""
+        return {
+            "conversation_id": self.conversation_id,
+            "protocol": {
+                "id": self.protocol.protocol_id,
+                "version": self.protocol.version
+            },
+            "participants": self.participants,
+            "current_state": self.current_state_id,
+            "history_length": len(self.history),
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "status": self.status
+        }
+        
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the context to a dictionary.
+        
+        Returns:
+            Dictionary representation of the context"""
+        return {
+            "conversation_id": self.conversation_id,
+            "protocol": {
+                "id": self.protocol.protocol_id,
+                "version": self.protocol.version
+            },
+            "participants": self.participants,
+            "current_state_id": self.current_state_id,
+            "history": self.history,
+            "metadata": self.metadata,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "status": self.status
+        }
+
+class ConversationManager:
+    """Manages active conversations.
+    
+    The conversation manager creates, tracks, and archives conversations
+    between agents using various protocols."""
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """Initialize the conversation manager.
+        
+        Args:
+            config: Configuration settings"""
+        self.config = config or {}
+        self.active_conversations: Dict[str, ConversationContext] = {}
+        self.archived_conversations: Dict[str, ConversationContext] = {}
+        self.protocols: Dict[str, Dict[str, ConversationProtocol]] = {}
+        
+        # Default configuration
+        self.max_history_size = self.config.get("max_history_size", 100)
+        self.auto_archive_days = self.config.get("auto_archive_days", 7)
+        
+        logger.info("Conversation Manager initialized")
+        
+    def register_protocol(self, protocol: ConversationProtocol) -> None:
+        """Register a protocol with the manager.
+        
+        Args:
+            protocol: Protocol to register"""
+        if protocol.protocol_id not in self.protocols:
+            self.protocols[protocol.protocol_id] = {}
+            
+        self.protocols[protocol.protocol_id][protocol.version] = protocol
+        
+        logger.info(f"Registered protocol: {protocol.protocol_id} v{protocol.version}")
+        
+    def get_protocol(self, protocol_id: str, version: str = "latest") -> Optional[ConversationProtocol]:
+        """Get a protocol by ID and version.
+        
+        Args:
+            protocol_id: Protocol ID
+            version: Protocol version, or "latest" for the latest version
+            
+        Returns:
+            The protocol, or None if not found"""
+        if protocol_id not in self.protocols:
+            return None
+            
+        if version == "latest":
+            # Find the latest version
+            versions = list(self.protocols[protocol_id].keys())
+            if not versions:
+                return None
+                
+            versions.sort(key=lambda v: [int(x) for x in v.split(".")])
+            version = versions[-1]
+            
+        return self.protocols[protocol_id].get(version)
+        
+    async def create_conversation(self, protocol_id: str, protocol_version: str, participants: List[Dict[str, str]]) -> Dict[str, Any]:
+        """
+        Create a new conversation.
+        
+        Args:
+            protocol_id: ID of the protocol to use
+            protocol_version: Version of the protocol to use
+            participants: List of participant information (id, role)
+            
+        Returns:
+            Creation result
+        """
+        protocol = self.get_protocol(protocol_id, protocol_version)
+        if protocol is None:
+            return {
+                "success": False,
+                "error": f"Protocol not found: {protocol_id} v{protocol_version}"
+            }
+            
+        # Generate conversation ID
+        conversation_id = f"conv_{uuid.uuid4().hex[:8]}"
+        
+        # Create context
+        context = ConversationContext(
+            conversation_id=conversation_id,
+            protocol=protocol,
+            participants=participants
+        )
+        
+        # Store in active conversations
+        self.active_conversations[conversation_id] = context
+        
+        logger.info(f"Created conversation: {conversation_id} using {protocol_id} v{protocol_version}")
+        
+        return {
+            "success": True,
+            "conversation_id": conversation_id,
+            "protocol": {
+                "id": protocol_id,
+                "version": protocol_version
+            },
+            "initial_state": protocol.initial_state_id
+        }
+        
+    async def add_message(self, conversation_id: str, message: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Add a message to a conversation.
+        
+        Args:
+            conversation_id: ID of the conversation
+            message: Message to add
+            
+        Returns:
+            Message addition result
+        """
+        # Find the conversation
+        context = self.active_conversations.get(conversation_id)
+        if context is None:
+            return {
+                "success": False,
+                "error": f"Conversation not found: {conversation_id}"
+            }
+            
+        # Add the message
+        if not context.add_message(message):
+            return {
+                "success": False,
+                "error": "Invalid message for current state"
+            }
+            
+        # Check if conversation is completed
+        if context.status == "completed":
+            logger.info(f"Conversation completed: {conversation_id}")
+            
+        return {
+            "success": True,
+            "conversation_id": conversation_id,
+            "new_state": context.current_state_id,
+            "is_terminal": context.protocol.is_terminal_state(context.current_state_id)
+        }
+        
+    async def get_conversation(self, conversation_id: str) -> Dict[str, Any]:
+        """
+        Get a conversation by ID.
+        
+        Args:
+            conversation_id: ID of the conversation
+            
+        Returns:
+            Conversation data
+        """
+        # Check active conversations
+        context = self.active_conversations.get(conversation_id)
+        if context is None:
+            # Check archived conversations
+            context = self.archived_conversations.get(conversation_id)
+            
+        if context is None:
+            return {
+                "success": False,
+                "error": f"Conversation not found: {conversation_id}"
+            }
+            
+        return {
+            "success": True,
+            "conversation": context.to_dict()
+        }
+        
+    async def get_agent_conversations(self, agent_id: str, status: str = "all") -> Dict[str, Any]:
+        """
+        Get conversations involving an agent.
+        
+        Args:
+            agent_id: ID of the agent
+            status: Filter by status ("active", "completed", "all")
+            
+        Returns:
+            List of conversations
+        """
+        conversations = []
+        
+        # Check active conversations
+        for conv_id, context in self.active_conversations.items():
+            if any(p["id"] == agent_id for p in context.participants):
+                if status == "all" or status == "active":
+                    conversations.append(context.get_context_summary())
+                    
+        # Check archived conversations
+        for conv_id, context in self.archived_conversations.items():
+            if any(p["id"] == agent_id for p in context.participants):
+                if status == "all" or status == "completed":
+                    conversations.append(context.get_context_summary())
+                    
+        return {
+            "success": True,
+            "conversations": conversations,
+            "count": len(conversations)
+        }
+        
+    async def archive_conversation(self, conversation_id: str) -> Dict[str, Any]:
+        """
+        Archive a conversation.
+        
+        Args:
+            conversation_id: ID of the conversation
+            
+        Returns:
+            Archiving result
+        """
+        # Find the conversation
+        context = self.active_conversations.get(conversation_id)
+        if context is None:
+            return {
+                "success": False,
+                "error": f"Conversation not found: {conversation_id}"
+            }
+            
+        # Move to archived conversations
+        self.archived_conversations[conversation_id] = context
+        del self.active_conversations[conversation_id]
+        
+        logger.info(f"Archived conversation: {conversation_id}")
+        
+        return {
+            "success": True,
+            "message": f"Conversation archived: {conversation_id}"
+        }
+        
+    async def auto_archive_old_conversations(self) -> Dict[str, Any]:
+        """
+        Automatically archive old conversations.
+        
+        Returns:
+            Archiving result
+        """
+        now = datetime.now()
+        archive_threshold = self.auto_archive_days * 24 * 60 * 60  # Convert days to seconds
+        
+        to_archive = []
+        
+        for conv_id, context in self.active_conversations.items():
+            try:
+                updated = datetime.fromisoformat(context.updated_at)
+                age_seconds = (now - updated).total_seconds()
+                
+                if age_seconds > archive_threshold:
+                    to_archive.append(conv_id)
+            except (ValueError, TypeError):
+                # Skip if date parsing fails
+                pass
+                
+        # Archive the identified conversations
+        for conv_id in to_archive:
+            await self.archive_conversation(conv_id)
+            
+        return {
+            "success": True,
+            "archived_count": len(to_archive),
+            "archived_conversations": to_archive
+        }
+
+# Standard protocol implementations
+
+class InformationExchangeProtocol(ConversationProtocol):
+    """Protocol for information exchange between agents.
+    
+    This protocol defines a structured way for agents to request and provide
+    information, with support for clarification requests."""
+    
+    def __init__(self):
+        """Initialize the Information Exchange Protocol."""
+        super().__init__(
+            protocol_id="info_exchange",
+            version="1.0",
+            description="Protocol for structured information exchange between agents"
+        )
+        
+        # Define states
+        request_state = ProtocolState(
+            state_id="request",
+            description="Initial request for information",
+            is_initial=True
+        )
+        
+        response_state = ProtocolState(
+            state_id="response",
+            description="Response to information request"
+        )
+        
+        clarification_state = ProtocolState(
+            state_id="clarification",
+            description="Request for clarification"
+        )
+        
+        completed_state = ProtocolState(
+            state_id="completed",
+            description="Information exchange completed",
+            is_terminal=True
+        )
+        
+        # Add valid message types and transitions
+        request_state.add_valid_message_type("request")
+        request_state.add_transition("request", "response")
+        
+        response_state.add_valid_message_type("response")
+        response_state.add_valid_message_type("clarification_request")
+        response_state.add_transition("response", "completed")
+        response_state.add_transition("clarification_request", "clarification")
+        
+        clarification_state.add_valid_message_type("clarification")
+        clarification_state.add_transition("clarification", "response")
+        
+        # Add states to protocol
+        self.add_state(request_state)
+        self.add_state(response_state)
+        self.add_state(clarification_state)
+        self.add_state(completed_state)
+
+class NegotiationProtocol(ConversationProtocol):
+    """Protocol for negotiation between agents.
+    
+    This protocol defines a structured way for agents to negotiate through
+    proposals, counter-proposals, and acceptance/rejection."""
+    
+    def __init__(self):
+        """Initialize the Negotiation Protocol."""
+        super().__init__(
+            protocol_id="negotiation",
+            version="1.0",
+            description="Protocol for structured negotiation between agents"
+        )
+        
+        # Define states
+        proposal_state = ProtocolState(
+            state_id="proposal",
+            description="Initial proposal",
+            is_initial=True
+        )
+        
+        consideration_state = ProtocolState(
+            state_id="consideration",
+            description="Considering the proposal"
+        )
+        
+        counter_proposal_state = ProtocolState(
+            state_id="counter_proposal",
+            description="Counter-proposal"
+        )
+        
+        accepted_state = ProtocolState(
+            state_id="accepted",
+            description="Proposal accepted",
+            is_terminal=True
+        )
+        
+        rejected_state = ProtocolState(
+            state_id="rejected",
+            description="Proposal rejected",
+            is_terminal=True
+        )
+        
+        # Add valid message types and transitions
+        proposal_state.add_valid_message_type("proposal")
+        proposal_state.add_transition("proposal", "consideration")
+        
+        consideration_state.add_valid_message_type("accept")
+        consideration_state.add_valid_message_type("reject")
+        consideration_state.add_valid_message_type("counter_proposal")
+        consideration_state.add_transition("accept", "accepted")
+        consideration_state.add_transition("reject", "rejected")
+        consideration_state.add_transition("counter_proposal", "counter_proposal")
+        
+        counter_proposal_state.add_valid_message_type("accept")
+        counter_proposal_state.add_valid_message_type("reject")
+        counter_proposal_state.add_valid_message_type("counter_proposal")
+        counter_proposal_state.add_transition("accept", "accepted")
+        counter_proposal_state.add_transition("reject", "rejected")
+        counter_proposal_state.add_transition("counter_proposal", "counter_proposal")
+        
+        # Add states to protocol
+        self.add_state(proposal_state)
+        self.add_state(consideration_state)
+        self.add_state(counter_proposal_state)
+        self.add_state(accepted_state)
+        self.add_state(rejected_state)
+
+class TaskDelegationProtocol(ConversationProtocol):
+    """Protocol for task delegation between agents.
+    
+    This protocol defines a structured way for agents to delegate tasks,
+    report progress, and complete tasks."""
+    
+    def __init__(self):
+        """Initialize the Task Delegation Protocol."""
+        super().__init__(
+            protocol_id="task_delegation",
+            version="1.0",
+            description="Protocol for structured task delegation between agents"
+        )
+        
+        # Define states
+        assignment_state = ProtocolState(
+            state_id="assignment",
+            description="Initial task assignment",
+            is_initial=True
+        )
+        
+        acceptance_state = ProtocolState(
+            state_id="acceptance",
+            description="Task acceptance or rejection"
+        )
+        
+        in_progress_state = ProtocolState(
+            state_id="in_progress",
+            description="Task in progress"
+        )
+        
+        completed_state = ProtocolState(
+            state_id="completed",
+            description="Task completed"
+        )
+        
+        verification_state = ProtocolState(
+            state_id="verification",
+            description="Task verification"
+        )
+        
+        finalized_state = ProtocolState(
+            state_id="finalized",
+            description="Task finalized",
+            is_terminal=True
+        )
+        
+        # Add valid message types and transitions
+        assignment_state.add_valid_message_type("assign_task")
+        assignment_state.add_transition("assign_task", "acceptance")
+        
+        acceptance_state.add_valid_message_type("accept_task")
+        acceptance_state.add_valid_message_type("reject_task")
+        acceptance_state.add_transition("accept_task", "in_progress")
+        acceptance_state.add_transition("reject_task", "finalized")
+        
+        in_progress_state.add_valid_message_type("progress_update")
+        in_progress_state.add_valid_message_type("task_completed")
+        in_progress_state.add_transition("progress_update", "in_progress")
+        in_progress_state.add_transition("task_completed", "completed")
+        
+        completed_state.add_valid_message_type("verify_task")
+        completed_state.add_transition("verify_task", "verification")
+        
+        verification_state.add_valid_message_type("approve_task")
+        verification_state.add_valid_message_type("request_changes")
+        verification_state.add_transition("approve_task", "finalized")
+        verification_state.add_transition("request_changes", "in_progress")
+        
+        # Add states to protocol
+        self.add_state(assignment_state)
+        self.add_state(acceptance_state)
+        self.add_state(in_progress_state)
+        self.add_state(completed_state)
+        self.add_state(verification_state)
+        self.add_state(finalized_state)
+
+class CollaborativeProblemSolvingProtocol(ConversationProtocol):
+    """Protocol for collaborative problem solving between agents.
+    
+    This protocol defines a structured way for agents to collaborate on
+    solving problems through problem definition, solution proposals,
+    and consensus building."""
+    
+    def __init__(self):
+        """Initialize the Collaborative Problem Solving Protocol."""
+        super().__init__(
+            protocol_id="collaborative_problem_solving",
+            version="1.0",
+            description="Protocol for structured collaborative problem solving between agents"
+        )
+        
+        # Define states
+        problem_definition_state = ProtocolState(
+            state_id="problem_definition",
+            description="Initial problem definition",
+            is_initial=True
+        )
+        
+        clarification_state = ProtocolState(
+            state_id="clarification",
+            description="Problem clarification"
+        )
+        
+        solution_proposal_state = ProtocolState(
+            state_id="solution_proposal",
+            description="Solution proposal"
+        )
+        
+        evaluation_state = ProtocolState(
+            state_id="evaluation",
+            description="Solution evaluation"
+        )
+        
+        refinement_state = ProtocolState(
+            state_id="refinement",
+            description="Solution refinement"
+        )
+        
+        consensus_state = ProtocolState(
+            state_id="consensus",
+            description="Consensus building"
+        )
+        
+        implementation_state = ProtocolState(
+            state_id="implementation",
+            description="Solution implementation"
+        )
+        
+        completed_state = ProtocolState(
+            state_id="completed",
+            description="Problem solving completed",
+            is_terminal=True
+        )
+        
+        # Add valid message types and transitions
+        problem_definition_state.add_valid_message_type("define_problem")
+        problem_definition_state.add_transition("define_problem", "clarification")
+        
+        clarification_state.add_valid_message_type("request_clarification")
+        clarification_state.add_valid_message_type("provide_clarification")
+        clarification_state.add_valid_message_type("problem_understood")
+        clarification_state.add_transition("request_clarification", "clarification")
+        clarification_state.add_transition("provide_clarification", "clarification")
+        clarification_state.add_transition("problem_understood", "solution_proposal")
+        
+        solution_proposal_state.add_valid_message_type("propose_solution")
+        solution_proposal_state.add_transition("propose_solution", "evaluation")
+        
+        evaluation_state.add_valid_message_type("evaluate_solution")
+        evaluation_state.add_transition("evaluate_solution", "refinement")
+        
+        refinement_state.add_valid_message_type("refine_solution")
+        refinement_state.add_valid_message_type("solution_refined")
+        refinement_state.add_transition("refine_solution", "refinement")
+        refinement_state.add_transition("solution_refined", "consensus")
+        
+        consensus_state.add_valid_message_type("agree")
+        consensus_state.add_valid_message_type("disagree")
+        consensus_state.add_transition("agree", "implementation")
+        consensus_state.add_transition("disagree", "solution_proposal")
+        
+        implementation_state.add_valid_message_type("implement_solution")
+        implementation_state.add_valid_message_type("implementation_complete")
+        implementation_state.add_transition("implement_solution", "implementation")
+        implementation_state.add_transition("implementation_complete", "completed")
+        
+        # Add states to protocol
+        self.add_state(problem_definition_state)
+        self.add_state(clarification_state)
+        self.add_state(solution_proposal_state)
+        self.add_state(evaluation_state)
+        self.add_state(refinement_state)
+        self.add_state(consensus_state)
+        self.add_state(implementation_state)
+        self.add_state(completed_state)
+
+class ErrorHandlingProtocol(ConversationProtocol):
+    """Protocol for error handling between agents.
+    
+    This protocol defines a structured way for agents to report errors,
+    diagnose issues, and implement fixes."""
+    
+    def __init__(self):
+        """Initialize the Error Handling Protocol."""
+        super().__init__(
+            protocol_id="error_handling",
+            version="1.0",
+            description="Protocol for structured error handling between agents"
+        )
+        
+        # Define states
+        error_report_state = ProtocolState(
+            state_id="error_report",
+            description="Initial error report",
+            is_initial=True
+        )
+        
+        diagnosis_state = ProtocolState(
+            state_id="diagnosis",
+            description="Error diagnosis"
+        )
+        
+        resolution_state = ProtocolState(
+            state_id="resolution",
+            description="Error resolution"
+        )
+        
+        verification_state = ProtocolState(
+            state_id="verification",
+            description="Resolution verification"
+        )
+        
+        completed_state = ProtocolState(
+            state_id="completed",
+            description="Error handling completed",
+            is_terminal=True
+        )
+        
+        # Add valid message types and transitions
+        error_report_state.add_valid_message_type("report_error")
+        error_report_state.add_transition("report_error", "diagnosis")
+        
+        diagnosis_state.add_valid_message_type("request_info")
+        diagnosis_state.add_valid_message_type("provide_info")
+        diagnosis_state.add_valid_message_type("diagnosis_complete")
+        diagnosis_state.add_transition("request_info", "diagnosis")
+        diagnosis_state.add_transition("provide_info", "diagnosis")
+        diagnosis_state.add_transition("diagnosis_complete", "resolution")
+        
+        resolution_state.add_valid_message_type("propose_fix")
+        resolution_state.add_valid_message_type("implement_fix")
+        resolution_state.add_transition("propose_fix", "resolution")
+        resolution_state.add_transition("implement_fix", "verification")
+        
+        verification_state.add_valid_message_type("verify_fix")
+        verification_state.add_valid_message_type("report_issue")
+        verification_state.add_transition("verify_fix", "completed")
+        verification_state.add_transition("report_issue", "diagnosis")
+        
+        # Add states to protocol
+        self.add_state(error_report_state)
+        self.add_state(diagnosis_state)
+        self.add_state(resolution_state)
+        self.add_state(verification_state)
+        self.add_state(completed_state)
+
+# Protocol registry
+def create_standard_protocols() -> Dict[str, ConversationProtocol]:
+    """Create standard protocol instances.
+    
+    Returns:
+        Dictionary of protocol instances"""
+    return {
+        "info_exchange": InformationExchangeProtocol(),
+        "negotiation": NegotiationProtocol(),
+        "task_delegation": TaskDelegationProtocol(),
+        "collaborative_problem_solving": CollaborativeProblemSolvingProtocol(),
+        "error_handling": ErrorHandlingProtocol()
+    }

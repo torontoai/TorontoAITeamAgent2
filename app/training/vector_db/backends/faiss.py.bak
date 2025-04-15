@@ -1,0 +1,776 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""
+FAISS Vector Database Implementation for TORONTO AI Team Agent.
+
+This module provides a FAISS implementation of the vector database interface.
+"""
+
+import logging
+import uuid
+import os
+import pickle
+import numpy as np
+from typing import Dict, List, Any, Optional, Union, Tuple
+import json
+from pathlib import Path
+
+from ..interface import VectorDBInterface
+from ..models import Document, QueryResult, SearchParams
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class FAISSVectorDB(VectorDBInterface):
+    """
+    FAISS implementation of the vector database interface.
+    
+    This implementation uses FAISS as the backend for vector storage and retrieval.
+    """
+    
+    def __init__(self, config: Dict[str, Any]):
+        """
+        Initialize the FAISS vector database.
+        
+        Args:
+            config: Configuration settings
+        """
+        self.config = config
+        
+        # Import faiss here to avoid dependency issues if not installed
+        try:
+            import faiss
+        except ImportError:
+            logger.error("FAISS is not installed. Please install it with 'pip install faiss-cpu' or 'pip install faiss-gpu'.")
+            raise
+        
+        # Store faiss import for later use
+        self._faiss = faiss
+        
+        # Get configuration settings
+        self.persist_directory = config.get('persist_directory', './faiss_db')
+        self.dimension = config.get('dimension', 1536)  # Default to OpenAI embedding dimension
+        self.index_type = config.get('index_type', 'Flat')
+        self.metric_type = config.get('metric_type', 'cosine')
+        self.nlist = config.get('nlist', 100)
+        self.nprobe = config.get('nprobe', 10)
+        
+        # Create persist directory if it doesn't exist
+        os.makedirs(self.persist_directory, exist_ok=True)
+        
+        # Initialize collections
+        self.collections: Dict[str, Dict[str, Any]] = {}
+        
+        # Load existing collections
+        self._load_collections()
+        
+        logger.info(f"Initialized FAISS vector database with persist directory: {self.persist_directory}")
+    
+    def create_collection(self, collection_name: str) -> bool:
+        """
+        Create a new collection in the vector database.
+        
+        Args:
+            collection_name: Name of the collection to create
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Check if collection already exists
+            if self.collection_exists(collection_name):
+                logger.warning(f"Collection already exists: {collection_name}")
+                return False
+            
+            # Create FAISS index
+            if self.metric_type == 'cosine':
+                # For cosine similarity, we need to normalize vectors
+                index = self._faiss.IndexFlatIP(self.dimension)
+            elif self.metric_type == 'l2':
+                index = self._faiss.IndexFlatL2(self.dimension)
+            else:
+                # Default to inner product
+                index = self._faiss.IndexFlatIP(self.dimension)
+            
+            # Create IVF index if specified
+            if self.index_type == 'IVF':
+                # Create quantizer
+                quantizer = index
+                
+                # Create IVF index
+                if self.metric_type == 'cosine':
+                    index = self._faiss.IndexIVFFlat(quantizer, self.dimension, self.nlist, self._faiss.METRIC_INNER_PRODUCT)
+                elif self.metric_type == 'l2':
+                    index = self._faiss.IndexIVFFlat(quantizer, self.dimension, self.nlist, self._faiss.METRIC_L2)
+                else:
+                    index = self._faiss.IndexIVFFlat(quantizer, self.dimension, self.nlist, self._faiss.METRIC_INNER_PRODUCT)
+                
+                # Set search parameters
+                index.nprobe = self.nprobe
+            
+            # Initialize collection data
+            self.collections[collection_name] = {
+                'index': index,
+                'documents': {},
+                'document_ids': [],
+                'embeddings': [],
+                'trained': False
+            }
+            
+            # Save collection
+            self._save_collection(collection_name)
+            
+            logger.info(f"Created collection: {collection_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Error creating collection {collection_name}: {str(e)}")
+            return False
+    
+    def delete_collection(self, collection_name: str) -> bool:
+        """
+        Delete a collection from the vector database.
+        
+        Args:
+            collection_name: Name of the collection to delete
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return False
+            
+            # Remove collection from memory
+            if collection_name in self.collections:
+                del self.collections[collection_name]
+            
+            # Remove collection files
+            collection_path = os.path.join(self.persist_directory, f"{collection_name}.pkl")
+            if os.path.exists(collection_path):
+                os.remove(collection_path)
+            
+            logger.info(f"Deleted collection: {collection_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting collection {collection_name}: {str(e)}")
+            return False
+    
+    def list_collections(self) -> List[str]:
+        """
+        List all collections in the vector database.
+        
+        Returns:
+            List of collection names
+        """
+        try:
+            return list(self.collections.keys())
+        except Exception as e:
+            logger.error(f"Error listing collections: {str(e)}")
+            return []
+    
+    def collection_exists(self, collection_name: str) -> bool:
+        """
+        Check if a collection exists in the vector database.
+        
+        Args:
+            collection_name: Name of the collection to check
+            
+        Returns:
+            True if the collection exists, False otherwise
+        """
+        try:
+            return collection_name in self.collections
+        except Exception as e:
+            logger.error(f"Error checking if collection {collection_name} exists: {str(e)}")
+            return False
+    
+    def add_documents(self, collection_name: str, documents: List[Document]) -> List[str]:
+        """
+        Add documents to a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            documents: List of documents to add
+            
+        Returns:
+            List of document IDs
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                self.create_collection(collection_name)
+            
+            # Get collection
+            collection = self.collections[collection_name]
+            
+            # Prepare data
+            document_ids = []
+            new_embeddings = []
+            
+            for document in documents:
+                # Skip documents without embeddings
+                if document.embedding is None:
+                    logger.warning(f"Document has no embedding, skipping")
+                    continue
+                
+                # Generate ID if not provided
+                doc_id = document.id or str(uuid.uuid4())
+                document_ids.append(doc_id)
+                
+                # Store document
+                collection['documents'][doc_id] = document
+                collection['document_ids'].append(doc_id)
+                
+                # Prepare embedding
+                embedding = np.array(document.embedding, dtype=np.float32)
+                
+                # Normalize for cosine similarity
+                if self.metric_type == 'cosine':
+                    embedding = embedding / np.linalg.norm(embedding)
+                
+                # Add to embeddings list
+                new_embeddings.append(embedding)
+                collection['embeddings'].append(embedding)
+            
+            # Convert to numpy array
+            if new_embeddings:
+                new_embeddings_array = np.array(new_embeddings, dtype=np.float32)
+                
+                # Train index if needed
+                if not collection['trained'] and hasattr(collection['index'], 'train'):
+                    collection['index'].train(new_embeddings_array)
+                    collection['trained'] = True
+                
+                # Add to index
+                collection['index'].add(new_embeddings_array)
+            
+            # Save collection
+            self._save_collection(collection_name)
+            
+            logger.info(f"Added {len(document_ids)} documents to collection: {collection_name}")
+            return document_ids
+        except Exception as e:
+            logger.error(f"Error adding documents to collection {collection_name}: {str(e)}")
+            return []
+    
+    def get_document(self, collection_name: str, document_id: str) -> Optional[Document]:
+        """
+        Get a document by ID.
+        
+        Args:
+            collection_name: Name of the collection
+            document_id: ID of the document to retrieve
+            
+        Returns:
+            Document if found, None otherwise
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return None
+            
+            # Get collection
+            collection = self.collections[collection_name]
+            
+            # Check if document exists
+            if document_id not in collection['documents']:
+                return None
+            
+            # Return document
+            return collection['documents'][document_id]
+        except Exception as e:
+            logger.error(f"Error getting document {document_id} from collection {collection_name}: {str(e)}")
+            return None
+    
+    def delete_document(self, collection_name: str, document_id: str) -> bool:
+        """
+        Delete a document by ID.
+        
+        Args:
+            collection_name: Name of the collection
+            document_id: ID of the document to delete
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return False
+            
+            # Get collection
+            collection = self.collections[collection_name]
+            
+            # Check if document exists
+            if document_id not in collection['documents']:
+                logger.warning(f"Document does not exist: {document_id}")
+                return False
+            
+            # FAISS doesn't support removing individual vectors
+            # We need to rebuild the index without the deleted document
+            
+            # Get document index
+            doc_index = collection['document_ids'].index(document_id)
+            
+            # Remove document
+            del collection['documents'][document_id]
+            collection['document_ids'].pop(doc_index)
+            collection['embeddings'].pop(doc_index)
+            
+            # Rebuild index
+            if collection['embeddings']:
+                # Create new index
+                if self.metric_type == 'cosine':
+                    index = self._faiss.IndexFlatIP(self.dimension)
+                elif self.metric_type == 'l2':
+                    index = self._faiss.IndexFlatL2(self.dimension)
+                else:
+                    index = self._faiss.IndexFlatIP(self.dimension)
+                
+                # Create IVF index if specified
+                if self.index_type == 'IVF':
+                    # Create quantizer
+                    quantizer = index
+                    
+                    # Create IVF index
+                    if self.metric_type == 'cosine':
+                        index = self._faiss.IndexIVFFlat(quantizer, self.dimension, self.nlist, self._faiss.METRIC_INNER_PRODUCT)
+                    elif self.metric_type == 'l2':
+                        index = self._faiss.IndexIVFFlat(quantizer, self.dimension, self.nlist, self._faiss.METRIC_L2)
+                    else:
+                        index = self._faiss.IndexIVFFlat(quantizer, self.dimension, self.nlist, self._faiss.METRIC_INNER_PRODUCT)
+                    
+                    # Set search parameters
+                    index.nprobe = self.nprobe
+                
+                # Convert embeddings to numpy array
+                embeddings_array = np.array(collection['embeddings'], dtype=np.float32)
+                
+                # Train index if needed
+                if hasattr(index, 'train'):
+                    index.train(embeddings_array)
+                    collection['trained'] = True
+                
+                # Add to index
+                index.add(embeddings_array)
+                
+                # Update index
+                collection['index'] = index
+            else:
+                # No documents left, reset index
+                if self.metric_type == 'cosine':
+                    collection['index'] = self._faiss.IndexFlatIP(self.dimension)
+                elif self.metric_type == 'l2':
+                    collection['index'] = self._faiss.IndexFlatL2(self.dimension)
+                else:
+                    collection['index'] = self._faiss.IndexFlatIP(self.dimension)
+                
+                collection['trained'] = False
+            
+            # Save collection
+            self._save_collection(collection_name)
+            
+            logger.info(f"Deleted document {document_id} from collection: {collection_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting document {document_id} from collection {collection_name}: {str(e)}")
+            return False
+    
+    def search(self, collection_name: str, query: str, params: SearchParams) -> List[QueryResult]:
+        """
+        Search for documents in a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            query: Query string
+            params: Search parameters
+            
+        Returns:
+            List of query results
+        """
+        try:
+            # FAISS doesn't support text search directly, so we need to use metadata filtering
+            # This is a simplified implementation that searches for the query string in the text field
+            
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return []
+            
+            # Get collection
+            collection = self.collections[collection_name]
+            
+            # Process results
+            query_results = []
+            
+            # Search through documents
+            for doc_id, document in collection['documents'].items():
+                # Check if text contains query
+                if query.lower() in document.text.lower():
+                    # Check filters
+                    if params.filters and not self._check_filters(document.metadata, params.filters):
+                        continue
+                    
+                    # Calculate simple text match score
+                    score = self._calculate_text_score(document.text, query)
+                    
+                    # Skip documents below minimum score
+                    if params.min_score is not None and score < params.min_score:
+                        continue
+                    
+                    # Create query result
+                    query_results.append(QueryResult(
+                        document=document,
+                        score=score,
+                        distance=None
+                    ))
+            
+            # Sort by score in descending order
+            query_results.sort(key=lambda x: x.score, reverse=True)
+            
+            # Apply offset and limit
+            return query_results[params.offset:params.offset + params.limit]
+        except Exception as e:
+            logger.error(f"Error searching collection {collection_name}: {str(e)}")
+            return []
+    
+    def search_by_vector(self, collection_name: str, vector: List[float], params: SearchParams) -> List[QueryResult]:
+        """
+        Search for documents in a collection using a vector.
+        
+        Args:
+            collection_name: Name of the collection
+            vector: Query vector
+            params: Search parameters
+            
+        Returns:
+            List of query results
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return []
+            
+            # Get collection
+            collection = self.collections[collection_name]
+            
+            # Check if collection is empty
+            if not collection['embeddings']:
+                return []
+            
+            # Prepare query vector
+            query_vector = np.array([vector], dtype=np.float32)
+            
+            # Normalize for cosine similarity
+            if self.metric_type == 'cosine':
+                query_vector = query_vector / np.linalg.norm(query_vector)
+            
+            # Search
+            k = min(len(collection['document_ids']), params.limit + params.offset)
+            distances, indices = collection['index'].search(query_vector, k)
+            
+            # Process results
+            query_results = []
+            
+            for i in range(len(indices[0])):
+                idx = indices[0][i]
+                distance = distances[0][i]
+                
+                # Skip invalid indices
+                if idx == -1:
+                    continue
+                
+                # Get document
+                doc_id = collection['document_ids'][idx]
+                document = collection['documents'][doc_id]
+                
+                # Check filters
+                if params.filters and not self._check_filters(document.metadata, params.filters):
+                    continue
+                
+                # Calculate score based on distance
+                if self.metric_type == 'cosine':
+                    # For cosine similarity, distance is already a similarity score
+                    score = distance
+                elif self.metric_type == 'l2':
+                    # For L2 distance, lower is better, convert to [0, 1]
+                    # This is a simplification, proper normalization depends on data
+                    score = max(0.0, 1.0 - min(1.0, distance / 10.0))
+                else:
+                    # Default fallback
+                    score = max(0.0, min(1.0, 1.0 - distance))
+                
+                # Skip documents below minimum score or above maximum distance
+                if params.min_score is not None and score < params.min_score:
+                    continue
+                if params.max_distance is not None and distance > params.max_distance:
+                    continue
+                
+                # Create query result
+                query_results.append(QueryResult(
+                    document=document,
+                    score=score,
+                    distance=distance
+                ))
+            
+            # Apply offset
+            return query_results[params.offset:min(params.offset + params.limit, len(query_results))]
+        except Exception as e:
+            logger.error(f"Error searching collection {collection_name} by vector: {str(e)}")
+            return []
+    
+    def hybrid_search(self, collection_name: str, query: str, vector: List[float], params: SearchParams) -> List[QueryResult]:
+        """
+        Perform a hybrid search combining vector similarity and keyword matching.
+        
+        Args:
+            collection_name: Name of the collection
+            query: Query string
+            vector: Query vector
+            params: Search parameters
+            
+        Returns:
+            List of query results
+        """
+        try:
+            # FAISS doesn't natively support hybrid search, so we implement it manually
+            
+            # Get vector search results
+            vector_results = self.search_by_vector(collection_name, vector, params)
+            
+            # Process results to add text scores
+            hybrid_results = []
+            
+            for result in vector_results:
+                # Calculate text score
+                text_score = self._calculate_text_score(result.document.text, query)
+                
+                # Calculate hybrid score
+                hybrid_score = (1 - params.hybrid_alpha) * result.score + params.hybrid_alpha * text_score
+                
+                # Skip documents below minimum score
+                if params.min_score is not None and hybrid_score < params.min_score:
+                    continue
+                
+                # Create query result
+                hybrid_results.append(QueryResult(
+                    document=result.document,
+                    score=hybrid_score,
+                    distance=result.distance,
+                    metadata={
+                        "vector_score": result.score,
+                        "text_score": text_score
+                    }
+                ))
+            
+            # Sort by score in descending order
+            hybrid_results.sort(key=lambda x: x.score, reverse=True)
+            
+            # Apply limit
+            return hybrid_results[:params.limit]
+        except Exception as e:
+            logger.error(f"Error performing hybrid search on collection {collection_name}: {str(e)}")
+            return []
+    
+    def count_documents(self, collection_name: str) -> int:
+        """
+        Count the number of documents in a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            
+        Returns:
+            Number of documents
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return 0
+            
+            # Get collection
+            collection = self.collections[collection_name]
+            
+            # Return count
+            return len(collection['document_ids'])
+        except Exception as e:
+            logger.error(f"Error counting documents in collection {collection_name}: {str(e)}")
+            return 0
+    
+    def get_stats(self, collection_name: str) -> Dict[str, Any]:
+        """
+        Get statistics for a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            
+        Returns:
+            Dictionary of statistics
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return {}
+            
+            # Get collection
+            collection = self.collections[collection_name]
+            
+            # Get count
+            count = len(collection['document_ids'])
+            
+            return {
+                "document_count": count,
+                "collection_name": collection_name,
+                "database_type": "faiss",
+                "dimension": self.dimension,
+                "index_type": self.index_type,
+                "metric_type": self.metric_type
+            }
+        except Exception as e:
+            logger.error(f"Error getting stats for collection {collection_name}: {str(e)}")
+            return {}
+    
+    def clear(self) -> bool:
+        """
+        Clear all data from the vector database.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get all collections
+            collections = list(self.collections.keys())
+            
+            # Delete each collection
+            for collection_name in collections:
+                self.delete_collection(collection_name)
+            
+            logger.info("Cleared all collections from FAISS vector database")
+            return True
+        except Exception as e:
+            logger.error(f"Error clearing FAISS vector database: {str(e)}")
+            return False
+    
+    def close(self) -> None:
+        """
+        Close the connection to the vector database.
+        """
+        try:
+            # Save all collections
+            for collection_name in self.collections:
+                self._save_collection(collection_name)
+            
+            logger.info("Closed FAISS vector database")
+        except Exception as e:
+            logger.error(f"Error closing FAISS vector database: {str(e)}")
+    
+    def _load_collections(self) -> None:
+        """
+        Load collections from disk.
+        """
+        try:
+            # Get collection files
+            collection_files = [f for f in os.listdir(self.persist_directory) if f.endswith('.pkl')]
+            
+            # Load each collection
+            for file_name in collection_files:
+                collection_name = file_name[:-4]  # Remove .pkl extension
+                collection_path = os.path.join(self.persist_directory, file_name)
+                
+                # Load collection
+                with open(collection_path, 'rb') as f:
+                    self.collections[collection_name] = pickle.load(f)
+                
+                logger.info(f"Loaded collection: {collection_name}")
+        except Exception as e:
+            logger.error(f"Error loading collections: {str(e)}")
+    
+    def _save_collection(self, collection_name: str) -> None:
+        """
+        Save a collection to disk.
+        
+        Args:
+            collection_name: Name of the collection to save
+        """
+        try:
+            # Check if collection exists
+            if collection_name not in self.collections:
+                return
+            
+            # Get collection path
+            collection_path = os.path.join(self.persist_directory, f"{collection_name}.pkl")
+            
+            # Save collection
+            with open(collection_path, 'wb') as f:
+                pickle.dump(self.collections[collection_name], f)
+            
+            logger.info(f"Saved collection: {collection_name}")
+        except Exception as e:
+            logger.error(f"Error saving collection {collection_name}: {str(e)}")
+    
+    def _check_filters(self, metadata: Dict[str, Any], filters: Dict[str, Any]) -> bool:
+        """
+        Check if metadata matches filters.
+        
+        Args:
+            metadata: Document metadata
+            filters: Metadata filters
+            
+        Returns:
+            True if metadata matches filters, False otherwise
+        """
+        # Simple implementation for basic filters
+        # In a real implementation, this would handle more complex filters
+        for key, value in filters.items():
+            if key not in metadata or metadata[key] != value:
+                return False
+        
+        return True
+    
+    def _calculate_text_score(self, text: str, query: str) -> float:
+        """
+        Calculate a simple text match score.
+        
+        Args:
+            text: Document text
+            query: Query string
+            
+        Returns:
+            Text match score between 0 and 1
+        """
+        # Simple implementation for demonstration purposes
+        # In a real implementation, this would use more sophisticated text matching
+        text_lower = text.lower()
+        query_lower = query.lower()
+        
+        # Split query into words
+        query_words = query_lower.split()
+        
+        # Count matching words
+        match_count = sum(1 for word in query_words if word in text_lower)
+        
+        # Calculate score
+        if not query_words:
+            return 0.0
+        
+        return match_count / len(query_words)

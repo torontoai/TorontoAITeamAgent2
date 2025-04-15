@@ -1,0 +1,51 @@
+{
+  "summary": {
+    "num_architectures": 1,
+    "num_tasks": 1,
+    "num_evaluations": 1,
+    "avg_fitness": 0.8278273809523812
+  },
+  "best_architecture": {
+    "name": "Sampled_Hierarchical Architecture_7740",
+    "id": null,
+    "fitness": 0.8278273809523812,
+    "metrics": {
+      "execution_time": 120.5,
+      "iterations": 8.0,
+      "token_usage": 3500.0,
+      "cost": 0.75,
+      "success": 1.0,
+      "quality_score": 0.85,
+      "message_count": 25.0
+    }
+  },
+  "worst_architecture": {
+    "name": "Sampled_Hierarchical Architecture_7740",
+    "id": null,
+    "fitness": 0.8278273809523812,
+    "metrics": {
+      "execution_time": 120.5,
+      "iterations": 8.0,
+      "token_usage": 3500.0,
+      "cost": 0.75,
+      "success": 1.0,
+      "quality_score": 0.85,
+      "message_count": 25.0
+    }
+  },
+  "best_by_task": {
+    "test_task_001": {
+      "architecture_name": "Sampled_Hierarchical Architecture_7740",
+      "architecture_id": null,
+      "fitness": 0.8278273809523812
+    }
+  },
+  "recent_evaluations": [
+    {
+      "architecture_name": "Sampled_Hierarchical Architecture_7740",
+      "task_id": "test_task_001",
+      "fitness": 0.8278273809523812,
+      "timestamp": "2025-04-15T02:27:16.200726"
+    }
+  ]
+}

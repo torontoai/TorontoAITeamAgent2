@@ -1,0 +1,993 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+import os
+import sys
+import asyncio
+from typing import Dict, List, Any, Optional
+from datetime import datetime, timedelta
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+
+# Add the project root to the Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+class Project(BaseModel):
+    """Project model."""
+    id: Optional[str] = None
+    name: str
+    description: str
+    start_date: datetime
+    target_end_date: datetime
+    actual_end_date: Optional[datetime] = None
+    status: str = "planning"
+    owner_id: str
+    team_ids: List[str]
+    
+class Milestone(BaseModel):
+    """Milestone model."""
+    id: Optional[str] = None
+    project_id: str
+    name: str
+    description: str
+    due_date: datetime
+    status: str = "pending"
+    completion_percentage: int = 0
+    
+class Task(BaseModel):
+    """Task model."""
+    id: Optional[str] = None
+    project_id: str
+    milestone_id: Optional[str] = None
+    name: str
+    description: str
+    assigned_to: str
+    priority: int = 1
+    status: str = "todo"
+    estimated_hours: float
+    actual_hours: float = 0
+    start_date: Optional[datetime] = None
+    due_date: datetime
+    completion_date: Optional[datetime] = None
+    dependencies: List[str] = []
+    
+class Risk(BaseModel):
+    """Risk model."""
+    id: Optional[str] = None
+    project_id: str
+    name: str
+    description: str
+    probability: float  # 0.0 to 1.0
+    impact: float  # 0.0 to 1.0
+    mitigation_strategy: str
+    status: str = "identified"
+    
+class TimelineEstimate(BaseModel):
+    """Timeline estimate model."""
+    project_id: str
+    estimated_duration: timedelta
+    confidence_level: float  # 0.0 to 1.0
+    best_case: timedelta
+    worst_case: timedelta
+    critical_path: List[str]  # Task IDs on the critical path
+
+class ProjectManagementModule:
+    """Project management module for the multi-agent team system.
+    Provides enhanced project management capabilities for handling complex projects."""
+    
+    def __init__(self):
+        """Initialize the project management module."""
+        self.projects = {}
+        self.milestones = {}
+        self.tasks = {}
+        self.risks = {}
+        self.timeline_estimates = {}
+        
+    async def create_project(self, project: Project) -> str:
+        """
+        Create a new project.
+        
+        Args:
+            project: Project data
+            
+        Returns:
+            Project ID
+        """
+        # Generate project ID if not provided
+        if not project.id:
+            project.id = f"proj_{len(self.projects) + 1}"
+        
+        # Store project
+        self.projects[project.id] = project.dict()
+        
+        return project.id
+    
+    async def get_project(self, project_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get project by ID.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            Project data or None if not found
+        """
+        return self.projects.get(project_id)
+    
+    async def update_project(self, project_id: str, project_data: Dict[str, Any]) -> bool:
+        """
+        Update project data.
+        
+        Args:
+            project_id: Project ID
+            project_data: Updated project data
+            
+        Returns:
+            True if project was updated successfully, False otherwise
+        """
+        if project_id not in self.projects:
+            return False
+        
+        # Update project data
+        self.projects[project_id].update(project_data)
+        
+        return True
+    
+    async def delete_project(self, project_id: str) -> bool:
+        """
+        Delete a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            True if project was deleted successfully, False otherwise
+        """
+        if project_id not in self.projects:
+            return False
+        
+        # Delete project
+        del self.projects[project_id]
+        
+        # Delete associated milestones, tasks, and risks
+        self.milestones = {k: v for k, v in self.milestones.items() if v["project_id"] != project_id}
+        self.tasks = {k: v for k, v in self.tasks.items() if v["project_id"] != project_id}
+        self.risks = {k: v for k, v in self.risks.items() if v["project_id"] != project_id}
+        
+        # Delete timeline estimate
+        if project_id in self.timeline_estimates:
+            del self.timeline_estimates[project_id]
+        
+        return True
+    
+    async def create_milestone(self, milestone: Milestone) -> str:
+        """
+        Create a new milestone.
+        
+        Args:
+            milestone: Milestone data
+            
+        Returns:
+            Milestone ID
+        """
+        # Check if project exists
+        if milestone.project_id not in self.projects:
+            raise ValueError(f"Project {milestone.project_id} not found")
+        
+        # Generate milestone ID if not provided
+        if not milestone.id:
+            milestone.id = f"mile_{len(self.milestones) + 1}"
+        
+        # Store milestone
+        self.milestones[milestone.id] = milestone.dict()
+        
+        return milestone.id
+    
+    async def get_milestone(self, milestone_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get milestone by ID.
+        
+        Args:
+            milestone_id: Milestone ID
+            
+        Returns:
+            Milestone data or None if not found
+        """
+        return self.milestones.get(milestone_id)
+    
+    async def update_milestone(self, milestone_id: str, milestone_data: Dict[str, Any]) -> bool:
+        """
+        Update milestone data.
+        
+        Args:
+            milestone_id: Milestone ID
+            milestone_data: Updated milestone data
+            
+        Returns:
+            True if milestone was updated successfully, False otherwise
+        """
+        if milestone_id not in self.milestones:
+            return False
+        
+        # Update milestone data
+        self.milestones[milestone_id].update(milestone_data)
+        
+        return True
+    
+    async def delete_milestone(self, milestone_id: str) -> bool:
+        """
+        Delete a milestone.
+        
+        Args:
+            milestone_id: Milestone ID
+            
+        Returns:
+            True if milestone was deleted successfully, False otherwise
+        """
+        if milestone_id not in self.milestones:
+            return False
+        
+        # Delete milestone
+        del self.milestones[milestone_id]
+        
+        # Update tasks associated with this milestone
+        for task_id, task in self.tasks.items():
+            if task["milestone_id"] == milestone_id:
+                task["milestone_id"] = None
+        
+        return True
+    
+    async def create_task(self, task: Task) -> str:
+        """
+        Create a new task.
+        
+        Args:
+            task: Task data
+            
+        Returns:
+            Task ID
+        """
+        # Check if project exists
+        if task.project_id not in self.projects:
+            raise ValueError(f"Project {task.project_id} not found")
+        
+        # Check if milestone exists if provided
+        if task.milestone_id and task.milestone_id not in self.milestones:
+            raise ValueError(f"Milestone {task.milestone_id} not found")
+        
+        # Generate task ID if not provided
+        if not task.id:
+            task.id = f"task_{len(self.tasks) + 1}"
+        
+        # Store task
+        self.tasks[task.id] = task.dict()
+        
+        return task.id
+    
+    async def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get task by ID.
+        
+        Args:
+            task_id: Task ID
+            
+        Returns:
+            Task data or None if not found
+        """
+        return self.tasks.get(task_id)
+    
+    async def update_task(self, task_id: str, task_data: Dict[str, Any]) -> bool:
+        """
+        Update task data.
+        
+        Args:
+            task_id: Task ID
+            task_data: Updated task data
+            
+        Returns:
+            True if task was updated successfully, False otherwise
+        """
+        if task_id not in self.tasks:
+            return False
+        
+        # Update task data
+        self.tasks[task_id].update(task_data)
+        
+        return True
+    
+    async def delete_task(self, task_id: str) -> bool:
+        """
+        Delete a task.
+        
+        Args:
+            task_id: Task ID
+            
+        Returns:
+            True if task was deleted successfully, False otherwise
+        """
+        if task_id not in self.tasks:
+            return False
+        
+        # Delete task
+        del self.tasks[task_id]
+        
+        # Remove task from dependencies
+        for task in self.tasks.values():
+            if task_id in task["dependencies"]:
+                task["dependencies"].remove(task_id)
+        
+        return True
+    
+    async def create_risk(self, risk: Risk) -> str:
+        """
+        Create a new risk.
+        
+        Args:
+            risk: Risk data
+            
+        Returns:
+            Risk ID
+        """
+        # Check if project exists
+        if risk.project_id not in self.projects:
+            raise ValueError(f"Project {risk.project_id} not found")
+        
+        # Generate risk ID if not provided
+        if not risk.id:
+            risk.id = f"risk_{len(self.risks) + 1}"
+        
+        # Store risk
+        self.risks[risk.id] = risk.dict()
+        
+        return risk.id
+    
+    async def get_risk(self, risk_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get risk by ID.
+        
+        Args:
+            risk_id: Risk ID
+            
+        Returns:
+            Risk data or None if not found
+        """
+        return self.risks.get(risk_id)
+    
+    async def update_risk(self, risk_id: str, risk_data: Dict[str, Any]) -> bool:
+        """
+        Update risk data.
+        
+        Args:
+            risk_id: Risk ID
+            risk_data: Updated risk data
+            
+        Returns:
+            True if risk was updated successfully, False otherwise
+        """
+        if risk_id not in self.risks:
+            return False
+        
+        # Update risk data
+        self.risks[risk_id].update(risk_data)
+        
+        return True
+    
+    async def delete_risk(self, risk_id: str) -> bool:
+        """
+        Delete a risk.
+        
+        Args:
+            risk_id: Risk ID
+            
+        Returns:
+            True if risk was deleted successfully, False otherwise
+        """
+        if risk_id not in self.risks:
+            return False
+        
+        # Delete risk
+        del self.risks[risk_id]
+        
+        return True
+    
+    async def estimate_timeline(self, project_id: str) -> TimelineEstimate:
+        """
+        Estimate project timeline.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            Timeline estimate
+        """
+        # Check if project exists
+        if project_id not in self.projects:
+            raise ValueError(f"Project {project_id} not found")
+        
+        # Get project tasks
+        project_tasks = {k: v for k, v in self.tasks.items() if v["project_id"] == project_id}
+        
+        # Calculate critical path
+        critical_path, duration = await self._calculate_critical_path(project_tasks)
+        
+        # Calculate best and worst case scenarios
+        best_case = duration * 0.8  # 20% faster than estimated
+        worst_case = duration * 1.5  # 50% slower than estimated
+        
+        # Create timeline estimate
+        estimate = TimelineEstimate(
+            project_id=project_id,
+            estimated_duration=duration,
+            confidence_level=0.8,  # 80% confidence
+            best_case=best_case,
+            worst_case=worst_case,
+            critical_path=critical_path
+        )
+        
+        # Store estimate
+        self.timeline_estimates[project_id] = estimate.dict()
+        
+        return estimate
+    
+    async def get_timeline_estimate(self, project_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get timeline estimate for a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            Timeline estimate or None if not found
+        """
+        return self.timeline_estimates.get(project_id)
+    
+    async def get_project_progress(self, project_id: str) -> Dict[str, Any]:
+        """
+        Get project progress.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            Project progress data
+        """
+        # Check if project exists
+        if project_id not in self.projects:
+            raise ValueError(f"Project {project_id} not found")
+        
+        # Get project milestones and tasks
+        project_milestones = {k: v for k, v in self.milestones.items() if v["project_id"] == project_id}
+        project_tasks = {k: v for k, v in self.tasks.items() if v["project_id"] == project_id}
+        
+        # Calculate milestone progress
+        milestone_progress = {}
+        for milestone_id, milestone in project_milestones.items():
+            milestone_tasks = {k: v for k, v in project_tasks.items() if v["milestone_id"] == milestone_id}
+            
+            if not milestone_tasks:
+                milestone_progress[milestone_id] = milestone["completion_percentage"]
+                continue
+            
+            completed_tasks = sum(1 for task in milestone_tasks.values() if task["status"] == "done")
+            total_tasks = len(milestone_tasks)
+            
+            completion_percentage = int((completed_tasks / total_tasks) * 100) if total_tasks > 0 else 0
+            milestone_progress[milestone_id] = completion_percentage
+        
+        # Calculate overall project progress
+        completed_tasks = sum(1 for task in project_tasks.values() if task["status"] == "done")
+        total_tasks = len(project_tasks)
+        
+        project_completion_percentage = int((completed_tasks / total_tasks) * 100) if total_tasks > 0 else 0
+        
+        # Calculate time progress
+        project = self.projects[project_id]
+        start_date = datetime.fromisoformat(project["start_date"]) if isinstance(project["start_date"], str) else project["start_date"]
+        target_end_date = datetime.fromisoformat(project["target_end_date"]) if isinstance(project["target_end_date"], str) else project["target_end_date"]
+        
+        total_days = (target_end_date - start_date).days
+        days_passed = (datetime.now() - start_date).days
+        
+        time_progress_percentage = int((days_passed / total_days) * 100) if total_days > 0 else 0
+        
+        # Check if project is on track
+        on_track = project_completion_percentage >= time_progress_percentage
+        
+        return {
+            "project_id": project_id,
+            "completion_percentage": project_completion_percentage,
+            "time_progress_percentage": time_progress_percentage,
+            "on_track": on_track,
+            "milestone_progress": milestone_progress,
+            "completed_tasks": completed_tasks,
+            "total_tasks": total_tasks
+        }
+    
+    async def get_project_dependencies(self, project_id: str) -> Dict[str, List[str]]:
+        """
+        Get project task dependencies.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            Dictionary of task dependencies
+        """
+        # Check if project exists
+        if project_id not in self.projects:
+            raise ValueError(f"Project {project_id} not found")
+        
+        # Get project tasks
+        project_tasks = {k: v for k, v in self.tasks.items() if v["project_id"] == project_id}
+        
+        # Build dependency graph
+        dependency_graph = {}
+        for task_id, task in project_tasks.items():
+            dependency_graph[task_id] = task["dependencies"]
+        
+        return dependency_graph
+    
+    async def _calculate_critical_path(self, tasks: Dict[str, Dict[str, Any]]) -> tuple:
+        """
+        Calculate the critical path for a set of tasks.
+        
+        Args:
+            tasks: Dictionary of tasks
+            
+        Returns:
+            Tuple of (critical_path, duration)
+        """
+        # Build dependency graph
+        dependency_graph = {}
+        for task_id, task in tasks.items():
+            dependency_graph[task_id] = task["dependencies"]
+        
+        # Calculate earliest start and finish times
+        earliest_start = {}
+        earliest_finish = {}
+        
+        # Initialize with tasks that have no dependencies
+        for task_id, dependencies in dependency_graph.items():
+            if not dependencies:
+                earliest_start[task_id] = 0
+                earliest_finish[task_id] = tasks[task_id]["estimated_hours"]
+        
+        # Process remaining tasks
+        while len(earliest_start) < len(tasks):
+            for task_id, dependencies in dependency_graph.items():
+                if task_id in earliest_start:
+                    continue
+                
+                # Check if all dependencies have been processed
+                if all(dep in earliest_finish for dep in dependencies):
+                    # Calculate earliest start time
+                    earliest_start[task_id] = max(earliest_finish.get(dep, 0) for dep in dependencies)
+                    
+                    # Calculate earliest finish time
+                    earliest_finish[task_id] = earliest_start[task_id] + tasks[task_id]["estimated_hours"]
+        
+        # Calculate latest start and finish times
+        latest_start = {}
+        latest_finish = {}
+        
+        # Initialize with the project end time
+        project_end = max(earliest_finish.values())
+        
+        for task_id in tasks:
+            latest_finish[task_id] = project_end
+        
+        # Find tasks that no other tasks depend on
+        dependent_tasks = set()
+        for dependencies in dependency_graph.values():
+            dependent_tasks.update(dependencies)
+        
+        end_tasks = set(tasks.keys()) - dependent_tasks
+        
+        for task_id in end_tasks:
+            latest_finish[task_id] = earliest_finish[task_id]
+            latest_start[task_id] = latest_finish[task_id] - tasks[task_id]["estimated_hours"]
+        
+        # Process remaining tasks in reverse order
+        while len(latest_start) < len(tasks):
+            for task_id, task in tasks.items():
+                if task_id in latest_start:
+                    continue
+                
+                # Find tasks that depend on this task
+                dependents = [t for t, deps in dependency_graph.items() if task_id in deps]
+                
+                # Check if all dependent tasks have been processed
+                if all(dep in latest_start for dep in dependents):
+                    # Calculate latest finish time
+                    if dependents:
+                        latest_finish[task_id] = min(latest_start.get(dep, project_end) for dep in dependents)
+                    else:
+                        latest_finish[task_id] = project_end
+                    
+                    # Calculate latest start time
+                    latest_start[task_id] = latest_finish[task_id] - tasks[task_id]["estimated_hours"]
+        
+        # Calculate slack time
+        slack = {}
+        for task_id in tasks:
+            slack[task_id] = latest_start[task_id] - earliest_start[task_id]
+        
+        # Find critical path (tasks with zero slack)
+        critical_path = [task_id for task_id, slack_time in slack.items() if slack_time == 0]
+        
+        # Sort critical path by earliest start time
+        critical_path.sort(key=lambda x: earliest_start[x])
+        
+        return critical_path, timedelta(hours=project_end)
+
+class ProjectManagementAPIModule:
+    """Project management API module for the multi-agent team system.
+    Provides FastAPI routes for project management capabilities."""
+    
+    def __init__(self, app: FastAPI):
+        """Initialize the project management API module.
+        
+        Args:
+            app: FastAPI application"""
+        self.app = app
+        self.project_management = ProjectManagementModule()
+        
+        # Register routes
+        self._register_routes()
+    
+    def _register_routes(self):
+        """Register routes with the FastAPI app."""
+        
+        @self.app.post("/api/projects", response_model=Dict[str, str])
+        async def create_project(project: Project):
+            """
+            Create a new project.
+            
+            Args:
+                project: Project data
+                
+            Returns:
+                Project ID
+            """
+            try:
+                project_id = await self.project_management.create_project(project)
+                return {"project_id": project_id}
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        
+        @self.app.get("/api/projects/{project_id}", response_model=Dict[str, Any])
+        async def get_project(project_id: str):
+            """
+            Get project by ID.
+            
+            Args:
+                project_id: Project ID
+                
+            Returns:
+                Project data
+            """
+            project = await self.project_management.get_project(project_id)
+            if not project:
+                raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+            return project
+        
+        @self.app.put("/api/projects/{project_id}", response_model=Dict[str, bool])
+        async def update_project(project_id: str, project_data: Dict[str, Any]):
+            """
+            Update project data.
+            
+            Args:
+                project_id: Project ID
+                project_data: Updated project data
+                
+            Returns:
+                Success status
+            """
+            success = await self.project_management.update_project(project_id, project_data)
+            if not success:
+                raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+            return {"success": success}
+        
+        @self.app.delete("/api/projects/{project_id}", response_model=Dict[str, bool])
+        async def delete_project(project_id: str):
+            """
+            Delete a project.
+            
+            Args:
+                project_id: Project ID
+                
+            Returns:
+                Success status
+            """
+            success = await self.project_management.delete_project(project_id)
+            if not success:
+                raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+            return {"success": success}
+        
+        @self.app.post("/api/milestones", response_model=Dict[str, str])
+        async def create_milestone(milestone: Milestone):
+            """
+            Create a new milestone.
+            
+            Args:
+                milestone: Milestone data
+                
+            Returns:
+                Milestone ID
+            """
+            try:
+                milestone_id = await self.project_management.create_milestone(milestone)
+                return {"milestone_id": milestone_id}
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        
+        @self.app.get("/api/milestones/{milestone_id}", response_model=Dict[str, Any])
+        async def get_milestone(milestone_id: str):
+            """
+            Get milestone by ID.
+            
+            Args:
+                milestone_id: Milestone ID
+                
+            Returns:
+                Milestone data
+            """
+            milestone = await self.project_management.get_milestone(milestone_id)
+            if not milestone:
+                raise HTTPException(status_code=404, detail=f"Milestone {milestone_id} not found")
+            return milestone
+        
+        @self.app.put("/api/milestones/{milestone_id}", response_model=Dict[str, bool])
+        async def update_milestone(milestone_id: str, milestone_data: Dict[str, Any]):
+            """
+            Update milestone data.
+            
+            Args:
+                milestone_id: Milestone ID
+                milestone_data: Updated milestone data
+                
+            Returns:
+                Success status
+            """
+            success = await self.project_management.update_milestone(milestone_id, milestone_data)
+            if not success:
+                raise HTTPException(status_code=404, detail=f"Milestone {milestone_id} not found")
+            return {"success": success}
+        
+        @self.app.delete("/api/milestones/{milestone_id}", response_model=Dict[str, bool])
+        async def delete_milestone(milestone_id: str):
+            """
+            Delete a milestone.
+            
+            Args:
+                milestone_id: Milestone ID
+                
+            Returns:
+                Success status
+            """
+            success = await self.project_management.delete_milestone(milestone_id)
+            if not success:
+                raise HTTPException(status_code=404, detail=f"Milestone {milestone_id} not found")
+            return {"success": success}
+        
+        @self.app.post("/api/tasks", response_model=Dict[str, str])
+        async def create_task(task: Task):
+            """
+            Create a new task.
+            
+            Args:
+                task: Task data
+                
+            Returns:
+                Task ID
+            """
+            try:
+                task_id = await self.project_management.create_task(task)
+                return {"task_id": task_id}
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        
+        @self.app.get("/api/tasks/{task_id}", response_model=Dict[str, Any])
+        async def get_task(task_id: str):
+            """
+            Get task by ID.
+            
+            Args:
+                task_id: Task ID
+                
+            Returns:
+                Task data
+            """
+            task = await self.project_management.get_task(task_id)
+            if not task:
+                raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+            return task
+        
+        @self.app.put("/api/tasks/{task_id}", response_model=Dict[str, bool])
+        async def update_task(task_id: str, task_data: Dict[str, Any]):
+            """
+            Update task data.
+            
+            Args:
+                task_id: Task ID
+                task_data: Updated task data
+                
+            Returns:
+                Success status
+            """
+            success = await self.project_management.update_task(task_id, task_data)
+            if not success:
+                raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+            return {"success": success}
+        
+        @self.app.delete("/api/tasks/{task_id}", response_model=Dict[str, bool])
+        async def delete_task(task_id: str):
+            """
+            Delete a task.
+            
+            Args:
+                task_id: Task ID
+                
+            Returns:
+                Success status
+            """
+            success = await self.project_management.delete_task(task_id)
+            if not success:
+                raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+            return {"success": success}
+        
+        @self.app.post("/api/risks", response_model=Dict[str, str])
+        async def create_risk(risk: Risk):
+            """
+            Create a new risk.
+            
+            Args:
+                risk: Risk data
+                
+            Returns:
+                Risk ID
+            """
+            try:
+                risk_id = await self.project_management.create_risk(risk)
+                return {"risk_id": risk_id}
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        
+        @self.app.get("/api/risks/{risk_id}", response_model=Dict[str, Any])
+        async def get_risk(risk_id: str):
+            """
+            Get risk by ID.
+            
+            Args:
+                risk_id: Risk ID
+                
+            Returns:
+                Risk data
+            """
+            risk = await self.project_management.get_risk(risk_id)
+            if not risk:
+                raise HTTPException(status_code=404, detail=f"Risk {risk_id} not found")
+            return risk
+        
+        @self.app.put("/api/risks/{risk_id}", response_model=Dict[str, bool])
+        async def update_risk(risk_id: str, risk_data: Dict[str, Any]):
+            """
+            Update risk data.
+            
+            Args:
+                risk_id: Risk ID
+                risk_data: Updated risk data
+                
+            Returns:
+                Success status
+            """
+            success = await self.project_management.update_risk(risk_id, risk_data)
+            if not success:
+                raise HTTPException(status_code=404, detail=f"Risk {risk_id} not found")
+            return {"success": success}
+        
+        @self.app.delete("/api/risks/{risk_id}", response_model=Dict[str, bool])
+        async def delete_risk(risk_id: str):
+            """
+            Delete a risk.
+            
+            Args:
+                risk_id: Risk ID
+                
+            Returns:
+                Success status
+            """
+            success = await self.project_management.delete_risk(risk_id)
+            if not success:
+                raise HTTPException(status_code=404, detail=f"Risk {risk_id} not found")
+            return {"success": success}
+        
+        @self.app.post("/api/projects/{project_id}/estimate-timeline", response_model=Dict[str, Any])
+        async def estimate_timeline(project_id: str):
+            """
+            Estimate project timeline.
+            
+            Args:
+                project_id: Project ID
+                
+            Returns:
+                Timeline estimate
+            """
+            try:
+                estimate = await self.project_management.estimate_timeline(project_id)
+                return estimate.dict()
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        
+        @self.app.get("/api/projects/{project_id}/timeline", response_model=Dict[str, Any])
+        async def get_timeline_estimate(project_id: str):
+            """
+            Get timeline estimate for a project.
+            
+            Args:
+                project_id: Project ID
+                
+            Returns:
+                Timeline estimate
+            """
+            estimate = await self.project_management.get_timeline_estimate(project_id)
+            if not estimate:
+                raise HTTPException(status_code=404, detail=f"Timeline estimate for project {project_id} not found")
+            return estimate
+        
+        @self.app.get("/api/projects/{project_id}/progress", response_model=Dict[str, Any])
+        async def get_project_progress(project_id: str):
+            """
+            Get project progress.
+            
+            Args:
+                project_id: Project ID
+                
+            Returns:
+                Project progress data
+            """
+            try:
+                progress = await self.project_management.get_project_progress(project_id)
+                return progress
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+        
+        @self.app.get("/api/projects/{project_id}/dependencies", response_model=Dict[str, List[str]])
+        async def get_project_dependencies(project_id: str):
+            """
+            Get project task dependencies.
+            
+            Args:
+                project_id: Project ID
+                
+            Returns:
+                Dictionary of task dependencies
+            """
+            try:
+                dependencies = await self.project_management.get_project_dependencies(project_id)
+                return dependencies
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+
+# Function to create project management API module
+def create_project_management_api_module(app: FastAPI) -> ProjectManagementAPIModule:
+    """Create and initialize the project management API module.
+    
+    Args:
+        app: FastAPI application
+        
+    Returns:
+        ProjectManagementAPIModule instance"""
+    return ProjectManagementAPIModule(app)

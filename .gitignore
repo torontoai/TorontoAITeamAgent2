@@ -1,0 +1,10 @@
+*.pyc
+__pycache__/
+*.egg-info/
+demo_deployment/
+test_deployment/
+venv/
+node_modules/
+.env
+dist/
+build/

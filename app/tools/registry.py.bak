@@ -1,0 +1,228 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""
+Tool Registry for TorontoAITeamAgent.
+
+This module provides a registry for all tools that agents can use.
+"""
+
+from typing import Dict, Any, List, Optional, Callable
+import logging
+import importlib
+import os
+import inspect
+
+logger = logging.getLogger(__name__)
+
+class ToolRegistry:
+    """
+    Registry for all tools that agents can use.
+    """
+    
+    def __init__(self):
+        """
+        Initialize the Tool Registry.
+        """
+        self.tools = {}
+        self.categories = {
+            "core_ai": [],
+            "agentic_coding": [],
+            "execution": [],
+            "formatting": [],
+            "analysis": [],
+            "type_checking": [],
+            "security": [],
+            "deployment": [],
+            "ui": []
+        }
+        
+        logger.info("Tool Registry initialized")
+    
+    def register_tool(self, tool_name: str, tool_instance: Any, category: str = None) -> None:
+        """
+        Register a tool in the registry.
+        
+        Args:
+            tool_name: Name of the tool
+            tool_instance: Instance of the tool
+            category: Category of the tool (optional)
+        """
+        self.tools[tool_name] = tool_instance
+        
+        if category and category in self.categories:
+            self.categories[category].append(tool_name)
+        
+        logger.info(f"Registered tool: {tool_name} in category: {category}")
+    
+    def get_tool(self, tool_name: str) -> Optional[Any]:
+        """
+        Get a tool from the registry.
+        
+        Args:
+            tool_name: Name of the tool
+            
+        Returns:
+            Tool instance or None if not found
+        """
+        if tool_name in self.tools:
+            return self.tools[tool_name]
+        
+        logger.warning(f"Tool not found: {tool_name}")
+        return None
+    
+    def get_tools_by_category(self, category: str) -> List[str]:
+        """
+        Get all tools in a category.
+        
+        Args:
+            category: Category name
+            
+        Returns:
+            List of tool names in the category
+        """
+        if category in self.categories:
+            return self.categories[category]
+        
+        logger.warning(f"Category not found: {category}")
+        return []
+    
+    def list_all_tools(self) -> Dict[str, List[str]]:
+        """
+        List all registered tools by category.
+        
+        Returns:
+            Dictionary of categories and their tools
+        """
+        return self.categories
+    
+    def load_tools_from_config(self, config: Dict[str, Any]) -> None:
+        """
+        Load tools based on configuration.
+        
+        Args:
+            config: Tool configuration
+        """
+        tool_config = config.get("tools", {})
+        
+        for tool_name, tool_settings in tool_config.items():
+            if not tool_settings.get("enabled", False):
+                logger.info(f"Tool {tool_name} is disabled, skipping")
+                continue
+            
+            try:
+                # Determine the category and module path
+                category = self._get_tool_category(tool_name)
+                module_path = f"app.tools.{category}.{tool_name}"
+                
+                # Import the module
+                module = importlib.import_module(module_path)
+                
+                # Find the tool class
+                tool_class = None
+                for name, obj in inspect.getmembers(module):
+                    if inspect.isclass(obj) and name.lower().endswith("tool"):
+                        tool_class = obj
+                        break
+                
+                if tool_class:
+                    # Instantiate the tool with settings
+                    tool_instance = tool_class(tool_settings)
+                    self.register_tool(tool_name, tool_instance, category)
+                else:
+                    logger.warning(f"No tool class found in module: {module_path}")
+            
+            except Exception as e:
+                logger.error(f"Error loading tool {tool_name}: {str(e)}")
+    
+    def _get_tool_category(self, tool_name: str) -> str:
+        """
+        Determine the category of a tool based on its name.
+        
+        Args:
+            tool_name: Name of the tool
+            
+        Returns:
+            Category name
+        """
+        # Map of tool names to categories
+        tool_category_map = {
+            "openai": "core_ai",
+            "ollama": "core_ai",
+            "claude": "core_ai",
+            "deepseek": "core_ai",
+            "aider": "agentic_coding",
+            "cursor": "agentic_coding",
+            "subprocess": "execution",
+            "pytest": "execution",
+            "replit": "execution",
+            "black": "formatting",
+            "flake8": "formatting",
+            "pylint": "analysis",
+            "mypy": "type_checking",
+            "pyright": "type_checking",
+            "bandit": "security",
+            "gitpython": "deployment",
+            "docker": "deployment",
+            "gradio": "ui",
+            "threading": "ui",
+            "queue": "ui"
+        }
+        
+        return tool_category_map.get(tool_name, "misc")
+    
+    async def execute_tool(self, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute a tool with the given parameters.
+        
+        Args:
+            tool_name: Name of the tool
+            params: Parameters for the tool
+            
+        Returns:
+            Tool execution result
+        """
+        tool = self.get_tool(tool_name)
+        
+        if not tool:
+            return {
+                "success": False,
+                "message": f"Tool not found: {tool_name}"
+            }
+        
+        try:
+            # Check if the tool has an async execute method
+            if hasattr(tool, "execute_async") and callable(tool.execute_async):
+                result = await tool.execute_async(params)
+            elif hasattr(tool, "execute") and callable(tool.execute):
+                result = tool.execute(params)
+            else:
+                return {
+                    "success": False,
+                    "message": f"Tool {tool_name} does not have an execute method"
+                }
+            
+            logger.info(f"Executed tool: {tool_name}")
+            return result
+        
+        except Exception as e:
+            logger.error(f"Error executing tool {tool_name}: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error executing tool {tool_name}: {str(e)}"
+            }
+
+# Create a singleton instance of the registry
+registry = ToolRegistry()

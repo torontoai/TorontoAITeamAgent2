@@ -1,0 +1,401 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""Decision Making Service for Project Manager Agent.
+
+This module provides services for making and tracking project decisions."""
+
+import logging
+import asyncio
+import datetime
+from typing import Dict, Any, List, Optional, Union
+
+from ..models import DecisionRecord, DecisionStatus, Project
+
+logger = logging.getLogger(__name__)
+
+class DecisionMakingService:
+    """Service for making and tracking project decisions."""
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """Initialize the decision making service.
+        
+        Args:
+            config: Configuration settings"""
+        self.config = config or {}
+        self.decisions = {}  # In-memory storage for decision records
+        self.task_service = None  # Will be set by dependency injection
+        self.stakeholder_service = None  # Will be set by dependency injection
+        logger.info("Decision making service initialized")
+    
+    def set_task_service(self, task_service):
+        """Set task service reference."""
+        self.task_service = task_service
+    
+    def set_stakeholder_service(self, stakeholder_service):
+        """Set stakeholder service reference."""
+        self.stakeholder_service = stakeholder_service
+    
+    async def make_decision(self, project_id: str, decision_data: Dict[str, Any]) -> DecisionRecord:
+        """
+        Make a decision for a project.
+        
+        Args:
+            project_id: Project ID
+            decision_data: Decision data
+            
+        Returns:
+            Decision record
+        """
+        logger.info(f"Making decision for project: {project_id}")
+        
+        # Add project ID to decision data
+        decision_data['project_id'] = project_id
+        
+        # Create decision record from data
+        decision = DecisionRecord.from_dict(decision_data)
+        
+        # Store decision record
+        self.decisions[decision.id] = decision
+        
+        logger.info(f"Decision made: {decision.id}")
+        return decision
+    
+    async def get_decision(self, decision_id: str) -> DecisionRecord:
+        """
+        Get a decision record by ID.
+        
+        Args:
+            decision_id: Decision ID
+            
+        Returns:
+            Decision record
+        """
+        logger.info(f"Getting decision: {decision_id}")
+        
+        # Check if decision exists
+        if decision_id not in self.decisions:
+            raise ValueError(f"Decision not found: {decision_id}")
+        
+        return self.decisions[decision_id]
+    
+    async def list_decisions(self, project_id: str) -> List[DecisionRecord]:
+        """
+        List all decisions for a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            List of decision records
+        """
+        logger.info(f"Listing all decisions for project: {project_id}")
+        
+        # Filter decisions by project
+        return [d for d in self.decisions.values() if d.project_id == project_id]
+    
+    async def update_decision(self, decision_id: str, decision_data: Dict[str, Any]) -> DecisionRecord:
+        """
+        Update a decision record.
+        
+        Args:
+            decision_id: Decision ID
+            decision_data: Updated decision data
+            
+        Returns:
+            Updated decision record
+        """
+        logger.info(f"Updating decision: {decision_id}")
+        
+        # Check if decision exists
+        if decision_id not in self.decisions:
+            raise ValueError(f"Decision not found: {decision_id}")
+        
+        # Get existing decision
+        decision = self.decisions[decision_id]
+        
+        # Update decision fields
+        for key, value in decision_data.items():
+            if key == 'id' or key == 'project_id':
+                continue  # Don't update ID or project_id
+            elif key == 'status' and value:
+                decision.status = value if isinstance(value, DecisionStatus) else DecisionStatus(value)
+            elif key == 'date' and value:
+                decision.date = datetime.datetime.fromisoformat(value) if isinstance(value, str) else value
+            elif hasattr(decision, key):
+                setattr(decision, key, value)
+        
+        # Update timestamp
+        decision.updated_at = datetime.datetime.now()
+        
+        # Store updated decision
+        self.decisions[decision_id] = decision
+        
+        logger.info(f"Decision updated: {decision_id}")
+        return decision
+    
+    async def delete_decision(self, decision_id: str) -> bool:
+        """
+        Delete a decision record.
+        
+        Args:
+            decision_id: Decision ID
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Deleting decision: {decision_id}")
+        
+        # Check if decision exists
+        if decision_id not in self.decisions:
+            raise ValueError(f"Decision not found: {decision_id}")
+        
+        # Delete decision
+        del self.decisions[decision_id]
+        
+        logger.info(f"Decision deleted: {decision_id}")
+        return True
+    
+    async def approve_decision(self, decision_id: str, approver_id: str, comments: str = None) -> DecisionRecord:
+        """
+        Approve a decision.
+        
+        Args:
+            decision_id: Decision ID
+            approver_id: Approver ID
+            comments: Approval comments
+            
+        Returns:
+            Updated decision record
+        """
+        logger.info(f"Approving decision: {decision_id}")
+        
+        # Check if decision exists
+        if decision_id not in self.decisions:
+            raise ValueError(f"Decision not found: {decision_id}")
+        
+        # Get existing decision
+        decision = self.decisions[decision_id]
+        
+        # Update decision status
+        decision.status = DecisionStatus.APPROVED
+        decision.updated_at = datetime.datetime.now()
+        
+        # Add approval metadata
+        if not hasattr(decision, 'metadata'):
+            decision.metadata = {}
+        
+        if 'approvals' not in decision.metadata:
+            decision.metadata['approvals'] = []
+        
+        decision.metadata['approvals'].append({
+            'approver_id': approver_id,
+            'timestamp': datetime.datetime.now().isoformat(),
+            'comments': comments
+        })
+        
+        # Store updated decision
+        self.decisions[decision_id] = decision
+        
+        logger.info(f"Decision approved: {decision_id}")
+        return decision
+    
+    async def reject_decision(self, decision_id: str, rejector_id: str, reason: str = None) -> DecisionRecord:
+        """
+        Reject a decision.
+        
+        Args:
+            decision_id: Decision ID
+            rejector_id: Rejector ID
+            reason: Rejection reason
+            
+        Returns:
+            Updated decision record
+        """
+        logger.info(f"Rejecting decision: {decision_id}")
+        
+        # Check if decision exists
+        if decision_id not in self.decisions:
+            raise ValueError(f"Decision not found: {decision_id}")
+        
+        # Get existing decision
+        decision = self.decisions[decision_id]
+        
+        # Update decision status
+        decision.status = DecisionStatus.REJECTED
+        decision.updated_at = datetime.datetime.now()
+        
+        # Add rejection metadata
+        if not hasattr(decision, 'metadata'):
+            decision.metadata = {}
+        
+        if 'rejections' not in decision.metadata:
+            decision.metadata['rejections'] = []
+        
+        decision.metadata['rejections'].append({
+            'rejector_id': rejector_id,
+            'timestamp': datetime.datetime.now().isoformat(),
+            'reason': reason
+        })
+        
+        # Store updated decision
+        self.decisions[decision_id] = decision
+        
+        logger.info(f"Decision rejected: {decision_id}")
+        return decision
+    
+    async def defer_decision(self, decision_id: str, deferrer_id: str, until_date: Union[str, datetime.datetime] = None, reason: str = None) -> DecisionRecord:
+        """
+        Defer a decision.
+        
+        Args:
+            decision_id: Decision ID
+            deferrer_id: Deferrer ID
+            until_date: Date until which the decision is deferred
+            reason: Deferral reason
+            
+        Returns:
+            Updated decision record
+        """
+        logger.info(f"Deferring decision: {decision_id}")
+        
+        # Check if decision exists
+        if decision_id not in self.decisions:
+            raise ValueError(f"Decision not found: {decision_id}")
+        
+        # Get existing decision
+        decision = self.decisions[decision_id]
+        
+        # Update decision status
+        decision.status = DecisionStatus.DEFERRED
+        decision.updated_at = datetime.datetime.now()
+        
+        # Process until_date
+        if until_date:
+            if isinstance(until_date, str):
+                until_date = datetime.datetime.fromisoformat(until_date)
+        
+        # Add deferral metadata
+        if not hasattr(decision, 'metadata'):
+            decision.metadata = {}
+        
+        if 'deferrals' not in decision.metadata:
+            decision.metadata['deferrals'] = []
+        
+        deferral = {
+            'deferrer_id': deferrer_id,
+            'timestamp': datetime.datetime.now().isoformat(),
+            'reason': reason
+        }
+        
+        if until_date:
+            deferral['until_date'] = until_date.isoformat()
+        
+        decision.metadata['deferrals'].append(deferral)
+        
+        # Store updated decision
+        self.decisions[decision_id] = decision
+        
+        logger.info(f"Decision deferred: {decision_id}")
+        return decision
+    
+    async def get_decision_history(self, decision_id: str) -> List[Dict[str, Any]]:
+        """
+        Get the history of a decision.
+        
+        Args:
+            decision_id: Decision ID
+            
+        Returns:
+            Decision history
+        """
+        logger.info(f"Getting decision history: {decision_id}")
+        
+        # Check if decision exists
+        if decision_id not in self.decisions:
+            raise ValueError(f"Decision not found: {decision_id}")
+        
+        # Get existing decision
+        decision = self.decisions[decision_id]
+        
+        # Extract history from metadata
+        history = []
+        
+        # Add creation event
+        history.append({
+            'event_type': 'created',
+            'timestamp': decision.created_at.isoformat(),
+            'details': {
+                'title': decision.title,
+                'description': decision.description
+            }
+        })
+        
+        # Add approvals
+        if hasattr(decision, 'metadata') and 'approvals' in decision.metadata:
+            for approval in decision.metadata['approvals']:
+                history.append({
+                    'event_type': 'approved',
+                    'timestamp': approval['timestamp'],
+                    'details': {
+                        'approver_id': approval['approver_id'],
+                        'comments': approval.get('comments')
+                    }
+                })
+        
+        # Add rejections
+        if hasattr(decision, 'metadata') and 'rejections' in decision.metadata:
+            for rejection in decision.metadata['rejections']:
+                history.append({
+                    'event_type': 'rejected',
+                    'timestamp': rejection['timestamp'],
+                    'details': {
+                        'rejector_id': rejection['rejector_id'],
+                        'reason': rejection.get('reason')
+                    }
+                })
+        
+        # Add deferrals
+        if hasattr(decision, 'metadata') and 'deferrals' in decision.metadata:
+            for deferral in decision.metadata['deferrals']:
+                history.append({
+                    'event_type': 'deferred',
+                    'timestamp': deferral['timestamp'],
+                    'details': {
+                        'deferrer_id': deferral['deferrer_id'],
+                        'until_date': deferral.get('until_date'),
+                        'reason': deferral.get('reason')
+                    }
+                })
+        
+        # Sort history by timestamp
+        history.sort(key=lambda x: x['timestamp'])
+        
+        return history
+    
+    async def get_pending_decisions(self, project_id: str) -> List[DecisionRecord]:
+        """
+        Get all pending decisions for a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            List of pending decision records
+        """
+        logger.info(f"Getting pending decisions for project: {project_id}")
+        
+        # Filter decisions by project and status
+        return [d for d in self.decisions.values() 
+                if d.project_id == project_id and d.status == DecisionStatus.PENDING]

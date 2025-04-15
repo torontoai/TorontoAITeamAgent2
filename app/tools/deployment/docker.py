@@ -1,0 +1,491 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+
+"""Deployment tools for TorontoAITeamAgent Team AI.
+
+This module provides tools for Docker operations."""
+
+from typing import Dict, Any, List, Optional
+import os
+import asyncio
+import tempfile
+import json
+from ..base import BaseTool, ToolResult
+
+class DockerTool(BaseTool):
+    """Tool for Docker operations."""
+    
+    name = "docker"
+    description = "Provides capabilities for Docker operations including building, running, and managing containers."
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """Initialize the Docker tool.
+        
+        Args:
+            config: Tool configuration with optional settings"""
+        super().__init__(config)
+        self.timeout = self.config.get("timeout", 300)  # Default timeout in seconds
+        
+        # Import here to avoid dependency issues
+        try:
+            import docker
+            self.docker_client = docker.from_env()
+        except ImportError:
+            raise ImportError("Docker Python SDK is not installed. Install it with 'pip install docker>=6.0.0'")
+    
+    async def execute(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Execute the Docker tool with the given parameters.
+        
+        Args:
+            params: Tool parameters including:
+                - operation: Operation to perform (build, run, stop, etc.)
+                - image: Docker image name for various operations
+                - tag: Docker image tag for various operations
+                - dockerfile: Path to Dockerfile for build operation
+                - context: Path to build context for build operation
+                - ports: Port mappings for run operation
+                - volumes: Volume mappings for run operation
+                - environment: Environment variables for run operation
+                - container_id: Container ID for container operations
+                - timeout: Command timeout in seconds (optional)
+                
+        Returns:
+            Tool execution result
+        """
+        operation = params.get("operation")
+        if not operation:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Operation parameter is required"
+            )
+            
+        try:
+            if operation == "build":
+                return await self._build_image(params)
+            elif operation == "run":
+                return await self._run_container(params)
+            elif operation == "stop":
+                return await self._stop_container(params)
+            elif operation == "list_images":
+                return await self._list_images(params)
+            elif operation == "list_containers":
+                return await self._list_containers(params)
+            elif operation == "remove_container":
+                return await self._remove_container(params)
+            elif operation == "remove_image":
+                return await self._remove_image(params)
+            else:
+                return ToolResult(
+                    success=False,
+                    data={},
+                    error=f"Unsupported operation: {operation}"
+                )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=str(e)
+            )
+    
+    async def _build_image(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Build a Docker image.
+        
+        Args:
+            params: Parameters for building an image
+            
+        Returns:
+            Tool execution result
+        """
+        image = params.get("image")
+        tag = params.get("tag", "latest")
+        dockerfile = params.get("dockerfile")
+        context = params.get("context", ".")
+        timeout = params.get("timeout", self.timeout)
+        
+        if not image:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Image parameter is required for build operation"
+            )
+            
+        if not dockerfile and not os.path.exists(os.path.join(context, "Dockerfile")):
+            return ToolResult(
+                success=False,
+                data={},
+                error="Dockerfile parameter is required or Dockerfile must exist in context"
+            )
+        
+        # Run in a separate thread to avoid blocking
+        loop = asyncio.get_event_loop()
+        try:
+            # Build image
+            image_obj, logs = await loop.run_in_executor(
+                None,
+                lambda: self.docker_client.images.build(
+                    path=context,
+                    dockerfile=dockerfile,
+                    tag=f"{image}:{tag}",
+                    rm=True
+                )
+            )
+            
+            # Extract logs
+            build_logs = []
+            for log in logs:
+                if "stream" in log:
+                    build_logs.append(log["stream"].strip())
+            
+            return ToolResult(
+                success=True,
+                data={
+                    "image_id": image_obj.id,
+                    "image_tags": image_obj.tags,
+                    "logs": build_logs
+                }
+            )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Failed to build image: {str(e)}"
+            )
+    
+    async def _run_container(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Run a Docker container.
+        
+        Args:
+            params: Parameters for running a container
+            
+        Returns:
+            Tool execution result
+        """
+        image = params.get("image")
+        tag = params.get("tag", "latest")
+        ports = params.get("ports", {})
+        volumes = params.get("volumes", {})
+        environment = params.get("environment", {})
+        command = params.get("command")
+        detach = params.get("detach", True)
+        name = params.get("name")
+        timeout = params.get("timeout", self.timeout)
+        
+        if not image:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Image parameter is required for run operation"
+            )
+        
+        # Run in a separate thread to avoid blocking
+        loop = asyncio.get_event_loop()
+        try:
+            # Run container
+            container = await loop.run_in_executor(
+                None,
+                lambda: self.docker_client.containers.run(
+                    f"{image}:{tag}",
+                    command=command,
+                    detach=detach,
+                    ports=ports,
+                    volumes=volumes,
+                    environment=environment,
+                    name=name
+                )
+            )
+            
+            # Get container logs if not detached
+            logs = None
+            if not detach:
+                logs = container.logs().decode("utf-8")
+            
+            return ToolResult(
+                success=True,
+                data={
+                    "container_id": container.id,
+                    "container_name": container.name,
+                    "image": container.image.tags[0] if container.image.tags else container.image.id,
+                    "status": container.status,
+                    "logs": logs
+                }
+            )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Failed to run container: {str(e)}"
+            )
+    
+    async def _stop_container(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Stop a Docker container.
+        
+        Args:
+            params: Parameters for stopping a container
+            
+        Returns:
+            Tool execution result
+        """
+        container_id = params.get("container_id")
+        timeout = params.get("timeout", self.timeout)
+        
+        if not container_id:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Container ID parameter is required for stop operation"
+            )
+        
+        # Run in a separate thread to avoid blocking
+        loop = asyncio.get_event_loop()
+        try:
+            # Get container
+            container = await loop.run_in_executor(
+                None,
+                lambda: self.docker_client.containers.get(container_id)
+            )
+            
+            # Stop container
+            await loop.run_in_executor(
+                None,
+                lambda: container.stop(timeout=timeout)
+            )
+            
+            return ToolResult(
+                success=True,
+                data={
+                    "container_id": container.id,
+                    "container_name": container.name,
+                    "status": "stopped"
+                }
+            )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Failed to stop container: {str(e)}"
+            )
+    
+    async def _list_images(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        List Docker images.
+        
+        Args:
+            params: Parameters for listing images
+            
+        Returns:
+            Tool execution result
+        """
+        # Run in a separate thread to avoid blocking
+        loop = asyncio.get_event_loop()
+        try:
+            # List images
+            images = await loop.run_in_executor(
+                None,
+                lambda: self.docker_client.images.list()
+            )
+            
+            # Format image data
+            image_data = []
+            for image in images:
+                image_data.append({
+                    "id": image.id,
+                    "tags": image.tags,
+                    "size": image.attrs["Size"],
+                    "created": image.attrs["Created"]
+                })
+            
+            return ToolResult(
+                success=True,
+                data={
+                    "images": image_data,
+                    "count": len(image_data)
+                }
+            )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Failed to list images: {str(e)}"
+            )
+    
+    async def _list_containers(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        List Docker containers.
+        
+        Args:
+            params: Parameters for listing containers
+            
+        Returns:
+            Tool execution result
+        """
+        all_containers = params.get("all", False)
+        
+        # Run in a separate thread to avoid blocking
+        loop = asyncio.get_event_loop()
+        try:
+            # List containers
+            containers = await loop.run_in_executor(
+                None,
+                lambda: self.docker_client.containers.list(all=all_containers)
+            )
+            
+            # Format container data
+            container_data = []
+            for container in containers:
+                container_data.append({
+                    "id": container.id,
+                    "name": container.name,
+                    "image": container.image.tags[0] if container.image.tags else container.image.id,
+                    "status": container.status,
+                    "created": container.attrs["Created"],
+                    "ports": container.attrs["NetworkSettings"]["Ports"]
+                })
+            
+            return ToolResult(
+                success=True,
+                data={
+                    "containers": container_data,
+                    "count": len(container_data)
+                }
+            )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Failed to list containers: {str(e)}"
+            )
+    
+    async def _remove_container(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Remove a Docker container.
+        
+        Args:
+            params: Parameters for removing a container
+            
+        Returns:
+            Tool execution result
+        """
+        container_id = params.get("container_id")
+        force = params.get("force", False)
+        
+        if not container_id:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Container ID parameter is required for remove operation"
+            )
+        
+        # Run in a separate thread to avoid blocking
+        loop = asyncio.get_event_loop()
+        try:
+            # Get container
+            container = await loop.run_in_executor(
+                None,
+                lambda: self.docker_client.containers.get(container_id)
+            )
+            
+            # Store container info before removal
+            container_info = {
+                "id": container.id,
+                "name": container.name,
+                "image": container.image.tags[0] if container.image.tags else container.image.id
+            }
+            
+            # Remove container
+            await loop.run_in_executor(
+                None,
+                lambda: container.remove(force=force)
+            )
+            
+            return ToolResult(
+                success=True,
+                data={
+                    "container": container_info,
+                    "removed": True
+                }
+            )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Failed to remove container: {str(e)}"
+            )
+    
+    async def _remove_image(self, params: Dict[str, Any]) -> ToolResult:
+        """
+        Remove a Docker image.
+        
+        Args:
+            params: Parameters for removing an image
+            
+        Returns:
+            Tool execution result
+        """
+        image = params.get("image")
+        tag = params.get("tag")
+        force = params.get("force", False)
+        
+        if not image:
+            return ToolResult(
+                success=False,
+                data={},
+                error="Image parameter is required for remove operation"
+            )
+        
+        # Combine image and tag if provided
+        image_name = f"{image}:{tag}" if tag else image
+        
+        # Run in a separate thread to avoid blocking
+        loop = asyncio.get_event_loop()
+        try:
+            # Remove image
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.docker_client.images.remove(image_name, force=force)
+            )
+            
+            return ToolResult(
+                success=True,
+                data={
+                    "image": image_name,
+                    "removed": True,
+                    "response": response
+                }
+            )
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                data={},
+                error=f"Failed to remove image: {str(e)}"
+            )
+    
+    def get_capabilities(self) -> List[str]:
+        """Return a list of capabilities provided by this tool.
+        
+        Returns:
+            List of capability descriptions"""
+        return [
+            "Build Docker images",
+            "Run Docker containers",
+            "Stop Docker containers",
+            "List Docker images and containers",
+            "Remove Docker containers and images",
+            "Manage Docker resources"
+        ]

@@ -1,0 +1,143 @@
+"""TORONTO AI TEAM AGENT - Authentication Module for Jira and Confluence
+
+This module provides authentication mechanisms for Jira and Confluence APIs.
+
+Copyright (c) 2025 TORONTO AI
+Created by David Tadeusz Chudak
+All rights reserved."""
+
+import base64
+import json
+import logging
+import time
+from typing import Dict, Optional, Tuple
+import requests
+from requests.auth import HTTPBasicAuth
+
+from .config import JiraConfig, ConfluenceConfig
+
+
+logger = logging.getLogger(__name__)
+
+
+class AuthenticationError(Exception):
+    """Exception raised for authentication errors."""
+    pass
+
+
+class TokenManager:
+    """Manages authentication tokens for Jira and Confluence APIs.
+    Handles token acquisition, caching, and renewal."""
+    
+    def __init__(self):
+        self._tokens = {}
+        self._expiry_times = {}
+    
+    def get_basic_auth_header(self, username: str, api_token: str) -> Dict[str, str]:
+        """Create HTTP Basic Authentication header for Jira/Confluence API.
+        
+        Args:
+            username: The username for authentication
+            api_token: The API token for authentication
+            
+        Returns:
+            Dict containing the Authorization header"""
+        auth_str = f"{username}:{api_token}"
+        encoded_auth = base64.b64encode(auth_str.encode()).decode()
+        return {"Authorization": f"Basic {encoded_auth}"}
+    
+    def get_jira_auth(self, config: JiraConfig) -> Tuple[Dict[str, str], HTTPBasicAuth]:
+        """Get authentication for Jira API.
+        
+        Args:
+            config: Jira configuration
+            
+        Returns:
+            Tuple of (headers, auth_object)"""
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
+        
+        auth = HTTPBasicAuth(config.username, config.api_token)
+        
+        return headers, auth
+    
+    def get_confluence_auth(self, config: ConfluenceConfig) -> Tuple[Dict[str, str], HTTPBasicAuth]:
+        """Get authentication for Confluence API.
+        
+        Args:
+            config: Confluence configuration
+            
+        Returns:
+            Tuple of (headers, auth_object)"""
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
+        
+        auth = HTTPBasicAuth(config.username, config.api_token)
+        
+        return headers, auth
+    
+    def validate_jira_credentials(self, config: JiraConfig) -> bool:
+        """Validate Jira credentials by making a test API call.
+        
+        Args:
+            config: Jira configuration
+            
+        Returns:
+            True if credentials are valid, False otherwise"""
+        headers, auth = self.get_jira_auth(config)
+        
+        try:
+            response = requests.get(
+                f"{config.url}/rest/api/3/myself",
+                headers=headers,
+                auth=auth,
+                timeout=config.timeout
+            )
+            
+            if response.status_code == 200:
+                logger.info("Jira credentials validated successfully")
+                return True
+            else:
+                logger.error(f"Jira credential validation failed: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error validating Jira credentials: {str(e)}")
+            return False
+    
+    def validate_confluence_credentials(self, config: ConfluenceConfig) -> bool:
+        """Validate Confluence credentials by making a test API call.
+        
+        Args:
+            config: Confluence configuration
+            
+        Returns:
+            True if credentials are valid, False otherwise"""
+        headers, auth = self.get_confluence_auth(config)
+        
+        try:
+            response = requests.get(
+                f"{config.url}/rest/api/user/current",
+                headers=headers,
+                auth=auth,
+                timeout=config.timeout
+            )
+            
+            if response.status_code == 200:
+                logger.info("Confluence credentials validated successfully")
+                return True
+            else:
+                logger.error(f"Confluence credential validation failed: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error validating Confluence credentials: {str(e)}")
+            return False
+
+
+# Singleton instance
+token_manager = TokenManager()

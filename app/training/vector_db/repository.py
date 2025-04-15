@@ -1,0 +1,257 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""Vector Database Repository for TORONTO AI Team Agent.
+
+This module provides a repository pattern implementation for vector database operations,
+abstracting the underlying database implementation and providing a consistent interface."""
+
+import logging
+from typing import Dict, List, Any, Optional, Union, Tuple
+
+from .interface import VectorDBInterface
+from .models import Document, QueryResult, SearchParams
+from .manager import VectorDBManager
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class VectorDBRepository:
+    """Repository pattern implementation for vector database operations.
+    
+    Provides a higher-level abstraction over the VectorDBManager, focusing on
+    domain-specific operations and use cases rather than raw database operations."""
+    
+    def __init__(self, manager: VectorDBManager):
+        """Initialize the vector database repository.
+        
+        Args:
+            manager: Vector database manager instance"""
+        self.manager = manager
+        logger.info("Initialized vector database repository")
+    
+    def store_knowledge_chunk(self, collection_name: str, text: str, embedding: List[float], 
+                             metadata: Dict[str, Any]) -> str:
+        """Store a knowledge chunk in the vector database.
+        
+        Args:
+            collection_name: Name of the collection
+            text: Text content of the knowledge chunk
+            embedding: Vector embedding of the text
+            metadata: Metadata for the knowledge chunk
+            
+        Returns:
+            Document ID"""
+        # Ensure collection exists
+        if not self.manager.collection_exists(collection_name):
+            self.manager.create_collection(collection_name)
+        
+        # Create document
+        document = Document(
+            text=text,
+            embedding=embedding,
+            metadata=metadata
+        )
+        
+        # Add document to collection
+        document_ids = self.manager.add_documents(collection_name, [document])
+        
+        return document_ids[0]
+    
+    def retrieve_knowledge(self, collection_name: str, query: str, 
+                          limit: int = 5, filters: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """Retrieve knowledge from the vector database based on a text query.
+        
+        Args:
+            collection_name: Name of the collection
+            query: Query string
+            limit: Maximum number of results to return
+            filters: Metadata filters to apply
+            
+        Returns:
+            List of knowledge chunks with text, metadata, and relevance score"""
+        # Create search parameters
+        params = SearchParams(
+            limit=limit,
+            filters=filters or {},
+            include_metadata=True,
+            include_embeddings=False
+        )
+        
+        # Search for documents
+        results = self.manager.search(collection_name, query, params)
+        
+        # Format results
+        return [
+            {
+                "text": result.document.text,
+                "metadata": result.document.metadata,
+                "relevance": result.score,
+                "document_id": result.document.id
+            }
+            for result in results
+        ]
+    
+    def retrieve_knowledge_by_vector(self, collection_name: str, vector: List[float], 
+                                   limit: int = 5, filters: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """Retrieve knowledge from the vector database based on a vector query.
+        
+        Args:
+            collection_name: Name of the collection
+            vector: Query vector
+            limit: Maximum number of results to return
+            filters: Metadata filters to apply
+            
+        Returns:
+            List of knowledge chunks with text, metadata, and relevance score"""
+        # Create search parameters
+        params = SearchParams(
+            limit=limit,
+            filters=filters or {},
+            include_metadata=True,
+            include_embeddings=False
+        )
+        
+        # Search for documents
+        results = self.manager.search_by_vector(collection_name, vector, params)
+        
+        # Format results
+        return [
+            {
+                "text": result.document.text,
+                "metadata": result.document.metadata,
+                "relevance": result.score,
+                "distance": result.distance,
+                "document_id": result.document.id
+            }
+            for result in results
+        ]
+    
+    def retrieve_knowledge_hybrid(self, collection_name: str, query: str, vector: List[float], 
+                                limit: int = 5, filters: Dict[str, Any] = None, 
+                                hybrid_alpha: float = 0.5) -> List[Dict[str, Any]]:
+        """Retrieve knowledge from the vector database using hybrid search.
+        
+        Args:
+            collection_name: Name of the collection
+            query: Query string
+            vector: Query vector
+            limit: Maximum number of results to return
+            filters: Metadata filters to apply
+            hybrid_alpha: Weight between vector (0) and text (1) for hybrid search
+            
+        Returns:
+            List of knowledge chunks with text, metadata, and relevance score"""
+        # Create search parameters
+        params = SearchParams(
+            limit=limit,
+            filters=filters or {},
+            include_metadata=True,
+            include_embeddings=False,
+            hybrid_alpha=hybrid_alpha
+        )
+        
+        # Search for documents
+        results = self.manager.hybrid_search(collection_name, query, vector, params)
+        
+        # Format results
+        return [
+            {
+                "text": result.document.text,
+                "metadata": result.document.metadata,
+                "relevance": result.score,
+                "distance": result.distance,
+                "vector_score": result.metadata.get("vector_score"),
+                "text_score": result.metadata.get("text_score"),
+                "document_id": result.document.id
+            }
+            for result in results
+        ]
+    
+    def get_knowledge_by_id(self, collection_name: str, document_id: str) -> Optional[Dict[str, Any]]:
+        """Get a knowledge chunk by ID.
+        
+        Args:
+            collection_name: Name of the collection
+            document_id: ID of the document to retrieve
+            
+        Returns:
+            Knowledge chunk with text and metadata if found, None otherwise"""
+        # Get document
+        document = self.manager.get_document(collection_name, document_id)
+        
+        if document is None:
+            return None
+        
+        return {
+            "text": document.text,
+            "metadata": document.metadata,
+            "document_id": document.id
+        }
+    
+    def delete_knowledge(self, collection_name: str, document_id: str) -> bool:
+        """Delete a knowledge chunk.
+        
+        Args:
+            collection_name: Name of the collection
+            document_id: ID of the document to delete
+            
+        Returns:
+            True if successful, False otherwise"""
+        return self.manager.delete_document(collection_name, document_id)
+    
+    def get_collection_stats(self, collection_name: str) -> Dict[str, Any]:
+        """Get statistics for a knowledge collection.
+        
+        Args:
+            collection_name: Name of the collection
+            
+        Returns:
+            Dictionary of statistics"""
+        # Get basic stats
+        stats = self.manager.get_stats(collection_name)
+        
+        # Add repository-specific stats
+        stats["repository_type"] = "knowledge"
+        
+        return stats
+    
+    def list_knowledge_collections(self) -> List[str]:
+        """List all knowledge collections.
+        
+        Returns:
+            List of collection names"""
+        return self.manager.list_collections()
+    
+    def clear_knowledge_collection(self, collection_name: str) -> bool:
+        """Clear a knowledge collection.
+        
+        Args:
+            collection_name: Name of the collection
+            
+        Returns:
+            True if successful, False otherwise"""
+        # Delete and recreate the collection
+        if self.manager.collection_exists(collection_name):
+            self.manager.delete_collection(collection_name)
+        
+        return self.manager.create_collection(collection_name)
+    
+    def get_performance_metrics(self) -> Dict[str, Any]:
+        """Get performance metrics for the vector database.
+        
+        Returns:
+            Dictionary of metrics"""
+        return self.manager.get_metrics()

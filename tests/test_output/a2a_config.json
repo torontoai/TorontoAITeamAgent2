@@ -1,0 +1,222 @@
+{
+  "agents": [
+    {
+      "id": "agent_0",
+      "name": "Project Coordinator",
+      "type": "coordinator",
+      "model": "gpt-4",
+      "role": "coordinator",
+      "capabilities": [
+        "planning",
+        "delegation",
+        "decision_making",
+        "coordination"
+      ],
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    },
+    {
+      "id": "agent_1",
+      "name": "Research Manager",
+      "type": "assistant",
+      "model": "gpt-4",
+      "role": "manager",
+      "capabilities": [
+        "research",
+        "coordination"
+      ],
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    },
+    {
+      "id": "agent_2",
+      "name": "Development Manager",
+      "type": "assistant",
+      "model": "gpt-4",
+      "role": "manager",
+      "capabilities": [
+        "code_generation",
+        "coordination"
+      ],
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    },
+    {
+      "id": "agent_3",
+      "name": "Quality Manager",
+      "type": "assistant",
+      "model": "gpt-4",
+      "role": "manager",
+      "capabilities": [
+        "quality_assessment",
+        "coordination"
+      ],
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    },
+    {
+      "id": "agent_4",
+      "name": "Information Retrieval",
+      "type": "researcher",
+      "model": "gpt-4",
+      "role": "researcher",
+      "capabilities": [
+        "information_retrieval",
+        "code_execution"
+      ],
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    },
+    {
+      "id": "agent_5",
+      "name": "Domain Expert",
+      "type": "specialist",
+      "model": "gpt-4",
+      "role": "specialist",
+      "capabilities": [
+        "domain_expertise"
+      ],
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    },
+    {
+      "id": "agent_6",
+      "name": "Code Generator",
+      "type": "assistant",
+      "model": "gpt-4",
+      "role": "coder",
+      "capabilities": [
+        "code_generation"
+      ],
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    },
+    {
+      "id": "agent_7",
+      "name": "Debugger",
+      "type": "assistant",
+      "model": "gpt-4",
+      "role": "coder",
+      "capabilities": [
+        "debugging"
+      ],
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    },
+    {
+      "id": "agent_8",
+      "name": "Tester",
+      "type": "critic",
+      "model": "gpt-4",
+      "role": "critic",
+      "capabilities": [
+        "testing"
+      ],
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    },
+    {
+      "id": "agent_9",
+      "name": "Reviewer",
+      "type": "critic",
+      "model": "gpt-4",
+      "role": "critic",
+      "capabilities": [
+        "feedback"
+      ],
+      "parameters": {
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "task_description": "A test task for MaAS integration testing",
+        "domain": "testing"
+      }
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "agent_0",
+        "type": "coordinator"
+      },
+      {
+        "id": "agent_1",
+        "type": "manager"
+      },
+      {
+        "id": "agent_2",
+        "type": "manager"
+      },
+      {
+        "id": "agent_3",
+        "type": "manager"
+      },
+      {
+        "id": "agent_4",
+        "type": "researcher"
+      },
+      {
+        "id": "agent_5",
+        "type": "specialist"
+      },
+      {
+        "id": "agent_6",
+        "type": "coder"
+      },
+      {
+        "id": "agent_7",
+        "type": "coder"
+      },
+      {
+        "id": "agent_8",
+        "type": "critic"
+      },
+      {
+        "id": "agent_9",
+        "type": "critic"
+      }
+    ],
+    "edges": []
+  },
+  "task": {
+    "id": "test_task_001",
+    "name": "Test Task",
+    "description": "A test task for MaAS integration testing",
+    "domain": "testing"
+  }
+}

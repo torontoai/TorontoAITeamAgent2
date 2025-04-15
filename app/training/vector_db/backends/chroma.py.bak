@@ -1,0 +1,594 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""
+ChromaDB Vector Database Implementation for TORONTO AI Team Agent.
+
+This module provides a ChromaDB implementation of the vector database interface.
+"""
+
+import logging
+import uuid
+import os
+from typing import Dict, List, Any, Optional, Union, Tuple
+from pathlib import Path
+
+from ..interface import VectorDBInterface
+from ..models import Document, QueryResult, SearchParams
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class ChromaDBVectorDB(VectorDBInterface):
+    """
+    ChromaDB implementation of the vector database interface.
+    
+    This implementation uses ChromaDB as the backend for vector storage and retrieval.
+    """
+    
+    def __init__(self, config: Dict[str, Any]):
+        """
+        Initialize the ChromaDB vector database.
+        
+        Args:
+            config: Configuration settings
+        """
+        self.config = config
+        
+        # Import chromadb here to avoid dependency issues if not installed
+        try:
+            import chromadb
+            from chromadb.config import Settings
+        except ImportError:
+            logger.error("ChromaDB is not installed. Please install it with 'pip install chromadb'.")
+            raise
+        
+        # Get configuration settings
+        self.persist_directory = config.get('persist_directory', './chroma_db')
+        self.collection_metadata = config.get('collection_metadata', {})
+        
+        # Create persist directory if it doesn't exist
+        os.makedirs(self.persist_directory, exist_ok=True)
+        
+        # Initialize ChromaDB client
+        self.client = chromadb.PersistentClient(path=self.persist_directory)
+        
+        logger.info(f"Initialized ChromaDB vector database with persist directory: {self.persist_directory}")
+    
+    def create_collection(self, collection_name: str) -> bool:
+        """
+        Create a new collection in the vector database.
+        
+        Args:
+            collection_name: Name of the collection to create
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Check if collection already exists
+            if self.collection_exists(collection_name):
+                logger.warning(f"Collection already exists: {collection_name}")
+                return False
+            
+            # Create collection
+            self.client.create_collection(
+                name=collection_name,
+                metadata=self.collection_metadata.get(collection_name, {})
+            )
+            
+            logger.info(f"Created collection: {collection_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Error creating collection {collection_name}: {str(e)}")
+            return False
+    
+    def delete_collection(self, collection_name: str) -> bool:
+        """
+        Delete a collection from the vector database.
+        
+        Args:
+            collection_name: Name of the collection to delete
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return False
+            
+            # Delete collection
+            self.client.delete_collection(name=collection_name)
+            
+            logger.info(f"Deleted collection: {collection_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting collection {collection_name}: {str(e)}")
+            return False
+    
+    def list_collections(self) -> List[str]:
+        """
+        List all collections in the vector database.
+        
+        Returns:
+            List of collection names
+        """
+        try:
+            collections = self.client.list_collections()
+            return [collection.name for collection in collections]
+        except Exception as e:
+            logger.error(f"Error listing collections: {str(e)}")
+            return []
+    
+    def collection_exists(self, collection_name: str) -> bool:
+        """
+        Check if a collection exists in the vector database.
+        
+        Args:
+            collection_name: Name of the collection to check
+            
+        Returns:
+            True if the collection exists, False otherwise
+        """
+        try:
+            collections = self.client.list_collections()
+            return any(collection.name == collection_name for collection in collections)
+        except Exception as e:
+            logger.error(f"Error checking if collection {collection_name} exists: {str(e)}")
+            return False
+    
+    def add_documents(self, collection_name: str, documents: List[Document]) -> List[str]:
+        """
+        Add documents to a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            documents: List of documents to add
+            
+        Returns:
+            List of document IDs
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                self.create_collection(collection_name)
+            
+            # Get collection
+            collection = self.client.get_collection(name=collection_name)
+            
+            # Prepare data for ChromaDB
+            ids = []
+            texts = []
+            embeddings = []
+            metadatas = []
+            
+            for document in documents:
+                # Generate ID if not provided
+                doc_id = document.id or str(uuid.uuid4())
+                ids.append(doc_id)
+                
+                # Add text
+                texts.append(document.text)
+                
+                # Add embedding if available
+                if document.embedding is not None:
+                    embeddings.append(document.embedding)
+                
+                # Add metadata
+                metadatas.append(document.metadata)
+            
+            # Add to collection
+            if embeddings and len(embeddings) == len(documents):
+                collection.add(
+                    ids=ids,
+                    documents=texts,
+                    embeddings=embeddings,
+                    metadatas=metadatas
+                )
+            else:
+                collection.add(
+                    ids=ids,
+                    documents=texts,
+                    metadatas=metadatas
+                )
+            
+            logger.info(f"Added {len(documents)} documents to collection: {collection_name}")
+            return ids
+        except Exception as e:
+            logger.error(f"Error adding documents to collection {collection_name}: {str(e)}")
+            return []
+    
+    def get_document(self, collection_name: str, document_id: str) -> Optional[Document]:
+        """
+        Get a document by ID.
+        
+        Args:
+            collection_name: Name of the collection
+            document_id: ID of the document to retrieve
+            
+        Returns:
+            Document if found, None otherwise
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return None
+            
+            # Get collection
+            collection = self.client.get_collection(name=collection_name)
+            
+            # Get document
+            result = collection.get(ids=[document_id], include=["documents", "embeddings", "metadatas"])
+            
+            # Check if document exists
+            if not result["ids"]:
+                return None
+            
+            # Create document
+            return Document(
+                id=result["ids"][0],
+                text=result["documents"][0],
+                embedding=result.get("embeddings", [[]])[0] if "embeddings" in result else None,
+                metadata=result["metadatas"][0] if "metadatas" in result else {}
+            )
+        except Exception as e:
+            logger.error(f"Error getting document {document_id} from collection {collection_name}: {str(e)}")
+            return None
+    
+    def delete_document(self, collection_name: str, document_id: str) -> bool:
+        """
+        Delete a document by ID.
+        
+        Args:
+            collection_name: Name of the collection
+            document_id: ID of the document to delete
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return False
+            
+            # Get collection
+            collection = self.client.get_collection(name=collection_name)
+            
+            # Delete document
+            collection.delete(ids=[document_id])
+            
+            logger.info(f"Deleted document {document_id} from collection: {collection_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting document {document_id} from collection {collection_name}: {str(e)}")
+            return False
+    
+    def search(self, collection_name: str, query: str, params: SearchParams) -> List[QueryResult]:
+        """
+        Search for documents in a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            query: Query string
+            params: Search parameters
+            
+        Returns:
+            List of query results
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return []
+            
+            # Get collection
+            collection = self.client.get_collection(name=collection_name)
+            
+            # Prepare query parameters
+            query_params = {
+                "query_texts": [query],
+                "n_results": params.limit + params.offset,
+                "include": ["documents", "metadatas", "distances"]
+            }
+            
+            # Add where clause if filters are provided
+            if params.filters:
+                query_params["where"] = params.filters
+            
+            # Execute query
+            results = collection.query(**query_params)
+            
+            # Process results
+            query_results = []
+            
+            # Check if results are empty
+            if not results["ids"][0]:
+                return []
+            
+            # Apply offset
+            start_idx = min(params.offset, len(results["ids"][0]))
+            end_idx = min(params.offset + params.limit, len(results["ids"][0]))
+            
+            for i in range(start_idx, end_idx):
+                # Create document
+                document = Document(
+                    id=results["ids"][0][i],
+                    text=results["documents"][0][i],
+                    embedding=None,  # ChromaDB doesn't return embeddings in query results
+                    metadata=results["metadatas"][0][i] if "metadatas" in results else {}
+                )
+                
+                # Calculate score from distance (convert distance to similarity score)
+                distance = results["distances"][0][i] if "distances" in results else None
+                score = 1.0 - (distance / 2.0) if distance is not None else 1.0
+                
+                # Create query result
+                query_results.append(QueryResult(
+                    document=document,
+                    score=score,
+                    distance=distance
+                ))
+            
+            return query_results
+        except Exception as e:
+            logger.error(f"Error searching collection {collection_name}: {str(e)}")
+            return []
+    
+    def search_by_vector(self, collection_name: str, vector: List[float], params: SearchParams) -> List[QueryResult]:
+        """
+        Search for documents in a collection using a vector.
+        
+        Args:
+            collection_name: Name of the collection
+            vector: Query vector
+            params: Search parameters
+            
+        Returns:
+            List of query results
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return []
+            
+            # Get collection
+            collection = self.client.get_collection(name=collection_name)
+            
+            # Prepare query parameters
+            query_params = {
+                "query_embeddings": [vector],
+                "n_results": params.limit + params.offset,
+                "include": ["documents", "metadatas", "distances"]
+            }
+            
+            # Add where clause if filters are provided
+            if params.filters:
+                query_params["where"] = params.filters
+            
+            # Execute query
+            results = collection.query(**query_params)
+            
+            # Process results
+            query_results = []
+            
+            # Check if results are empty
+            if not results["ids"][0]:
+                return []
+            
+            # Apply offset
+            start_idx = min(params.offset, len(results["ids"][0]))
+            end_idx = min(params.offset + params.limit, len(results["ids"][0]))
+            
+            for i in range(start_idx, end_idx):
+                # Create document
+                document = Document(
+                    id=results["ids"][0][i],
+                    text=results["documents"][0][i],
+                    embedding=None,  # ChromaDB doesn't return embeddings in query results
+                    metadata=results["metadatas"][0][i] if "metadatas" in results else {}
+                )
+                
+                # Calculate score from distance (convert distance to similarity score)
+                distance = results["distances"][0][i] if "distances" in results else None
+                score = 1.0 - (distance / 2.0) if distance is not None else 1.0
+                
+                # Skip documents below minimum score or above maximum distance
+                if params.min_score is not None and score < params.min_score:
+                    continue
+                if params.max_distance is not None and distance is not None and distance > params.max_distance:
+                    continue
+                
+                # Create query result
+                query_results.append(QueryResult(
+                    document=document,
+                    score=score,
+                    distance=distance
+                ))
+            
+            return query_results
+        except Exception as e:
+            logger.error(f"Error searching collection {collection_name} by vector: {str(e)}")
+            return []
+    
+    def hybrid_search(self, collection_name: str, query: str, vector: List[float], params: SearchParams) -> List[QueryResult]:
+        """
+        Perform a hybrid search combining vector similarity and keyword matching.
+        
+        Args:
+            collection_name: Name of the collection
+            query: Query string
+            vector: Query vector
+            params: Search parameters
+            
+        Returns:
+            List of query results
+        """
+        try:
+            # ChromaDB doesn't natively support hybrid search, so we implement it manually
+            
+            # Get text search results
+            text_results = self.search(collection_name, query, params)
+            
+            # Get vector search results
+            vector_results = self.search_by_vector(collection_name, vector, params)
+            
+            # Combine results
+            combined_results = {}
+            
+            # Add text search results
+            for result in text_results:
+                combined_results[result.document.id] = {
+                    "document": result.document,
+                    "text_score": result.score,
+                    "vector_score": 0.0,
+                    "distance": result.distance
+                }
+            
+            # Add vector search results
+            for result in vector_results:
+                if result.document.id in combined_results:
+                    combined_results[result.document.id]["vector_score"] = result.score
+                    combined_results[result.document.id]["distance"] = result.distance
+                else:
+                    combined_results[result.document.id] = {
+                        "document": result.document,
+                        "text_score": 0.0,
+                        "vector_score": result.score,
+                        "distance": result.distance
+                    }
+            
+            # Calculate hybrid scores
+            hybrid_results = []
+            for doc_id, data in combined_results.items():
+                # Calculate hybrid score
+                hybrid_score = (1 - params.hybrid_alpha) * data["vector_score"] + params.hybrid_alpha * data["text_score"]
+                
+                # Skip documents below minimum score
+                if params.min_score is not None and hybrid_score < params.min_score:
+                    continue
+                
+                # Skip documents above maximum distance
+                if params.max_distance is not None and data["distance"] is not None and data["distance"] > params.max_distance:
+                    continue
+                
+                # Create query result
+                hybrid_results.append(QueryResult(
+                    document=data["document"],
+                    score=hybrid_score,
+                    distance=data["distance"],
+                    metadata={
+                        "vector_score": data["vector_score"],
+                        "text_score": data["text_score"]
+                    }
+                ))
+            
+            # Sort by score in descending order
+            hybrid_results.sort(key=lambda x: x.score, reverse=True)
+            
+            # Apply limit
+            return hybrid_results[:params.limit]
+        except Exception as e:
+            logger.error(f"Error performing hybrid search on collection {collection_name}: {str(e)}")
+            return []
+    
+    def count_documents(self, collection_name: str) -> int:
+        """
+        Count the number of documents in a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            
+        Returns:
+            Number of documents
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return 0
+            
+            # Get collection
+            collection = self.client.get_collection(name=collection_name)
+            
+            # Get count
+            return collection.count()
+        except Exception as e:
+            logger.error(f"Error counting documents in collection {collection_name}: {str(e)}")
+            return 0
+    
+    def get_stats(self, collection_name: str) -> Dict[str, Any]:
+        """
+        Get statistics for a collection.
+        
+        Args:
+            collection_name: Name of the collection
+            
+        Returns:
+            Dictionary of statistics
+        """
+        try:
+            # Check if collection exists
+            if not self.collection_exists(collection_name):
+                logger.warning(f"Collection does not exist: {collection_name}")
+                return {}
+            
+            # Get collection
+            collection = self.client.get_collection(name=collection_name)
+            
+            # Get count
+            count = collection.count()
+            
+            return {
+                "document_count": count,
+                "collection_name": collection_name,
+                "database_type": "chroma"
+            }
+        except Exception as e:
+            logger.error(f"Error getting stats for collection {collection_name}: {str(e)}")
+            return {}
+    
+    def clear(self) -> bool:
+        """
+        Clear all data from the vector database.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get all collections
+            collections = self.list_collections()
+            
+            # Delete each collection
+            for collection_name in collections:
+                self.delete_collection(collection_name)
+            
+            logger.info("Cleared all collections from ChromaDB vector database")
+            return True
+        except Exception as e:
+            logger.error(f"Error clearing ChromaDB vector database: {str(e)}")
+            return False
+    
+    def close(self) -> None:
+        """
+        Close the connection to the vector database.
+        """
+        # ChromaDB doesn't require explicit connection closing
+        logger.info("Closed ChromaDB vector database")

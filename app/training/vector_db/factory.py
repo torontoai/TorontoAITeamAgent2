@@ -1,0 +1,91 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""Vector Database Factory for TORONTO AI Team Agent.
+
+This module provides a factory for creating vector database instances based on configuration."""
+
+import logging
+from typing import Dict, Any, Type
+
+from .interface import VectorDBInterface
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class VectorDatabaseFactory:
+    """Factory for creating vector database instances based on configuration."""
+    
+    # Registry of available vector database implementations
+    _registry: Dict[str, Type[VectorDBInterface]] = {}
+    
+    @classmethod
+    def register(cls, db_type: str, db_class: Type[VectorDBInterface]) -> None:
+        """Register a vector database implementation.
+        
+        Args:
+            db_type: Type identifier for the database
+            db_class: Class implementing the VectorDBInterface"""
+        cls._registry[db_type] = db_class
+        logger.info(f"Registered vector database implementation: {db_type}")
+    
+    @classmethod
+    def create_vector_db(cls, config: Dict[str, Any]) -> VectorDBInterface:
+        """Create a vector database instance based on configuration.
+        
+        Args:
+            config: Configuration settings including 'type' and backend-specific settings
+            
+        Returns:
+            Vector database instance
+            
+        Raises:
+            ValueError: If the specified database type is not registered"""
+        db_type = config.get('type', 'in_memory').lower()
+        
+        if db_type not in cls._registry:
+            available_types = ', '.join(cls._registry.keys())
+            raise ValueError(f"Unsupported vector database type: {db_type}. Available types: {available_types}")
+        
+        db_class = cls._registry[db_type]
+        logger.info(f"Creating vector database of type: {db_type}")
+        
+        return db_class(config)
+    
+    @classmethod
+    def list_available_types(cls) -> Dict[str, str]:
+        """List all available vector database types.
+        
+        Returns:
+            Dictionary mapping database types to their descriptions"""
+        return {db_type: db_class.__doc__.split('\n')[0] if db_class.__doc__ else ""
+                for db_type, db_class in cls._registry.items()}
+
+# Import and register implementations
+# These imports are at the bottom to avoid circular imports
+from .backends.in_memory import InMemoryVectorDB
+from .backends.chroma import ChromaDBVectorDB
+from .backends.pinecone import PineconeVectorDB
+from .backends.weaviate import WeaviateVectorDB
+from .backends.milvus import MilvusVectorDB
+from .backends.faiss import FAISSVectorDB
+
+# Register implementations
+VectorDatabaseFactory.register('in_memory', InMemoryVectorDB)
+VectorDatabaseFactory.register('chroma', ChromaDBVectorDB)
+VectorDatabaseFactory.register('pinecone', PineconeVectorDB)
+VectorDatabaseFactory.register('weaviate', WeaviateVectorDB)
+VectorDatabaseFactory.register('milvus', MilvusVectorDB)
+VectorDatabaseFactory.register('faiss', FAISSVectorDB)

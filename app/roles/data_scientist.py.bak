@@ -1,0 +1,772 @@
+"""
+TORONTO AI TEAM AGENT - Data Scientist Role Implementation
+
+This module implements the Data Scientist role for the TORONTO AI TEAM AGENT system,
+providing specialized knowledge, skills, and capabilities for data science tasks.
+
+Copyright (c) 2025 TORONTO AI
+Created by David Tadeusz Chudak
+All rights reserved.
+"""
+
+import os
+import json
+import logging
+from typing import Dict, List, Any, Optional
+from datetime import datetime
+
+from ..training.knowledge_extraction import KnowledgeExtractor
+from ..training.knowledge_integration import KnowledgeIntegrator
+from ..training.vector_db import VectorDBManager
+from ..training.config import TrainingConfig
+from ..collaboration.hierarchy.role_manager import Role
+
+logger = logging.getLogger(__name__)
+
+class DataScientistRole:
+    """
+    Implementation of the Data Scientist role for the TORONTO AI TEAM AGENT system.
+    
+    The Data Scientist role handles data-intensive projects, including machine learning,
+    statistical analysis, data visualization, and predictive modeling.
+    """
+    
+    def __init__(
+        self,
+        training_config: TrainingConfig,
+        vector_db_manager: VectorDBManager,
+        knowledge_integrator: KnowledgeIntegrator
+    ):
+        """
+        Initialize the Data Scientist role.
+        
+        Args:
+            training_config: Training system configuration
+            vector_db_manager: Vector database manager
+            knowledge_integrator: Knowledge integrator
+        """
+        self.training_config = training_config
+        self.vector_db_manager = vector_db_manager
+        self.knowledge_integrator = knowledge_integrator
+        self.role_id = "data_scientist"
+        self.collection_name = f"{self.role_id}_knowledge"
+        
+        # Create knowledge extractor
+        self.knowledge_extractor = KnowledgeExtractor(
+            chunk_size=training_config.chunk_size,
+            chunk_overlap=training_config.chunk_overlap,
+            embedding_model=training_config.embedding_model
+        )
+    
+    def get_role_definition(self) -> Role:
+        """
+        Get the role definition for the Data Scientist.
+        
+        Returns:
+            Role definition
+        """
+        return Role(
+            role_id=self.role_id,
+            role_name="Data Scientist",
+            role_description="Handles data-intensive projects, including machine learning, statistical analysis, data visualization, and predictive modeling.",
+            tier="core",
+            responsibilities=[
+                "Data collection and preprocessing",
+                "Statistical analysis and hypothesis testing",
+                "Machine learning model development",
+                "Data visualization and interpretation",
+                "Predictive modeling and forecasting",
+                "Feature engineering and selection",
+                "Model evaluation and validation",
+                "Communication of insights to stakeholders"
+            ],
+            authority_level="medium",
+            required_skills=[
+                "Statistics and probability",
+                "Machine learning",
+                "Programming (Python, R)",
+                "Data visualization",
+                "SQL and database knowledge",
+                "Big data technologies",
+                "Domain knowledge",
+                "Communication"
+            ],
+            reports_to="project_manager",
+            direct_reports=[],
+            communication_channels=["email", "chat", "meetings", "documentation"],
+            performance_metrics=[
+                "Model accuracy and performance",
+                "Project completion time",
+                "Insight quality and actionability",
+                "Code quality and reproducibility"
+            ],
+            suitable_for="both"  # Can be assigned to human or AI
+        )
+    
+    def initialize_knowledge_base(self) -> Dict[str, Any]:
+        """
+        Initialize the knowledge base for the Data Scientist role with basic knowledge.
+        
+        Returns:
+            Summary of the initialization
+        """
+        # Create output directory
+        output_dir = os.path.join(self.training_config.data_dir, "roles", self.role_id)
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Create basic knowledge
+        knowledge_chunks = self._create_basic_knowledge()
+        
+        # Store in vector database
+        logger.info(f"Storing {len(knowledge_chunks)} chunks in vector database")
+        self.vector_db_manager.create_collection(self.collection_name)
+        self.vector_db_manager.add_documents(self.collection_name, knowledge_chunks)
+        
+        # Integrate with existing knowledge
+        logger.info("Integrating with existing knowledge")
+        self.knowledge_integrator.integrate_knowledge(
+            collection_name=self.collection_name,
+            role=self.role_id,
+            source="base_knowledge"
+        )
+        
+        # Create initialization summary
+        initialization_summary = {
+            "role": self.role_id,
+            "knowledge_chunks": len(knowledge_chunks),
+            "collection_name": self.collection_name,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        # Save initialization summary
+        summary_filepath = os.path.join(output_dir, f"{self.role_id}_initialization_summary.json")
+        with open(summary_filepath, 'w') as f:
+            json.dump(initialization_summary, f, indent=2)
+        
+        logger.info(f"Knowledge base initialization completed for role: {self.role_id}")
+        return initialization_summary
+    
+    def _create_basic_knowledge(self) -> List[Any]:
+        """
+        Create basic knowledge for the Data Scientist role.
+        
+        Returns:
+            List of knowledge chunks
+        """
+        # Basic knowledge text
+        basic_knowledge = """
+# Data Science Fundamentals
+
+Data science is an interdisciplinary field that uses scientific methods, processes, algorithms, and systems to extract knowledge and insights from structured and unstructured data. It combines expertise from various fields, including statistics, computer science, and domain knowledge, to analyze and interpret complex data.
+
+## Core Concepts
+
+### The Data Science Process
+
+The data science process typically follows these steps:
+
+1. **Problem Definition**: Clearly defining the business problem or question to be answered.
+2. **Data Collection**: Gathering relevant data from various sources.
+3. **Data Cleaning**: Handling missing values, outliers, and inconsistencies.
+4. **Exploratory Data Analysis (EDA)**: Understanding the data through visualization and summary statistics.
+5. **Feature Engineering**: Creating new features or transforming existing ones to improve model performance.
+6. **Model Selection**: Choosing appropriate algorithms based on the problem type.
+7. **Model Training**: Fitting the model to the training data.
+8. **Model Evaluation**: Assessing model performance using appropriate metrics.
+9. **Model Deployment**: Implementing the model in a production environment.
+10. **Monitoring and Maintenance**: Continuously evaluating and updating the model as needed.
+
+### Types of Data
+
+Data can be categorized in various ways:
+
+1. **Structured Data**: Organized data with a predefined schema, such as relational databases.
+2. **Unstructured Data**: Data without a predefined format, such as text, images, and videos.
+3. **Semi-structured Data**: Data with some organizational properties but not rigid schema, such as JSON or XML.
+4. **Time Series Data**: Sequential data points collected over time.
+5. **Spatial Data**: Data with geographic or geometric information.
+6. **Categorical Data**: Data that can be divided into distinct groups or categories.
+7. **Numerical Data**: Data represented as numbers, which can be further divided into discrete and continuous.
+
+### Statistical Foundations
+
+Statistics provides the mathematical foundation for data science:
+
+1. **Descriptive Statistics**: Summarizing and describing data using measures like mean, median, mode, variance, and standard deviation.
+2. **Inferential Statistics**: Drawing conclusions about populations based on sample data.
+3. **Probability Distributions**: Mathematical functions that describe the likelihood of different outcomes, such as normal, binomial, and Poisson distributions.
+4. **Hypothesis Testing**: Assessing whether observed differences are statistically significant.
+5. **Confidence Intervals**: Ranges of values that likely contain the true population parameter.
+6. **Regression Analysis**: Modeling relationships between variables.
+7. **Bayesian Statistics**: Incorporating prior knowledge and updating beliefs based on new evidence.
+
+## Machine Learning
+
+### Supervised Learning
+
+Supervised learning involves training models on labeled data to make predictions:
+
+1. **Classification**: Predicting categorical outcomes, such as spam detection or image recognition.
+2. **Regression**: Predicting continuous values, such as house prices or temperature.
+3. **Common Algorithms**:
+   - Linear and Logistic Regression
+   - Decision Trees and Random Forests
+   - Support Vector Machines (SVM)
+   - k-Nearest Neighbors (k-NN)
+   - Neural Networks
+   - Gradient Boosting Machines (GBM)
+
+### Unsupervised Learning
+
+Unsupervised learning involves finding patterns in unlabeled data:
+
+1. **Clustering**: Grouping similar data points, such as customer segmentation.
+2. **Dimensionality Reduction**: Reducing the number of features while preserving important information.
+3. **Association Rule Learning**: Discovering relationships between variables, such as market basket analysis.
+4. **Common Algorithms**:
+   - k-Means Clustering
+   - Hierarchical Clustering
+   - Principal Component Analysis (PCA)
+   - t-Distributed Stochastic Neighbor Embedding (t-SNE)
+   - Apriori Algorithm
+   - DBSCAN
+
+### Reinforcement Learning
+
+Reinforcement learning involves training agents to make sequences of decisions:
+
+1. **Key Components**:
+   - Agent: The decision-maker
+   - Environment: The context in which the agent operates
+   - Actions: What the agent can do
+   - Rewards: Feedback from the environment
+2. **Common Algorithms**:
+   - Q-Learning
+   - Deep Q Networks (DQN)
+   - Policy Gradient Methods
+   - Actor-Critic Methods
+
+### Deep Learning
+
+Deep learning is a subset of machine learning that uses neural networks with multiple layers:
+
+1. **Neural Network Architecture**:
+   - Input Layer: Receives the initial data
+   - Hidden Layers: Process the data through weighted connections
+   - Output Layer: Produces the final prediction
+2. **Common Architectures**:
+   - Convolutional Neural Networks (CNN) for image processing
+   - Recurrent Neural Networks (RNN) for sequential data
+   - Long Short-Term Memory (LSTM) for long-range dependencies
+   - Transformers for natural language processing
+   - Generative Adversarial Networks (GAN) for generating new data
+
+## Data Visualization
+
+### Principles of Effective Visualization
+
+1. **Clarity**: Presenting data in a clear and understandable way.
+2. **Accuracy**: Representing data truthfully without distortion.
+3. **Efficiency**: Maximizing the data-to-ink ratio by removing unnecessary elements.
+4. **Aesthetics**: Creating visually appealing graphics that engage the audience.
+5. **Relevance**: Focusing on the most important aspects of the data.
+
+### Common Visualization Types
+
+1. **Bar Charts**: Comparing values across categories.
+2. **Line Charts**: Showing trends over time.
+3. **Scatter Plots**: Revealing relationships between two variables.
+4. **Histograms**: Displaying the distribution of a single variable.
+5. **Box Plots**: Summarizing the distribution of a dataset.
+6. **Heat Maps**: Showing patterns in complex datasets.
+7. **Pie Charts**: Displaying proportions of a whole.
+8. **Network Graphs**: Visualizing relationships between entities.
+
+### Visualization Tools
+
+1. **Matplotlib**: Basic plotting library in Python.
+2. **Seaborn**: Statistical data visualization based on Matplotlib.
+3. **Plotly**: Interactive visualizations for web applications.
+4. **Tableau**: Business intelligence and analytics platform.
+5. **Power BI**: Business analytics service by Microsoft.
+6. **D3.js**: JavaScript library for creating custom visualizations.
+
+## Big Data Technologies
+
+### Distributed Computing
+
+1. **Hadoop**: Framework for distributed storage and processing of large datasets.
+2. **Spark**: Unified analytics engine for big data processing.
+3. **Dask**: Parallel computing library for Python.
+4. **Ray**: Framework for scaling Python applications.
+
+### Data Storage
+
+1. **Relational Databases**: Structured data storage using SQL (MySQL, PostgreSQL).
+2. **NoSQL Databases**: Flexible data models for unstructured data (MongoDB, Cassandra).
+3. **Data Warehouses**: Centralized repositories for structured data (Snowflake, Redshift).
+4. **Data Lakes**: Storage repositories for raw data (AWS S3, Azure Data Lake).
+
+### Data Processing
+
+1. **Batch Processing**: Processing large volumes of data at scheduled intervals.
+2. **Stream Processing**: Processing data in real-time as it arrives (Kafka, Flink).
+3. **ETL (Extract, Transform, Load)**: Moving data between systems and transforming it.
+4. **ELT (Extract, Load, Transform)**: Loading raw data first, then transforming it as needed.
+
+## Programming for Data Science
+
+### Python
+
+Python is the most popular programming language for data science:
+
+1. **Key Libraries**:
+   - NumPy: Numerical computing with arrays and matrices
+   - Pandas: Data manipulation and analysis
+   - Scikit-learn: Machine learning algorithms
+   - TensorFlow and PyTorch: Deep learning frameworks
+   - Matplotlib and Seaborn: Data visualization
+   - Statsmodels: Statistical modeling
+
+### R
+
+R is a language specifically designed for statistical computing:
+
+1. **Key Packages**:
+   - dplyr: Data manipulation
+   - ggplot2: Data visualization
+   - caret: Machine learning
+   - tidyr: Data cleaning
+   - shiny: Interactive web applications
+
+### SQL
+
+SQL is essential for working with relational databases:
+
+1. **Key Operations**:
+   - SELECT: Retrieving data
+   - JOIN: Combining tables
+   - GROUP BY: Aggregating data
+   - WHERE: Filtering data
+   - HAVING: Filtering grouped data
+   - Window Functions: Performing calculations across rows
+
+## Model Evaluation and Validation
+
+### Evaluation Metrics
+
+1. **Classification Metrics**:
+   - Accuracy: Proportion of correct predictions
+   - Precision: Proportion of true positives among positive predictions
+   - Recall: Proportion of true positives identified
+   - F1 Score: Harmonic mean of precision and recall
+   - ROC Curve and AUC: Evaluating model performance across thresholds
+   - Confusion Matrix: Table showing true positives, false positives, true negatives, and false negatives
+
+2. **Regression Metrics**:
+   - Mean Absolute Error (MAE): Average absolute difference between predictions and actual values
+   - Mean Squared Error (MSE): Average squared difference between predictions and actual values
+   - Root Mean Squared Error (RMSE): Square root of MSE
+   - R-squared: Proportion of variance explained by the model
+   - Adjusted R-squared: R-squared adjusted for the number of predictors
+
+### Validation Techniques
+
+1. **Train-Test Split**: Dividing data into training and testing sets.
+2. **Cross-Validation**: Splitting data into multiple folds for training and validation.
+3. **Holdout Validation**: Setting aside a portion of data for final evaluation.
+4. **Time Series Validation**: Accounting for temporal dependencies in time series data.
+
+### Overfitting and Underfitting
+
+1. **Overfitting**: Model performs well on training data but poorly on new data.
+2. **Underfitting**: Model fails to capture the underlying pattern in the data.
+3. **Bias-Variance Tradeoff**: Balancing model complexity to avoid both overfitting and underfitting.
+4. **Regularization Techniques**: L1 (Lasso), L2 (Ridge), and Elastic Net regularization to prevent overfitting.
+
+## Feature Engineering
+
+### Feature Selection
+
+1. **Filter Methods**: Selecting features based on statistical measures.
+2. **Wrapper Methods**: Evaluating subsets of features using a model.
+3. **Embedded Methods**: Selecting features as part of the model training process.
+4. **Importance Ranking**: Identifying the most influential features for a model.
+
+### Feature Transformation
+
+1. **Scaling**: Normalizing or standardizing numerical features.
+2. **Encoding**: Converting categorical variables into numerical representations.
+3. **Binning**: Grouping continuous variables into discrete categories.
+4. **Dimensionality Reduction**: Reducing the number of features while preserving information.
+
+### Feature Creation
+
+1. **Interaction Terms**: Creating new features by combining existing ones.
+2. **Polynomial Features**: Generating polynomial combinations of features.
+3. **Domain-Specific Features**: Creating features based on domain knowledge.
+4. **Time-Based Features**: Extracting temporal patterns from datetime variables.
+
+## Ethical Considerations
+
+### Bias and Fairness
+
+1. **Sources of Bias**: Training data, feature selection, algorithm design, and interpretation.
+2. **Fairness Metrics**: Statistical measures to assess model fairness across different groups.
+3. **Mitigation Strategies**: Techniques to reduce bias in models.
+4. **Fairness-Aware Algorithms**: Algorithms designed to promote fairness.
+
+### Privacy and Security
+
+1. **Data Anonymization**: Removing personally identifiable information.
+2. **Differential Privacy**: Adding noise to data to protect individual privacy.
+3. **Secure Computation**: Methods for analyzing sensitive data without exposing it.
+4. **Federated Learning**: Training models across multiple devices without sharing raw data.
+
+### Transparency and Explainability
+
+1. **Interpretable Models**: Using models that are inherently understandable.
+2. **Post-hoc Explanations**: Techniques to explain complex models after training.
+3. **Local vs. Global Explanations**: Understanding individual predictions vs. overall model behavior.
+4. **Explainable AI (XAI) Tools**: SHAP values, LIME, feature importance, and partial dependence plots.
+
+# Data Science in Practice
+
+## Exploratory Data Analysis (EDA)
+
+### Data Profiling
+
+Data profiling involves examining the data to understand its structure, content, and quality:
+
+1. **Summary Statistics**: Calculating mean, median, mode, standard deviation, and percentiles.
+2. **Data Types**: Identifying numerical, categorical, datetime, and text variables.
+3. **Missing Values**: Quantifying and visualizing the extent of missing data.
+4. **Outliers**: Detecting unusual values that may affect analysis.
+5. **Distributions**: Examining the shape and spread of numerical variables.
+6. **Cardinality**: Counting unique values in categorical variables.
+
+### Data Visualization for EDA
+
+Visualization is a powerful tool for understanding data patterns:
+
+1. **Univariate Analysis**: Examining individual variables using histograms, box plots, and bar charts.
+2. **Bivariate Analysis**: Exploring relationships between pairs of variables using scatter plots, correlation matrices, and grouped bar charts.
+3. **Multivariate Analysis**: Investigating complex relationships using heat maps, parallel coordinates, and dimensionality reduction techniques.
+4. **Temporal Analysis**: Analyzing time-based patterns using line charts, seasonal decomposition, and lag plots.
+5. **Spatial Analysis**: Visualizing geographic data using maps and choropleth plots.
+
+### Correlation Analysis
+
+Correlation analysis measures the strength and direction of relationships between variables:
+
+1. **Pearson Correlation**: Linear relationship between continuous variables.
+2. **Spearman Correlation**: Monotonic relationship between ordinal variables.
+3. **Point-Biserial Correlation**: Relationship between continuous and binary variables.
+4. **Chi-Square Test**: Association between categorical variables.
+5. **Correlation Matrix**: Visualizing pairwise correlations across multiple variables.
+
+## Data Preprocessing
+
+### Data Cleaning
+
+Data cleaning involves handling issues that could affect analysis:
+
+1. **Missing Data Strategies**:
+   - Deletion: Removing rows or columns with missing values.
+   - Imputation: Filling missing values with mean, median, mode, or predicted values.
+   - Flagging: Creating indicators for missing values.
+2. **Outlier Treatment**:
+   - Detection: Using statistical methods or visualization to identify outliers.
+   - Removal: Eliminating extreme values that may distort analysis.
+   - Transformation: Applying functions to reduce the impact of outliers.
+   - Capping: Setting upper and lower bounds for values.
+3. **Error Correction**:
+   - Data Validation: Checking for inconsistencies and impossible values.
+   - Standardization: Ensuring consistent formats for dates, addresses, and other fields.
+   - Deduplication: Identifying and removing duplicate records.
+
+### Data Transformation
+
+Data transformation prepares data for modeling:
+
+1. **Normalization and Standardization**:
+   - Min-Max Scaling: Rescaling data to a specific range (usually 0-1).
+   - Z-score Standardization: Transforming data to have mean 0 and standard deviation 1.
+   - Robust Scaling: Using median and interquartile range for scaling.
+2. **Encoding Categorical Variables**:
+   - One-Hot Encoding: Creating binary columns for each category.
+   - Label Encoding: Assigning numerical values to categories.
+   - Target Encoding: Replacing categories with target statistics.
+   - Embedding: Learning dense representations for categories.
+3. **Feature Scaling**:
+   - Log Transformation: Reducing skewness in positively skewed data.
+   - Box-Cox Transformation: Parametric power transformation for non-normal data.
+   - Yeo-Johnson Transformation: Extension of Box-Cox that handles negative values.
+
+### Handling Imbalanced Data
+
+Imbalanced data occurs when class distributions are not equal:
+
+1. **Resampling Techniques**:
+   - Oversampling: Increasing the number of minority class samples.
+   - Undersampling: Reducing the number of majority class samples.
+   - Hybrid Methods: Combining oversampling and undersampling.
+2. **Synthetic Data Generation**:
+   - SMOTE (Synthetic Minority Over-sampling Technique): Creating synthetic samples for the minority class.
+   - ADASYN (Adaptive Synthetic Sampling): Generating samples focused on difficult-to-learn examples.
+3. **Algorithm-Level Approaches**:
+   - Cost-Sensitive Learning: Assigning higher costs to misclassifying minority classes.
+   - Ensemble Methods: Combining multiple models to improve performance on imbalanced data.
+   - Anomaly Detection: Treating the minority class as anomalies.
+
+## Advanced Machine Learning Techniques
+
+### Ensemble Methods
+
+Ensemble methods combine multiple models to improve performance:
+
+1. **Bagging (Bootstrap Aggregating)**:
+   - Random Forest: Ensemble of decision trees trained on bootstrap samples.
+   - Bagged Decision Trees: Averaging predictions from multiple trees.
+2. **Boosting**:
+   - AdaBoost: Sequential training with higher weights for misclassified examples.
+   - Gradient Boosting: Building trees to correct errors of previous trees.
+   - XGBoost, LightGBM, CatBoost: Optimized implementations of gradient boosting.
+3. **Stacking**:
+   - Training a meta-model on the predictions of base models.
+   - Blending: Using a validation set for meta-model training.
+
+### Time Series Analysis
+
+Time series analysis focuses on data collected over time:
+
+1. **Decomposition**:
+   - Trend: Long-term direction.
+   - Seasonality: Regular patterns at fixed intervals.
+   - Cyclical: Irregular patterns without fixed frequency.
+   - Residual: Random variation.
+2. **Forecasting Models**:
+   - ARIMA (AutoRegressive Integrated Moving Average): Modeling time series with past values and errors.
+   - Exponential Smoothing: Weighted averages with exponentially decreasing weights.
+   - Prophet: Decomposable model for business time series.
+   - LSTM and GRU: Neural network approaches for complex time series.
+3. **Evaluation**:
+   - Train-Test Split with Time Order: Respecting temporal order in validation.
+   - Time Series Cross-Validation: Rolling window approach.
+   - Metrics: MAE, RMSE, MAPE (Mean Absolute Percentage Error).
+
+### Natural Language Processing (NLP)
+
+NLP involves analyzing and generating human language:
+
+1. **Text Preprocessing**:
+   - Tokenization: Splitting text into words or subwords.
+   - Stemming and Lemmatization: Reducing words to their base forms.
+   - Stop Word Removal: Eliminating common words with little semantic value.
+   - Part-of-Speech Tagging: Identifying grammatical categories.
+2. **Text Representation**:
+   - Bag of Words: Counting word occurrences.
+   - TF-IDF (Term Frequency-Inverse Document Frequency): Weighting words by importance.
+   - Word Embeddings: Dense vector representations (Word2Vec, GloVe).
+   - Contextual Embeddings: Context-dependent representations (BERT, GPT).
+3. **NLP Tasks**:
+   - Sentiment Analysis: Determining the emotional tone of text.
+   - Named Entity Recognition: Identifying entities like people, organizations, and locations.
+   - Text Classification: Categorizing documents.
+   - Machine Translation: Converting text between languages.
+   - Question Answering: Generating answers to natural language questions.
+
+## Model Deployment and MLOps
+
+### Model Serialization
+
+Model serialization involves saving trained models for later use:
+
+1. **Pickle**: Python-specific serialization format.
+2. **Joblib**: Optimized for large NumPy arrays.
+3. **ONNX (Open Neural Network Exchange)**: Framework-agnostic format for neural networks.
+4. **TensorFlow SavedModel**: Format for TensorFlow models.
+5. **PyTorch TorchScript**: Format for PyTorch models.
+
+### Deployment Options
+
+Models can be deployed in various environments:
+
+1. **Web Services**:
+   - REST API: Exposing models through HTTP endpoints.
+   - GraphQL: Query language for APIs.
+   - WebSockets: Real-time bidirectional communication.
+2. **Containerization**:
+   - Docker: Packaging models with dependencies.
+   - Kubernetes: Orchestrating containerized applications.
+3. **Serverless**:
+   - AWS Lambda, Azure Functions, Google Cloud Functions: Event-driven execution.
+4. **Edge Devices**:
+   - Mobile Applications: Deploying models on smartphones.
+   - IoT Devices: Running models on resource-constrained hardware.
+   - Browsers: JavaScript implementations for client-side inference.
+
+### Monitoring and Maintenance
+
+Ensuring deployed models continue to perform well:
+
+1. **Performance Monitoring**:
+   - Tracking prediction accuracy over time.
+   - Detecting concept drift (changes in the relationship between features and target).
+   - Monitoring data drift (changes in the distribution of input features).
+2. **Resource Monitoring**:
+   - CPU, memory, and disk usage.
+   - Latency and throughput.
+   - Error rates and exceptions.
+3. **Model Updating**:
+   - Retraining on new data.
+   - Online learning for continuous updates.
+   - A/B testing for comparing model versions.
+   - Rollback mechanisms for reverting to previous versions.
+
+## Data Science Project Management
+
+### Project Lifecycle
+
+Managing data science projects from inception to completion:
+
+1. **Problem Definition**:
+   - Identifying business objectives.
+   - Translating business problems into data science tasks.
+   - Setting success criteria and metrics.
+2. **Data Acquisition and Understanding**:
+   - Identifying data sources.
+   - Assessing data quality and availability.
+   - Performing exploratory data analysis.
+3. **Modeling**:
+   - Feature engineering and selection.
+   - Model selection and training.
+   - Hyperparameter tuning and optimization.
+4. **Deployment**:
+   - Integrating models into production systems.
+   - Documenting model behavior and limitations.
+   - Creating user interfaces or APIs.
+5. **Monitoring and Maintenance**:
+   - Tracking model performance.
+   - Updating models as needed.
+   - Handling feedback and issues.
+
+### Agile Data Science
+
+Applying agile methodologies to data science projects:
+
+1. **Scrum for Data Science**:
+   - Sprints: Short, focused periods of work.
+   - Daily Stand-ups: Brief team meetings to discuss progress.
+   - Sprint Reviews: Demonstrating completed work.
+   - Sprint Retrospectives: Reflecting on process improvements.
+2. **Kanban for Data Science**:
+   - Visualizing workflow on a Kanban board.
+   - Limiting work in progress.
+   - Continuous delivery of value.
+3. **Minimum Viable Products (MVPs)**:
+   - Starting with simple models.
+   - Iteratively adding complexity.
+   - Gathering feedback early and often.
+
+### Collaboration and Communication
+
+Working effectively with stakeholders and team members:
+
+1. **Cross-functional Collaboration**:
+   - Working with domain experts to understand the problem.
+   - Collaborating with engineers for deployment.
+   - Partnering with business stakeholders to define success.
+2. **Technical Communication**:
+   - Documenting code and models.
+   - Creating reproducible analyses.
+   - Using version control for collaboration.
+3. **Non-technical Communication**:
+   - Translating technical concepts for non-technical audiences.
+   - Visualizing results effectively.
+   - Storytelling with data.
+   - Presenting findings and recommendations.
+
+## Domain-Specific Applications
+
+### Finance
+
+Applications of data science in finance:
+
+1. **Risk Assessment**:
+   - Credit scoring models.
+   - Fraud detection systems.
+   - Market risk modeling.
+2. **Algorithmic Trading**:
+   - Quantitative trading strategies.
+   - High-frequency trading algorithms.
+   - Sentiment analysis for market prediction.
+3. **Customer Analytics**:
+   - Customer segmentation.
+   - Lifetime value prediction.
+   - Churn prediction and prevention.
+
+### Healthcare
+
+Applications of data science in healthcare:
+
+1. **Clinical Decision Support**:
+   - Diagnosis assistance.
+   - Treatment recommendation.
+   - Risk stratification.
+2. **Medical Imaging**:
+   - Disease detection in X-rays, MRIs, and CT scans.
+   - Segmentation of anatomical structures.
+   - 3D reconstruction.
+3. **Public Health**:
+   - Disease outbreak prediction.
+   - Healthcare resource allocation.
+   - Population health management.
+
+### Retail
+
+Applications of data science in retail:
+
+1. **Demand Forecasting**:
+   - Predicting product demand.
+   - Inventory optimization.
+   - Seasonal trend analysis.
+2. **Recommendation Systems**:
+   - Product recommendations.
+   - Personalized marketing.
+   - Cross-selling and upselling.
+3. **Price Optimization**:
+   - Dynamic pricing strategies.
+   - Competitive price analysis.
+   - Promotion effectiveness.
+
+### Manufacturing
+
+Applications of data science in manufacturing:
+
+1. **Predictive Maintenance**:
+   - Forecasting equipment failures.
+   - Optimizing maintenance schedules.
+   - Reducing downtime.
+2. **Quality Control**:
+   - Defect detection and classification.
+   - Root cause analysis.
+   - Process optimization.
+3. **Supply Chain Optimization**:
+   - Demand forecasting.
+   - Inventory management.
+   - Logistics optimization.
+"""
+        
+        # Chunk the text
+        chunks = self.knowledge_extractor.extract_chunks(basic_knowledge)
+        
+        # Add metadata
+        for chunk in chunks:
+            chunk.metadata.update({
+                "source": "base_knowledge",
+                "role": self.role_id,
+                "category": "fundamentals"
+            })
+        
+        return chunks

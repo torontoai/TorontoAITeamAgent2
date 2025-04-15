@@ -1,0 +1,353 @@
+# TORONTO AI TEAM AGENT - PROPRIETARY
+#
+# Copyright (c) 2025 TORONTO AI
+# Creator: David Tadeusz Chudak
+# All Rights Reserved
+#
+# This file is part of the TORONTO AI TEAM AGENT software.
+#
+# This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+# which is licensed under the MIT License. The original license is included
+# in the LICENSE file in the root directory of this project.
+#
+# This software has been substantially modified with proprietary enhancements.
+
+"""Code Review Service for technical capabilities module.
+
+This module provides services for reviewing code based on specified criteria."""
+
+import os
+import sys
+import logging
+from typing import Dict, List, Any, Optional
+
+from ..models.data_models import (
+    CodeReviewRequest,
+    CodeReviewResult
+)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class CodeReviewService:
+    """Service for reviewing code based on specified criteria."""
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """Initialize the code review service.
+        
+        Args:
+            config: Configuration settings"""
+        self.config = config or {}
+        self.rules_dir = self.config.get('rules_dir', 'rules')
+        logger.info("Initialized code review service")
+    
+    async def review_code(self, request: CodeReviewRequest) -> CodeReviewResult:
+        """
+        Review code based on specified criteria.
+        
+        Args:
+            request: Code review request
+            
+        Returns:
+            Code review result
+        """
+        logger.info(f"Reviewing code for project: {request.project_id}")
+        
+        # Analyze files
+        issues, suggestions = await self._analyze_files(request.files, request.review_criteria)
+        
+        # Calculate quality metrics
+        quality_metrics = await self._calculate_quality_metrics(request.files, issues)
+        
+        # Create result
+        result = CodeReviewResult(
+            project_id=request.project_id,
+            review_id=f"review_{request.project_id}_{int(time.time())}",
+            issues=issues,
+            suggestions=suggestions,
+            quality_metrics=quality_metrics
+        )
+        
+        logger.info(f"Completed code review for project: {request.project_id}")
+        return result
+    
+    async def _analyze_files(
+        self, files: List[Dict[str, Any]], review_criteria: Dict[str, Any]
+    ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """
+        Analyze files based on review criteria.
+        
+        Args:
+            files: List of files to analyze
+            review_criteria: Review criteria
+            
+        Returns:
+            Tuple of issues and suggestions
+        """
+        # In a real implementation, this would perform detailed code analysis
+        # For now, return mock issues and suggestions
+        issues = []
+        suggestions = []
+        
+        for file in files:
+            file_path = file.get('path', '')
+            file_content = file.get('content', '')
+            
+            # Check for common issues
+            file_issues, file_suggestions = self._check_file(file_path, file_content, review_criteria)
+            
+            issues.extend(file_issues)
+            suggestions.extend(file_suggestions)
+        
+        return issues, suggestions
+    
+    def _check_file(
+        self, file_path: str, file_content: str, review_criteria: Dict[str, Any]
+    ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """Check a file for issues and suggestions.
+        
+        Args:
+            file_path: File path
+            file_content: File content
+            review_criteria: Review criteria
+            
+        Returns:
+            Tuple of issues and suggestions"""
+        issues = []
+        suggestions = []
+        
+        # Check for code style issues
+        if review_criteria.get('check_code_style', True):
+            style_issues, style_suggestions = self._check_code_style(file_path, file_content)
+            issues.extend(style_issues)
+            suggestions.extend(style_suggestions)
+        
+        # Check for security issues
+        if review_criteria.get('check_security', True):
+            security_issues, security_suggestions = self._check_security(file_path, file_content)
+            issues.extend(security_issues)
+            suggestions.extend(security_suggestions)
+        
+        # Check for performance issues
+        if review_criteria.get('check_performance', True):
+            performance_issues, performance_suggestions = self._check_performance(file_path, file_content)
+            issues.extend(performance_issues)
+            suggestions.extend(performance_suggestions)
+        
+        return issues, suggestions
+    
+    def _check_code_style(self, file_path: str, file_content: str) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """Check code style.
+        
+        Args:
+            file_path: File path
+            file_content: File content
+            
+        Returns:
+            Tuple of issues and suggestions"""
+        issues = []
+        suggestions = []
+        
+        # Check for long lines
+        lines = file_content.split('\n')
+        for i, line in enumerate(lines):
+            if len(line) > 100:
+                issues.append({
+                    "file": file_path,
+                    "line": i + 1,
+                    "type": "code_style",
+                    "severity": "low",
+                    "message": "Line is too long (exceeds 100 characters)"
+                })
+                suggestions.append({
+                    "file": file_path,
+                    "line": i + 1,
+                    "type": "code_style",
+                    "message": "Consider breaking this line into multiple lines"
+                })
+        
+        # Check for inconsistent indentation
+        indentation = None
+        for i, line in enumerate(lines):
+            if line.strip() == '':
+                continue
+            
+            current_indentation = len(line) - len(line.lstrip())
+            if indentation is None:
+                indentation = current_indentation
+            elif current_indentation > 0 and current_indentation % indentation != 0:
+                issues.append({
+                    "file": file_path,
+                    "line": i + 1,
+                    "type": "code_style",
+                    "severity": "low",
+                    "message": "Inconsistent indentation"
+                })
+                suggestions.append({
+                    "file": file_path,
+                    "line": i + 1,
+                    "type": "code_style",
+                    "message": f"Use consistent indentation (multiples of {indentation} spaces)"
+                })
+        
+        return issues, suggestions
+    
+    def _check_security(self, file_path: str, file_content: str) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """Check security issues.
+        
+        Args:
+            file_path: File path
+            file_content: File content
+            
+        Returns:
+            Tuple of issues and suggestions"""
+        issues = []
+        suggestions = []
+        
+        # Check for hardcoded secrets
+        lines = file_content.split('\n')
+        for i, line in enumerate(lines):
+            if 'password' in line.lower() and '=' in line and not line.strip().startswith('//'):
+                issues.append({
+                    "file": file_path,
+                    "line": i + 1,
+                    "type": "security",
+                    "severity": "high",
+                    "message": "Possible hardcoded password"
+                })
+                suggestions.append({
+                    "file": file_path,
+                    "line": i + 1,
+                    "type": "security",
+                    "message": "Use environment variables or a secure configuration system for sensitive information"
+                })
+            
+            if 'api_key' in line.lower() and '=' in line and not line.strip().startswith('//'):
+                issues.append({
+                    "file": file_path,
+                    "line": i + 1,
+                    "type": "security",
+                    "severity": "high",
+                    "message": "Possible hardcoded API key"
+                })
+                suggestions.append({
+                    "file": file_path,
+                    "line": i + 1,
+                    "type": "security",
+                    "message": "Use environment variables or a secure configuration system for sensitive information"
+                })
+        
+        # Check for SQL injection vulnerabilities
+        for i, line in enumerate(lines):
+            if ('sql' in line.lower() or 'query' in line.lower()) and '+' in line and not line.strip().startswith('//'):
+                issues.append({
+                    "file": file_path,
+                    "line": i + 1,
+                    "type": "security",
+                    "severity": "high",
+                    "message": "Possible SQL injection vulnerability"
+                })
+                suggestions.append({
+                    "file": file_path,
+                    "line": i + 1,
+                    "type": "security",
+                    "message": "Use parameterized queries or an ORM to prevent SQL injection"
+                })
+        
+        return issues, suggestions
+    
+    def _check_performance(self, file_path: str, file_content: str) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """Check performance issues.
+        
+        Args:
+            file_path: File path
+            file_content: File content
+            
+        Returns:
+            Tuple of issues and suggestions"""
+        issues = []
+        suggestions = []
+        
+        # Check for nested loops
+        lines = file_content.split('\n')
+        in_loop = False
+        nested_loop_start = -1
+        
+        for i, line in enumerate(lines):
+            if 'for ' in line or 'while ' in line:
+                if in_loop:
+                    nested_loop_start = i + 1
+                else:
+                    in_loop = True
+            
+            if nested_loop_start > 0 and ('}' in line or 'end' in line.lower()):
+                issues.append({
+                    "file": file_path,
+                    "line": nested_loop_start,
+                    "type": "performance",
+                    "severity": "medium",
+                    "message": "Nested loop detected"
+                })
+                suggestions.append({
+                    "file": file_path,
+                    "line": nested_loop_start,
+                    "type": "performance",
+                    "message": "Consider optimizing nested loops to improve performance"
+                })
+                nested_loop_start = -1
+            
+            if in_loop and ('}' in line or 'end' in line.lower()):
+                in_loop = False
+        
+        return issues, suggestions
+    
+    async def _calculate_quality_metrics(
+        self, files: List[Dict[str, Any]], issues: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Calculate quality metrics based on files and issues.
+        
+        Args:
+            files: List of files
+            issues: List of issues
+            
+        Returns:
+            Quality metrics
+        """
+        # In a real implementation, this would calculate detailed quality metrics
+        # For now, return mock metrics
+        
+        # Count issues by severity
+        high_severity = sum(1 for issue in issues if issue.get('severity') == 'high')
+        medium_severity = sum(1 for issue in issues if issue.get('severity') == 'medium')
+        low_severity = sum(1 for issue in issues if issue.get('severity') == 'low')
+        
+        # Count issues by type
+        code_style_issues = sum(1 for issue in issues if issue.get('type') == 'code_style')
+        security_issues = sum(1 for issue in issues if issue.get('type') == 'security')
+        performance_issues = sum(1 for issue in issues if issue.get('type') == 'performance')
+        
+        # Calculate total lines of code
+        total_lines = sum(len(file.get('content', '').split('\n')) for file in files)
+        
+        # Calculate issue density
+        issue_density = len(issues) / total_lines if total_lines > 0 else 0
+        
+        # Calculate overall score (0-100)
+        # Higher is better, penalize high severity issues more
+        score = 100 - (high_severity * 10 + medium_severity * 5 + low_severity * 2)
+        score = max(0, min(100, score))
+        
+        return {
+            "total_issues": len(issues),
+            "high_severity_issues": high_severity,
+            "medium_severity_issues": medium_severity,
+            "low_severity_issues": low_severity,
+            "code_style_issues": code_style_issues,
+            "security_issues": security_issues,
+            "performance_issues": performance_issues,
+            "total_lines": total_lines,
+            "issue_density": issue_density,
+            "overall_score": score
+        }
