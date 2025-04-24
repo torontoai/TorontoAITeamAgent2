@@ -68,6 +68,17 @@ The TORONTO AI TEAM AGENT is a comprehensive framework for creating and managing
 - **Entity Mapping**: Comprehensive mapping between internal entities and Jira/Confluence objects
 - **Authentication Management**: Secure OAuth and API token handling
 
+### Slack Integration
+
+- **Streamlined Communication**: Direct communication between AI agents and humans through Slack
+- **Real-time Messaging**: Send and receive messages in real-time with rich formatting
+- **Channel & Direct Message Support**: Communicate in public channels or private direct messages
+- **Interactive Components**: Use buttons, menus, and modals for enhanced interaction
+- **File Sharing**: Exchange files and documents seamlessly between agents and humans
+- **Event Handling**: Process and respond to various Slack events (messages, reactions, etc.)
+- **Webhook Integration**: Real-time notifications through Slack's event API
+- **MCP/A2A Framework Integration**: Seamless connection with existing agent communication protocols
+
 ### Coursera API Integration
 
 - **Knowledge Pipeline**: Access to specialized educational content for agent training
@@ -253,6 +264,13 @@ integration_system.connect_jira(
     api_token="your-api-token"
 )
 
+# Connect to Slack
+integration_system.connect_slack(
+    bot_token="xoxb-your-bot-token",
+    signing_secret="your-signing-secret",
+    app_token="xapp-your-app-token"
+)
+
 # Start the team
 team.start()
 ```
@@ -333,6 +351,7 @@ For more examples, see [Quick Start Guide](docs/getting-started/quick-start.md).
 - [MCP-A2A Technology](docs/features/mcp-a2a-technology.md)
 - [Human-AI Collaboration Framework](docs/features/human-ai-collaboration-framework.md)
 - [Jira-Confluence Integration](docs/features/jira-confluence-integration.md)
+- [Slack Integration](docs/features/slack-integration.md)
 - [Coursera API Integration](docs/features/coursera-api-integration.md)
 
 ### Innovative AI Enhancements
@@ -384,4 +403,4 @@ This software is based on OpenManus (Copyright (c) 2025 manna_and_poem), which i
 
 - The TORONTO AI team for their vision and support
 - All contributors who have helped shape this project
-- The open-source community for providing invaluable tools and libraries
+- The open-source community for providing invaluable tools and frameworks
