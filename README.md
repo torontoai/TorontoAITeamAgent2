@@ -46,6 +46,15 @@ The TORONTO AI TEAM AGENT is a comprehensive framework for creating and managing
   - Enable dynamic agent team formation with specialized roles
   - Seamlessly integrate with MaAS and A2A frameworks
 
+- **Almost Limitless Context Window**
+  - Process extremely large projects, documents, and code repositories without context limitations
+  - Combine vector database integration with hierarchical document processing
+  - Implement recursive summarization for multi-level understanding
+  - Utilize sophisticated memory management across different memory types
+  - Distribute context processing across specialized agents
+  - Maintain context awareness across massive amounts of information
+  - Efficiently retrieve and process relevant content as needed
+
 ### Vector-Based Knowledge Integration
 
 - **Multiple Vector Database Backends**: Support for InMemory, ChromaDB, Pinecone, Weaviate, Milvus, and FAISS
@@ -168,6 +177,43 @@ The TORONTO AI TEAM AGENT system now features a comprehensive integration with G
 - **Multi-Agent Collaboration**: Enable effective collaboration between Grok 3-powered agents
 - **Architecture Optimization**: Discover optimal team structures using Grok 3's capabilities
 
+## Context Window Extension System
+
+The TORONTO AI TEAM AGENT system now features an innovative Context Window Extension System that provides an almost limitless context window, enabling the processing of extremely large projects, documents, and code repositories without context limitations.
+
+### Core Components
+
+- **Vector Database Integration Layer**: Persistent storage of all content with semantic search capabilities
+- **Hierarchical Document Processing System**: Breaks down large documents into manageable hierarchical structures
+- **Recursive Summarization Pipeline**: Creates multi-level summaries to maintain high-level understanding
+- **Memory Management System**: Organizes information across different memory types
+- **Multi-Agent Context Distribution System**: Distributes context processing across specialized agents
+
+### Key Capabilities
+
+- **Almost Limitless Context**: Process extremely large projects without token limitations
+- **Hierarchical Navigation**: Navigate complex document structures efficiently
+- **Multi-Level Summarization**: Access information at different levels of detail
+- **Persistent Memory**: Maintain context across sessions with sophisticated memory management
+- **Distributed Processing**: Leverage multiple agents for efficient context handling
+- **Semantic Search**: Retrieve relevant information based on meaning rather than keywords
+- **Adaptive Compression**: Automatically adjust compression ratios based on content importance
+
+### Use Cases
+
+- **Large Code Repositories**: Process and understand entire codebases with millions of lines of code
+- **Extensive Documentation**: Navigate and comprehend large technical documentation sets
+- **Long Conversation Histories**: Maintain context across extended conversation sessions
+- **Complex Projects**: Handle multi-faceted projects with diverse information sources
+- **Research Analysis**: Process and synthesize large volumes of research papers and data
+
+### Integration with Existing Components
+
+- **Grok 3 Enhancement**: Extends Grok 3's already impressive 128K token context window to virtually unlimited size
+- **MaAS Optimization**: Enables more effective architecture search with comprehensive context awareness
+- **A2A Communication**: Facilitates more effective agent communication with shared context understanding
+- **Vector Knowledge Base**: Seamlessly integrates with existing vector-based knowledge integration
+
 ## Integrated Tools
 
 TORONTO AI TEAM AGENT integrates a comprehensive set of tools across various categories:
@@ -260,6 +306,7 @@ from app.integration import IntegrationSystem
 from app.multimodal import MultimodalSystem
 from app.orchestration import OrchestrationSystem
 from app.code_generation import CodeGenerationSystem
+from app.context_extension import ContextWindowManager
 
 # Initialize the core systems
 training_system = TrainingSystem(config_path="config.yaml")
@@ -270,6 +317,7 @@ integration_system = IntegrationSystem(config_path="config.yaml")
 multimodal_system = MultimodalSystem(config_path="config.yaml")
 orchestration_system = OrchestrationSystem(config_path="config.yaml")
 code_generation_system = CodeGenerationSystem(config_path="config.yaml")
+context_window_manager = ContextWindowManager(config_path="config.yaml")
 
 # Create a team with human and AI members
 team = orchestration_system.create_team(
@@ -302,6 +350,14 @@ code = code_generation_system.generate_code_with_multimodal_context(
     requirements="Create a data visualization dashboard",
     image_paths=["/path/to/mockup.jpg"]
 )
+
+# Process a large code repository with the Context Window Extension System
+repo_dir = "/path/to/large/repository"
+context_window_manager.process_directory(repo_dir, "code_repository")
+
+# Retrieve information from the large repository
+query = "authentication implementation"
+context = context_window_manager.retrieve_context(query, "combined", 5)
 
 # Connect to Jira and Confluence
 integration_system.connect_jira(
@@ -338,201 +394,146 @@ integration_manager = MaaSIntegrationManager(supernet, evaluator)
 task = TaskModel(
     id="task_001",
     name="Research Task",
-    description="Research the latest developments in AI",
-    domain="research",
-    required_capabilities=[
-        AgentCapability.RESEARCH,
-        AgentCapability.SUMMARIZATION,
-        AgentCapability.PLANNING
-    ],
-    complexity_score=0.7
+    description="Research the latest developments in AI and create a summary report",
+    complexity=0.7,
+    domain="research"
 )
 
-# Create an agent team using AutoGen
-autogen_config = integration_manager.create_agent_team(
-    task=task,
-    framework="autogen"
-)
+# Sample an architecture for the task
+architecture = supernet.sample_architecture(task)
 
-# Execute the workflow with AutoGen
-autogen_results = integration_manager.execute_workflow(
-    task=task,
-    framework="autogen"
-)
+# Convert to A2A configuration
+a2a_config = integration_manager.convert_to_a2a(architecture)
 
-# Alternatively, create an agent team using A2A
-a2a_config = integration_manager.create_agent_team(
-    task=task,
-    framework="a2a"
-)
+# Create and execute the A2A team
+a2a_team = integration_manager.create_a2a_team(a2a_config)
+result = a2a_team.execute(task)
 
-# Execute the workflow with A2A
-a2a_results = integration_manager.execute_workflow(
-    task=task,
-    framework="a2a"
-)
+# Evaluate performance
+performance = evaluator.evaluate(architecture, task, result)
 
-# Visualize the architecture
-from app.orchestration.maas.visualization.architecture_visualizer import ArchitectureVisualizer
-visualizer = ArchitectureVisualizer()
-architecture = supernet.get_last_sampled_architecture()
-visualization = visualizer.visualize_architecture(
-    architecture,
-    output_path="architecture_visualization",
-    output_format="html"
-)
+# Update the supernet with feedback
+supernet.update(architecture, performance)
 ```
 
 ### Using Grok 3 Integration
 
 ```python
-from app.models.adapters.model_adapter import Grok3Adapter
+from app.models.providers.grok3_provider import Grok3Provider
 from app.models.adapters.reasoning_adapters import ReasoningGrok3Adapter
 from app.code_execution.code_execution import CodeExecutionGrok3Adapter
 from app.orchestration.maas.integration.grok3_maas_integration import Grok3MaaSIntegration
 from app.orchestration.adapters.grok3_a2a_integration import Grok3A2AIntegration
-from app.orchestration.adapters.a2a_adapter import A2AAdapter
-from app.orchestration.maas.supernet.agentic_supernet import AgenticSupernet
-from app.orchestration.maas.evaluation.evaluator import ArchitectureEvaluator
-from app.orchestration.maas.algorithms.search_algorithms import SearchAlgorithm
 
-# Initialize Grok 3 adapters
-grok3_adapter = Grok3Adapter()
-reasoning_adapter = ReasoningGrok3Adapter()
-code_execution_adapter = CodeExecutionGrok3Adapter()
+# Initialize Grok 3 provider
+grok3_provider = Grok3Provider(api_key="your-grok3-api-key")
 
-# Initialize MaAS components
-supernet = AgenticSupernet()
-evaluator = ArchitectureEvaluator()
-search_algorithm = SearchAlgorithm()
+# Create reasoning adapter
+reasoning_adapter = ReasoningGrok3Adapter(provider=grok3_provider)
 
-# Initialize A2A adapter
-a2a_adapter = A2AAdapter()
+# Create code execution adapter
+code_execution_adapter = CodeExecutionGrok3Adapter(provider=grok3_provider)
 
-# Initialize Grok 3 integrations
-maas_integration = Grok3MaaSIntegration(
-    grok3_adapter=grok3_adapter,
-    reasoning_adapter=reasoning_adapter,
-    code_execution_adapter=code_execution_adapter,
-    supernet=supernet,
-    evaluator=evaluator,
-    search_algorithm=search_algorithm
+# Use advanced reasoning
+result = reasoning_adapter.think(
+    prompt="Analyze the implications of quantum computing on cryptography",
+    max_tokens=2000
 )
 
-a2a_integration = Grok3A2AIntegration(
-    grok3_adapter=grok3_adapter,
-    reasoning_adapter=reasoning_adapter,
-    code_execution_adapter=code_execution_adapter,
-    a2a_adapter=a2a_adapter
-)
-
-# Create a Grok 3-powered architecture template
-template = maas_integration.create_grok3_architecture_template(
-    template_name="problem_solving_team",
-    num_agents=3,
-    use_reasoning=True,
-    use_code_execution=True
-)
-
-# Optimize the architecture for a specific task
-result = maas_integration.optimize_architecture_for_task(
-    task_description="Analyze large financial datasets and generate insights",
-    initial_template=template,
-    optimization_steps=5
-)
-
-# Create a team of Grok 3-powered agents
-team = a2a_integration.create_agent_team(
-    team_name="Financial Analysis Team",
-    agent_roles=[
-        {"role": "coordinator", "name": "Team Lead"},
-        {"role": "developer", "name": "Data Engineer"},
-        {"role": "analyst", "name": "Financial Analyst"}
-    ]
-)
-
-# Request reasoning with "think" mode
-reasoning_result = a2a_integration.request_reasoning(
-    from_agent_id=team["agents"][0]["id"],
-    to_agent_id=team["agents"][2]["id"],
-    prompt="What are the key factors affecting market volatility?",
-    reasoning_mode="think"
-)
-
-# Request code execution
-code_result = a2a_integration.request_code_execution(
-    from_agent_id=team["agents"][0]["id"],
-    to_agent_id=team["agents"][1]["id"],
-    prompt="Create a function to analyze time series data for anomalies",
+# Generate and execute code
+code_result = code_execution_adapter.generate_and_execute(
+    prompt="Create a function to calculate the Fibonacci sequence",
     language="python"
+)
+
+# Integrate with MaAS
+grok3_maas = Grok3MaaSIntegration(provider=grok3_provider)
+architecture = grok3_maas.create_architecture_template(
+    task_description="Analyze large dataset and generate visualizations",
+    complexity=0.8
+)
+
+# Integrate with A2A
+grok3_a2a = Grok3A2AIntegration(provider=grok3_provider)
+agent_team = grok3_a2a.create_agent_team(
+    team_name="Data Analysis Team",
+    roles=["data_analyst", "visualization_expert", "report_writer"]
 )
 ```
 
-For more examples, see [Quick Start Guide](docs/getting-started/quick-start.md).
+### Using Context Window Extension System
+
+```python
+from app.context_extension.context_window_manager import ContextWindowManager
+from app.context_extension.vector_db_manager import VectorDatabaseManager
+from app.context_extension.hierarchical_processor import HierarchicalProcessor
+from app.context_extension.recursive_summarizer import RecursiveSummarizer
+from app.context_extension.memory_manager import MemoryManager
+from app.context_extension.multi_agent_context import MultiAgentContextDistributor
+
+# Initialize Context Window Manager
+context_manager = ContextWindowManager(
+    vector_db_config={
+        "db_provider": "chroma",
+        "embedding_model": "sentence-transformers/all-mpnet-base-v2",
+        "collection_name": "project_collection",
+        "persist_directory": "/path/to/vector_db"
+    },
+    memory_manager_config={
+        "storage_dir": "/path/to/memory",
+        "short_term_capacity": 100,
+        "working_memory_capacity": 50
+    }
+)
+
+# Process a large code repository
+import os
+repo_dir = "/path/to/large/repository"
+for root, dirs, files in os.walk(repo_dir):
+    for file in files:
+        if file.endswith((".py", ".js", ".java", ".cpp")):
+            file_path = os.path.join(root, file)
+            with open(file_path, "r") as f:
+                content = f.read()
+                context_manager.process_document(content, file_path, "code")
+
+# Process a large document
+with open("/path/to/large/document.md", "r") as f:
+    document = f.read()
+    context_manager.process_document(document, "large_document", "markdown")
+
+# Retrieve context for a specific query
+query = "authentication implementation"
+result = context_manager.retrieve_context(query, "combined", 5)
+print(f"Retrieved context: {len(result['context'])} characters")
+
+# Get a summary at different levels
+summary_level_0 = context_manager.get_summary_at_level("large_document", 0)  # High-level
+summary_level_1 = context_manager.get_summary_at_level("large_document", 1)  # More detailed
+
+# Drill down into specific sections
+drill_down = context_manager.drill_down_context("user authentication", "large_document")
+```
 
 ## Documentation
 
-### Getting Started
-- [Prerequisites](docs/getting-started/prerequisites.md)
-- [Installation](docs/getting-started/installation.md)
-- [Quick Start](docs/getting-started/quick-start.md)
+For detailed documentation, see:
 
-### Features
-- [Knowledge Integration](docs/features/knowledge-integration.md)
-- [MCP-A2A Technology](docs/features/mcp-a2a-technology.md)
-- [Human-AI Collaboration Framework](docs/features/human-ai-collaboration-framework.md)
-- [Jira-Confluence Integration](docs/features/jira-confluence-integration.md)
-- [Slack Integration](docs/features/slack-integration.md)
-- [Coursera API Integration](docs/features/coursera-api-integration.md)
-- [Grok 3 Integration](docs/grok3_integration_guide.md)
-
-### Innovative AI Enhancements
-- [Multimodal Agent Cognition](docs/multimodal_agent_cognition.md)
-- [Autonomous Agent Orchestration](docs/autonomous_agent_orchestration.md)
-- [Advanced Code Generation](docs/advanced_code_generation.md)
-- [Enhancements Integration Guide](docs/enhancements_integration_guide.md)
-- [Innovative AI Enhancements Overview](docs/innovative_ai_enhancements.md)
-
-### Multi-agent Architecture Search (MaAS)
-- [MaAS Integration Guide](docs/maas_integration_guide.md)
+- [Getting Started Guide](docs/getting-started/index.md)
+- [API Reference](docs/api/index.md)
+- [Architecture Overview](docs/architecture/index.md)
+- [Integration Guides](docs/integration/index.md)
 - [MaAS Implementation](docs/maas_implementation.md)
-
-### Deployment
-- [Local Deployment](docs/deployment/local-deployment.md)
-- [Production Deployment](docs/deployment/production-deployment.md)
-- [Deployment Strategy](docs/deployment/deployment-strategy.md)
-
-### Frontend
-- [Setup](docs/frontend/setup.md)
-- [Configuration](docs/frontend/configuration.md)
-- [Customization](docs/frontend/customization.md)
-
-### Backend
-- [Configuration](docs/backend/configuration.md)
-- [Monitoring](docs/backend/monitoring.md)
-- [Scaling](docs/backend/scaling.md)
-- [Backup & Recovery](docs/backend/backup-recovery.md)
-
-### Troubleshooting
-- [Common Issues](docs/troubleshooting/common-issues.md)
-
-### Roadmap
-- [Improvement Analysis](docs/roadmap/improvement_analysis.md)
-- [Improvement Prioritization](docs/roadmap/improvement_prioritization.md)
-- [Implementation Plan](docs/roadmap/consolidated_implementation_plan.md)
+- [MaAS Integration Guide](docs/maas_integration_guide.md)
+- [Grok 3 Integration Guide](docs/grok3_integration_guide.md)
+- [Context Window Extension](docs/context_window_extension.md)
+- [Tutorials](docs/tutorials/index.md)
+- [Examples](docs/examples/index.md)
 
 ## Contributing
 
-We welcome contributions to the TORONTO AI TEAM AGENT project! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
+See [Contributing Guidelines](CONTRIBUTING.md) for information on how to contribute to the project.
 
 ## License
 
-This project is licensed under a proprietary license - see the [LICENSE](LICENSE) file for details. All rights reserved.
-
-This software is based on OpenManus (Copyright (c) 2025 manna_and_poem), which is licensed under the MIT License. The TORONTO AI TEAM AGENT has been substantially modified with proprietary enhancements.
-
-## Acknowledgments
-
-- The TORONTO AI team for their vision and support
-- All contributors who have helped shape this project
-- The open-source community for providing invaluable tools and frameworks
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
