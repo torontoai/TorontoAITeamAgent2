@@ -70,6 +70,8 @@ The TORONTO AI TEAM AGENT is a comprehensive framework for creating and managing
   - Utilize Google's Gemini Pro/Ultra models for additional multimodal reasoning capabilities
   - Seamlessly switch between models based on task requirements and performance characteristics
   - Combine multiple models for enhanced capabilities and cross-model verification
+  - Access local models through Ollama integration for privacy and reduced latency
+  - Utilize DeepSeek models for specialized reasoning and code generation tasks
 
 - **Task Estimation Framework**
   - Accurately estimate completion times for tasks based on complexity and historical performance
@@ -118,6 +120,8 @@ The TORONTO AI TEAM AGENT is a comprehensive framework for creating and managing
   - Enforce security policies and access controls across the system
   - Detect and respond to security events with configurable alerting
   - Generate compliance reports for regulatory requirements
+  - Perform automated security scanning with Bandit for Python code
+  - Implement custom security scanners for comprehensive vulnerability detection
 
 - **Human-AI Collaboration Features**
   - **Personalized Agent Adaptation**: Learn from individual human team members' preferences and working styles
@@ -136,6 +140,39 @@ The TORONTO AI TEAM AGENT is a comprehensive framework for creating and managing
   - Provide actionable insights for optimizing agent deployment
   - Enable data-driven team composition and task allocation
   - Predict future performance based on historical data
+
+### Code Review and Development Tools
+
+- **Static Analysis Tools**
+  - **Pylint**: Comprehensive Python code analysis for error detection and code quality improvement
+  - **Flake8**: Style guide enforcement and linting for Python code
+  - **Bandit**: Security vulnerability scanning for Python applications
+  - **SonarQube**: Continuous inspection of code quality and security vulnerabilities
+
+- **Code Formatting Tools**
+  - **Black**: Uncompromising Python code formatter with a focus on consistency
+  - **Prettier**: Opinionated code formatter for JavaScript, TypeScript, and web technologies
+  - **ESLint**: Pluggable linting utility for JavaScript and TypeScript
+
+- **Type Checking Tools**
+  - **Mypy**: Static type checker for Python that enforces type annotations
+  - **Pyright**: Fast type checker used in Microsoft's Pylance extension for VS Code
+  - **TypeScript**: JavaScript with syntax for types, providing compile-time type checking
+
+- **Agentic Coding Tools**
+  - **Aider**: AI pair programming tool that integrates with version control
+  - **Cursor**: AI-powered code editor with intelligent code completion and refactoring
+  - **GitHub Copilot**: AI pair programmer that offers code suggestions in real-time
+
+- **Testing Frameworks**
+  - **Pytest**: Feature-rich Python testing framework with simple syntax
+  - **Jest**: JavaScript testing framework with a focus on simplicity
+  - **Cypress**: End-to-end testing framework for web applications
+
+- **Execution Environments**
+  - **Replit**: Browser-based IDE for collaborative coding and execution
+  - **Jupyter**: Interactive computing environment for data science and machine learning
+  - **Subprocess**: Native Python subprocess management for code execution
 
 ### Vector-Based Knowledge Integration
 
@@ -161,6 +198,29 @@ The TORONTO AI TEAM AGENT is a comprehensive framework for creating and managing
 - **Knowledge Sharing**: Seamless knowledge transfer between humans and AI agents
 - **Personalized Agent Adaptation**: Agents learn from individual human team members' preferences
 - **Collaborative Decision Support**: Structured frameworks for human-AI joint decision-making
+
+### Multimodal Services
+
+- **Image Generation**
+  - Integration with DALL-E 3, Midjourney, and Stable Diffusion
+  - Generate images from text descriptions with customizable parameters
+  - Create diagrams, mockups, and visual assets for projects
+  - Edit and modify existing images with text instructions
+  - Style transfer and image variation capabilities
+
+- **Speech Processing**
+  - Text-to-speech synthesis with Eleven Labs integration
+  - Speech-to-text transcription with Whisper
+  - Voice cloning and customization capabilities
+  - Multi-language support for global applications
+  - Real-time speech processing for interactive applications
+
+- **Transformers Integration**
+  - Direct access to Hugging Face transformers models
+  - Fine-tuning capabilities for specialized tasks
+  - Multi-modal model support (text, image, audio)
+  - Optimized inference for production environments
+  - Model quantization for improved performance
 
 ### Jira/Confluence Integration
 
@@ -776,6 +836,127 @@ time_trend = analytics.create_visualization(
 )
 ```
 
+### Using Code Review Tools
+
+```python
+from app.tools.analysis.pylint import PylintTool
+from app.tools.formatting.black import BlackTool
+from app.tools.formatting.flake8 import Flake8Tool
+from app.tools.type_checking.mypy import MypyTool
+from app.tools.security.bandit import BanditTool
+
+# Initialize code review tools
+pylint = PylintTool()
+black = BlackTool()
+flake8 = Flake8Tool()
+mypy = MypyTool()
+bandit = BanditTool()
+
+# Path to the code to review
+code_path = "/path/to/your/code.py"
+
+# Run static analysis with Pylint
+pylint_result = pylint.analyze(code_path)
+print(f"Pylint score: {pylint_result.score}/10")
+print(f"Issues found: {len(pylint_result.issues)}")
+for issue in pylint_result.issues[:5]:  # Show first 5 issues
+    print(f"- {issue.code}: {issue.message} at line {issue.line}")
+
+# Format code with Black
+black_result = black.format(code_path)
+print(f"Code formatted: {black_result.formatted}")
+print(f"Changes made: {black_result.changes}")
+
+# Check style with Flake8
+flake8_result = flake8.check(code_path)
+print(f"Flake8 issues found: {len(flake8_result.issues)}")
+for issue in flake8_result.issues[:5]:  # Show first 5 issues
+    print(f"- {issue.code}: {issue.message} at line {issue.line}")
+
+# Check types with Mypy
+mypy_result = mypy.check(code_path)
+print(f"Type issues found: {len(mypy_result.issues)}")
+for issue in mypy_result.issues[:5]:  # Show first 5 issues
+    print(f"- {issue.message} at line {issue.line}")
+
+# Check security with Bandit
+bandit_result = bandit.scan(code_path)
+print(f"Security issues found: {len(bandit_result.issues)}")
+for issue in bandit_result.issues:
+    print(f"- {issue.severity} {issue.confidence}: {issue.message} at line {issue.line}")
+```
+
+### Using Multimodal Services
+
+```python
+from app.multimodal.services.image_generation import ImageGenerator
+from app.multimodal.services.speech_processing import SpeechProcessor
+from app.multimodal.services.transformers_client import TransformersClient
+
+# Initialize image generation service
+image_generator = ImageGenerator(provider="dall-e-3")
+
+# Generate an image
+image_result = image_generator.generate(
+    prompt="A futuristic city with flying cars and tall glass buildings",
+    size="1024x1024",
+    quality="standard"
+)
+
+# Save the generated image
+image_path = image_generator.save_image(
+    image_data=image_result.image_data,
+    file_path="/path/to/save/futuristic_city.png"
+)
+
+# Initialize speech processing service
+speech_processor = SpeechProcessor()
+
+# Convert text to speech
+audio_result = speech_processor.text_to_speech(
+    text="Welcome to the Toronto AI Team Agent system.",
+    voice="alloy",
+    speed=1.0
+)
+
+# Save the audio file
+audio_path = speech_processor.save_audio(
+    audio_data=audio_result.audio_data,
+    file_path="/path/to/save/welcome_message.mp3"
+)
+
+# Transcribe speech from audio file
+transcription = speech_processor.speech_to_text(
+    audio_file="/path/to/audio/recording.mp3",
+    language="en"
+)
+
+print(f"Transcription: {transcription.text}")
+
+# Initialize transformers client
+transformers = TransformersClient()
+
+# Perform image classification
+image_classification = transformers.classify_image(
+    image_path="/path/to/image.jpg",
+    model_name="google/vit-base-patch16-224"
+)
+
+print("Image classification results:")
+for label, score in image_classification.results:
+    print(f"- {label}: {score:.2f}")
+
+# Perform named entity recognition
+ner_results = transformers.extract_entities(
+    text="Apple Inc. is planning to open a new office in Toronto next year.",
+    model_name="dslim/bert-base-NER"
+)
+
+print("Named entities:")
+for entity in ner_results.entities:
+    print(f"- {entity.text} ({entity.label})")
+```
+
 ## Documentation
 
 For more detailed information, please refer to the following documentation:
@@ -799,6 +980,8 @@ For more detailed information, please refer to the following documentation:
 - [Security Features](docs/security_features.md)
 - [Human-AI Collaboration](docs/human_ai_collaboration.md)
 - [Agent Performance Analytics](docs/agent_performance_analytics.md)
+- [Code Review Tools](docs/code_review_tools.md)
+- [Multimodal Services](docs/multimodal_services.md)
 
 ## License
 
