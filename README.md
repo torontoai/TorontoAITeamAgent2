@@ -119,6 +119,24 @@ The TORONTO AI TEAM AGENT is a comprehensive framework for creating and managing
   - Detect and respond to security events with configurable alerting
   - Generate compliance reports for regulatory requirements
 
+- **Human-AI Collaboration Features**
+  - **Personalized Agent Adaptation**: Learn from individual human team members' preferences and working styles
+  - **Collaborative Decision Support**: Implement structured frameworks for human-AI joint decision-making
+  - Customize agent communication style based on user preferences
+  - Adapt task assignments to match individual working styles
+  - Provide transparent decision processes with clear rationales
+  - Enable effective collaboration between human and AI team members
+  - Track adaptation effectiveness through satisfaction metrics
+
+- **Agent Performance Analytics**
+  - Implement comprehensive monitoring of agent performance metrics
+  - Track time-based, quality, efficiency, satisfaction, and collaboration metrics
+  - Analyze performance at task, agent, role, team, and project levels
+  - Generate visual representations of performance trends and patterns
+  - Provide actionable insights for optimizing agent deployment
+  - Enable data-driven team composition and task allocation
+  - Predict future performance based on historical data
+
 ### Vector-Based Knowledge Integration
 
 - **Multiple Vector Database Backends**: Support for InMemory, ChromaDB, Pinecone, Weaviate, Milvus, and FAISS
@@ -141,6 +159,8 @@ The TORONTO AI TEAM AGENT is a comprehensive framework for creating and managing
 - **Transparent Communication**: All team members have visibility into relevant communications
 - **Adaptive Workflow**: Framework adapts to changing project needs and team composition
 - **Knowledge Sharing**: Seamless knowledge transfer between humans and AI agents
+- **Personalized Agent Adaptation**: Agents learn from individual human team members' preferences
+- **Collaborative Decision Support**: Structured frameworks for human-AI joint decision-making
 
 ### Jira/Confluence Integration
 
@@ -206,7 +226,7 @@ The TORONTO AI TEAM AGENT system features a powerful integration between Multi-a
 
 ## Grok 3 Integration
 
-The TORONTO AI TEAM AGENT system now features a comprehensive integration with Grok 3 API, enabling advanced reasoning capabilities, large context processing, and secure code execution within the multi-agent framework.
+The TORONTO AI TEAM AGENT system features a comprehensive integration with Grok 3 API, enabling advanced reasoning capabilities, large context processing, and secure code execution within the multi-agent framework.
 
 ### Grok 3 Core Capabilities
 
@@ -243,7 +263,7 @@ The TORONTO AI TEAM AGENT system now features a comprehensive integration with G
 
 ## Context Window Extension System
 
-The TORONTO AI TEAM AGENT system now features an innovative Context Window Extension System that provides an almost limitless context window, enabling the processing of extremely large projects, documents, and code repositories without context limitations.
+The TORONTO AI TEAM AGENT system features an innovative Context Window Extension System that provides an almost limitless context window, enabling the processing of extremely large projects, documents, and code repositories without context limitations.
 
 ### Core Components
 
@@ -259,236 +279,108 @@ The TORONTO AI TEAM AGENT system now features an innovative Context Window Exten
 - **Hierarchical Navigation**: Navigate complex document structures efficiently
 - **Multi-Level Summarization**: Access information at different levels of detail
 - **Persistent Memory**: Maintain context across sessions with sophisticated memory management
-- **Distributed Processing**: Leverage multiple agents for efficient context handling
-- **Semantic Search**: Retrieve relevant information based on meaning rather than keywords
-- **Adaptive Compression**: Automatically adjust compression ratios based on content importance
+- **Distributed Processing**: Leverage multiple agents for processing large contexts
+- **Semantic Search**: Find relevant information quickly regardless of context size
+- **Dynamic Retrieval**: Retrieve detailed information on demand based on current focus
 
 ### Use Cases
 
-- **Large Code Repositories**: Process and understand entire codebases with millions of lines of code
-- **Extensive Documentation**: Navigate and comprehend large technical documentation sets
-- **Long Conversation Histories**: Maintain context across extended conversation sessions
-- **Complex Projects**: Handle multi-faceted projects with diverse information sources
-- **Research Analysis**: Process and synthesize large volumes of research papers and data
+- **Large Codebase Understanding**: Process and understand entire code repositories
+- **Comprehensive Document Analysis**: Analyze large documents or document collections
+- **Extended Conversations**: Maintain context in long-running conversations
+- **Complex Project Management**: Keep track of all aspects of large, complex projects
+- **Knowledge Integration**: Combine information from multiple large sources
 
-### Integration with Existing Components
+## Human-AI Collaboration Features
 
-- **Grok 3 Enhancement**: Extends Grok 3's already impressive 128K token context window to virtually unlimited size
-- **MaAS Optimization**: Enables more effective architecture search with comprehensive context awareness
-- **A2A Communication**: Facilitates more effective agent communication with shared context understanding
-- **Vector Knowledge Base**: Seamlessly integrates with existing vector-based knowledge integration
+The TORONTO AI TEAM AGENT system includes advanced Human-AI Collaboration features that enable personalized agent adaptation and structured collaborative decision-making.
 
-## Project Management Features
+### Personalized Agent Adaptation
 
-The TORONTO AI TEAM AGENT system now includes comprehensive project management capabilities that enable effective planning, resource allocation, and progress tracking for complex projects.
+The Personalized Agent Adaptation feature enables agents to learn from individual human team members' preferences and working styles, creating a more personalized and effective collaboration experience.
 
-### Gantt Chart Generation
+#### Key Components
 
-The Gantt Chart Generation feature enables agents to create and maintain detailed project timelines with dependencies, critical path analysis, and resource allocation visualization.
-
-#### Key Capabilities
-
-- **Interactive Timeline Visualization**: Create visually appealing and interactive Gantt charts
-- **Dependency Management**: Define and visualize task dependencies and relationships
-- **Critical Path Analysis**: Automatically identify the critical path in project schedules
-- **Resource Allocation Visualization**: View resource assignments across the project timeline
-- **Progress Tracking**: Visualize actual progress against planned timelines
-- **Export Options**: Export charts to various formats (HTML, PNG, PDF, etc.)
-- **Real-time Updates**: Automatically update charts as project status changes
-
-### Resource Allocation Optimization
-
-The Resource Allocation Optimization feature implements sophisticated algorithms for optimal assignment of tasks to human and AI team members based on skills, availability, and workload.
+- **UserPreferenceProfile**: Tracks user preferences across communication style, work style, decision-making approach, and feedback preferences
+- **PersonalizedAgentAdapter**: Modifies agent behavior based on user preferences for communication, task assignment, and decision support
+- **Preference Learning**: Automatically infers preferences from interaction history and explicit feedback
+- **Adaptation Metrics**: Tracks adaptation success rate and preference confidence levels
 
 #### Key Capabilities
 
-- **Skill-Based Matching**: Assign tasks based on required skills and team member capabilities
-- **Workload Balancing**: Distribute work evenly across team members
-- **Priority-Based Allocation**: Allocate resources based on task priorities
-- **Constraint Satisfaction**: Handle complex constraints like time zones and availability
-- **What-If Analysis**: Simulate different allocation scenarios to find optimal solutions
-- **Dynamic Reallocation**: Adjust allocations as project conditions change
-- **Performance Tracking**: Monitor and optimize resource utilization over time
+- **Communication Adaptation**: Adjusts message verbosity, formality, and technical level based on user preferences
+- **Task Assignment Adaptation**: Modifies task instructions, checkpoints, and deadlines to match user working style
+- **Decision Support Adaptation**: Tailors decision frameworks and information presentation to user preferences
+- **Feedback Adaptation**: Customizes feedback timing, format, and detail level based on user preferences
+- **Continuous Learning**: Improves adaptation over time through interaction analysis and feedback
 
-### Automated Progress Reporting
+#### Use Cases
 
-The Automated Progress Reporting feature generates customized reports for different stakeholders with appropriate detail levels, visualizations, and insights.
+- **Personalized Collaboration**: Create a tailored experience for each team member
+- **Improved Communication**: Reduce misunderstandings through adapted communication styles
+- **Enhanced Productivity**: Align agent behavior with individual working preferences
+- **Increased User Satisfaction**: Improve user experience through personalization
+- **Team Diversity Support**: Accommodate different working styles within the same team
 
-#### Key Capabilities
+### Collaborative Decision Support
 
-- **Stakeholder-Specific Reports**: Generate reports tailored to different audience needs
-- **Multi-Level Detail**: Provide executive summaries, detailed breakdowns, and everything in between
-- **Automated Data Collection**: Gather progress data from various sources automatically
-- **Visual Dashboards**: Create interactive dashboards with key metrics and charts
-- **Trend Analysis**: Identify and highlight trends in project performance
-- **Risk Highlighting**: Automatically identify and report potential risks and issues
-- **Scheduled Distribution**: Automatically generate and distribute reports on schedule
+The Collaborative Decision Support feature implements structured frameworks for human-AI joint decision-making, enabling more effective and transparent collaborative decisions.
 
-## CI/CD Integration
+#### Key Components
 
-The TORONTO AI TEAM AGENT system now includes comprehensive CI/CD integration capabilities that enable automated testing, building, and deployment of software applications.
-
-### GitHub Actions and GitLab CI Integration
-
-The CI/CD integration feature enables agents to create, manage, and optimize CI/CD pipelines for automated testing and deployment using popular platforms like GitHub Actions and GitLab CI.
+- **CollaborativeDecision**: Represents a decision process with participants, options, criteria, and evaluations
+- **DecisionFrameworks**: Multiple frameworks including Pros/Cons, Weighted Criteria, Decision Matrix, and more
+- **DecisionParticipant**: Represents human and AI participants with different roles in the decision process
+- **DecisionOption**: Represents options with pros, cons, attributes, and evaluations
+- **EvaluationCriterion**: Represents criteria for evaluating options with customizable weights
 
 #### Key Capabilities
 
-- **Workflow Generation**: Automatically generate workflow configurations based on project requirements
-- **Pipeline Optimization**: Analyze and optimize pipeline performance and efficiency
-- **Testing Strategy Implementation**: Configure comprehensive testing across multiple environments
-- **Deployment Automation**: Set up automated deployment with appropriate approval gates
-- **Security Integration**: Incorporate security scanning and quality checks into CI/CD workflows
-- **Notification System**: Configure notifications for pipeline events and status changes
-- **Custom Action Development**: Create custom actions and jobs for specific requirements
+- **Structured Decision Process**: Provides clear frameworks for complex decisions
+- **Multi-Participant Collaboration**: Enables both humans and AI agents to contribute to decisions
+- **Transparent Evaluation**: Makes the evaluation process explicit and traceable
+- **Decision Analysis**: Generates insights and recommendations based on evaluations
+- **Decision Documentation**: Creates comprehensive records of decision processes and rationales
 
-### Use Cases
+#### Use Cases
 
-- **Automated Testing**: Set up comprehensive test suites that run automatically on code changes
-- **Continuous Integration**: Ensure code changes are regularly built and tested
-- **Continuous Deployment**: Automate the deployment process to various environments
-- **Release Management**: Manage the release process with appropriate approvals and checks
-- **Infrastructure as Code**: Manage infrastructure changes through CI/CD pipelines
-- **Quality Assurance**: Enforce code quality standards through automated checks
+- **Complex Problem Solving**: Navigate complex decisions with multiple factors and stakeholders
+- **Transparent Decision-Making**: Make the decision process and rationale explicit and traceable
+- **Collaborative Intelligence**: Combine human expertise with AI capabilities for better decisions
+- **Bias Mitigation**: Use structured evaluation to reduce cognitive biases
+- **Knowledge Capture**: Document decision processes for future reference and learning
 
-## Container Orchestration
+## Agent Performance Analytics
 
-The TORONTO AI TEAM AGENT system now includes powerful container orchestration capabilities for building, deploying, and managing containerized applications.
-
-### Docker Integration
-
-The Docker integration feature enables agents to build, test, and deploy containerized applications with proper isolation and dependency management.
-
-#### Key Capabilities
-
-- **Dockerfile Generation**: Automatically create optimized Dockerfiles for applications
-- **Image Building**: Build Docker images with appropriate layers and caching
-- **Container Management**: Create, start, stop, and monitor containers
-- **Volume Management**: Configure persistent storage for containers
-- **Network Configuration**: Set up container networks and communication
-- **Multi-Stage Builds**: Implement efficient multi-stage build processes
-- **Docker Compose Integration**: Generate and manage Docker Compose configurations
-
-### Kubernetes Orchestration
-
-The Kubernetes orchestration feature allows agents to deploy and manage containerized applications across clusters, ensuring high availability and scalability.
-
-#### Key Capabilities
-
-- **Manifest Generation**: Create Kubernetes manifests (Deployments, Services, etc.)
-- **Cluster Management**: Interact with Kubernetes clusters for deployment and management
-- **Scaling Configuration**: Set up horizontal and vertical scaling policies
-- **Service Discovery**: Configure service discovery and load balancing
-- **Secret Management**: Securely manage sensitive information in Kubernetes
-- **Deployment Strategies**: Implement advanced deployment strategies (blue-green, canary, etc.)
-- **Monitoring Integration**: Set up monitoring and logging for Kubernetes resources
-
-### Use Cases
-
-- **Microservice Deployment**: Deploy and manage microservice architectures
-- **Scalable Applications**: Create applications that can scale based on demand
-- **High Availability Systems**: Ensure system reliability through redundancy and failover
-- **DevOps Automation**: Automate the container lifecycle from development to production
-- **Cloud-Native Applications**: Develop applications optimized for cloud environments
-- **Hybrid Cloud Deployment**: Deploy applications across multiple cloud providers
-
-## IDE Extensions
-
-The TORONTO AI TEAM AGENT system now includes IDE extension capabilities that enable direct agent assistance within popular development environments.
-
-### VSCode and JetBrains Extensions
-
-The IDE extensions feature creates plugins for VSCode, JetBrains IDEs, and other development environments, allowing direct agent assistance within the developer's workflow.
-
-#### Key Capabilities
-
-- **Real-time Coding Assistance**: Provide code suggestions and completions as developers type
-- **Context-Aware Documentation**: Generate documentation based on the current code context
-- **Code Explanation**: Explain complex code sections with detailed annotations
-- **Direct Agent Communication**: Chat with agents directly from within the IDE
-- **Code Review**: Perform automated code reviews with actionable suggestions
-- **Refactoring Assistance**: Suggest and implement code refactoring operations
-- **Language Support**: Support multiple programming languages and frameworks
-
-### Use Cases
-
-- **Developer Productivity**: Enhance developer productivity with AI-powered assistance
-- **Knowledge Transfer**: Facilitate knowledge sharing between team members
-- **Code Quality**: Improve code quality through real-time suggestions and reviews
-- **Learning Assistance**: Help developers learn new languages and frameworks
-- **Team Collaboration**: Enable better collaboration between developers and AI agents
-- **Documentation Generation**: Automatically generate and maintain code documentation
-
-## Load Balancing System
-
-The TORONTO AI TEAM AGENT system now includes a sophisticated load balancing system that automatically distributes work across multiple agents of the same role.
+The TORONTO AI TEAM AGENT system includes comprehensive Agent Performance Analytics that enable detailed tracking, analysis, and visualization of agent performance across various dimensions.
 
 ### Key Components
 
-- **LoadBalancingSystem**: Central system for managing agent registration and task assignment
-- **LoadBalancer**: Implements different load balancing algorithms and strategies
-- **TaskQueue**: Manages the queue of tasks waiting to be assigned
-- **Agent**: Represents an agent in the system with capabilities and status
-- **Task**: Represents a task with requirements, priority, and dependencies
+- **PerformanceMetric**: Represents individual performance measurements across various metric types
+- **AgentTask**: Represents tasks assigned to agents with complete lifecycle tracking
+- **AgentProfile**: Maintains comprehensive profiles of agent performance history
+- **PerformanceAnalytics**: Provides the main interface for recording and analyzing metrics
+- **TeamPerformanceMonitor**: Focuses on team-level analytics and workload distribution
+- **PerformanceReport**: Generates structured reports on agent and team performance
+- **PerformanceVisualization**: Creates visual representations of performance data
 
-### Load Balancing Strategies
+### Key Capabilities
 
-- **Round Robin**: Distribute tasks in a circular order for equal distribution
-- **Least Connections**: Assign tasks to agents with the fewest active tasks
-- **Weighted**: Assign tasks based on agent weights and capabilities
-- **Capability Based**: Match tasks to agents with the required skills
-- **Response Time**: Assign tasks based on agent performance metrics
-- **Adaptive**: Dynamically adjust strategy based on system performance
-
-### Use Cases
-
-- **Scalable Agent Deployment**: Deploy multiple agents of the same role for increased capacity
-- **Workload Distribution**: Efficiently distribute tasks across available agents
-- **High Availability**: Ensure system reliability through redundant agent deployment
-- **Performance Optimization**: Maximize throughput and minimize response times
-- **Resource Utilization**: Optimize resource usage across the agent team
-- **Task Prioritization**: Handle tasks with different priorities and requirements
-
-## Security Features
-
-The TORONTO AI TEAM AGENT system now includes comprehensive security features that ensure secure development practices and maintain accountability for all agent actions.
-
-### Security Scanning Tools Integration
-
-The security scanning tools integration enables agents to leverage popular security scanning tools like Snyk, SonarQube, and others for secure development.
-
-#### Key Capabilities
-
-- **Vulnerability Detection**: Identify security vulnerabilities in code and dependencies
-- **Multiple Scanner Support**: Integrate with various security scanners for comprehensive coverage
-- **Severity Classification**: Categorize vulnerabilities by severity for prioritization
-- **Fix Recommendations**: Provide actionable recommendations for addressing vulnerabilities
-- **Continuous Scanning**: Implement regular security scanning as part of the development process
-- **Custom Rules**: Support for custom security rules and policies
-- **Compliance Checking**: Verify compliance with security standards and best practices
-
-### Audit Trail System
-
-The audit trail system maintains comprehensive logs of all agent actions for accountability and compliance purposes.
-
-#### Key Capabilities
-
-- **Comprehensive Logging**: Log all significant actions and events in the system
-- **Event Classification**: Categorize events by type, severity, and actor
-- **Tamper-Proof Storage**: Ensure logs cannot be modified or deleted by unauthorized users
-- **Query Capabilities**: Search and filter audit events based on various criteria
-- **Compliance Reporting**: Generate reports for regulatory compliance
-- **Alerting**: Set up alerts for critical security events
-- **Retention Policies**: Implement configurable retention policies for audit data
+- **Comprehensive Metric Tracking**: Track time-based, quality, efficiency, satisfaction, and collaboration metrics
+- **Multi-Level Analysis**: Analyze performance at task, agent, role, team, and project levels
+- **Advanced Visualization**: Create rich visualizations of performance trends and patterns
+- **Actionable Insights**: Generate insights for optimizing agent deployment and task allocation
+- **Team Optimization**: Provide data-driven guidance for creating high-performing agent teams
+- **Performance Prediction**: Forecast future performance based on historical data
 
 ### Use Cases
 
-- **Secure Development**: Ensure code and dependencies are free from known vulnerabilities
-- **Compliance Requirements**: Meet regulatory and organizational compliance requirements
-- **Incident Investigation**: Investigate security incidents with detailed audit trails
-- **Accountability**: Maintain accountability for all actions in the system
-- **Risk Management**: Identify and mitigate security risks proactively
-- **Security Governance**: Implement and enforce security policies and standards
+- **Resource Optimization**: Data-driven assignment of agents to tasks based on performance profiles
+- **Continuous Improvement**: Identification of improvement opportunities through detailed analysis
+- **Enhanced Accountability**: Clear performance tracking and reporting for all agents
+- **Better Planning**: More accurate estimation of task completion times and resource requirements
+- **Team Composition**: Data-driven insights for creating optimal agent teams
+- **Performance Benchmarking**: Compare performance across different agents, roles, and teams
 
 ## Code Examples
 
@@ -719,471 +611,182 @@ allocation = resource_optimizer.optimize(
 # Initialize the progress report generator
 report_generator = ProgressReportGenerator()
 
-# Define progress data
-progress_data = {
-    "task1": {
-        "status": "completed",
-        "actual_duration": 4,  # days
-        "completion_percentage": 100
-    },
-    "task2": {
-        "status": "in_progress",
-        "actual_duration": 6,  # days so far
-        "completion_percentage": 60
-    },
-    "task3": {
-        "status": "not_started",
-        "completion_percentage": 0
-    },
-    "task4": {
-        "status": "not_started",
-        "completion_percentage": 0
-    },
-    "task5": {
-        "status": "not_started",
-        "completion_percentage": 0
-    }
-}
-
-# Generate a progress report for executives
-executive_report = report_generator.generate_report(
+# Generate a progress report
+report = report_generator.generate_report(
     project_name="Web Application Development",
     tasks=tasks,
     progress_data=progress_data,
     allocation=allocation,
-    audience="executive",
-    include_charts=True
-)
-
-# Generate a detailed report for the development team
-detailed_report = report_generator.generate_report(
-    project_name="Web Application Development",
-    tasks=tasks,
-    progress_data=progress_data,
-    allocation=allocation,
-    audience="development_team",
-    include_charts=True,
-    include_task_details=True
-)
-
-# Export the reports
-report_generator.export_report(
-    report=executive_report,
-    format="pdf",
-    output_path="executive_report.pdf"
-)
-
-report_generator.export_report(
-    report=detailed_report,
-    format="html",
-    output_path="detailed_report.html"
+    audience="executive"
 )
 ```
 
-### Using CI/CD Integrations
+### Using Human-AI Collaboration Features
 
 ```python
-from app.cicd.cicd_integration import GitHubActionsManager, GitLabCIManager
+from app.human_ai_collaboration.personalized_agent_adaptation import UserPreferenceProfile, PersonalizedAgentAdapter
+from app.human_ai_collaboration.collaborative_decision_support import CollaborativeDecisionSupport, DecisionFramework, DecisionParticipantRole
 
-# Initialize GitHub Actions manager
-github_actions = GitHubActionsManager(
-    repo_owner="your-username",
-    repo_name="your-repo",
-    token="your-github-token"
+# Create a user preference profile
+user_profile = UserPreferenceProfile(
+    user_id="user123",
+    name="John Doe"
 )
 
-# Create a workflow for a Python application
-workflow = github_actions.create_workflow(
-    name="Python Application",
-    triggers=["push", "pull_request"],
-    python_version=["3.8", "3.9", "3.10"],
-    include_linting=True,
-    include_testing=True,
-    include_coverage=True
+# Update explicit preferences
+user_profile.update_preference(
+    category="communication_style",
+    preference="verbosity",
+    value=0.8  # Prefers detailed communication
 )
 
-# Add a deployment job to the workflow
-workflow = github_actions.add_deployment_job(
-    workflow=workflow,
-    environment="production",
-    deployment_url="https://your-app.example.com",
-    requires_approval=True
+user_profile.update_preference(
+    category="work_style",
+    preference="autonomy_level",
+    value=0.3  # Prefers more guidance
 )
 
-# Save the workflow to the repository
-github_actions.save_workflow(
-    workflow=workflow,
-    path=".github/workflows/python-app.yml"
+# Create personalized agent adapter
+base_agent = get_base_agent()  # Your agent implementation
+personalized_agent = PersonalizedAgentAdapter(
+    base_agent=base_agent,
+    user_profile=user_profile
 )
 
-# Initialize GitLab CI manager
-gitlab_ci = GitLabCIManager(
-    project_id="your-project-id",
-    token="your-gitlab-token"
+# Generate adapted communication
+original_message = "Task completed."
+adapted_message = personalized_agent.adapt_communication(original_message)
+# Result: A more detailed message based on user's verbosity preference
+
+# Initialize decision support system
+decision_support = CollaborativeDecisionSupport()
+
+# Create a new decision
+decision = decision_support.create_decision(
+    title="Software Architecture Selection",
+    description="Select the best architecture for our new application.",
+    framework=DecisionFramework.WEIGHTED_CRITERIA,
+    created_by="user_1"
 )
 
-# Create a CI/CD pipeline for a Node.js application
-pipeline = gitlab_ci.create_pipeline(
-    name="Node.js Application",
-    node_version=["14", "16", "18"],
-    include_linting=True,
-    include_testing=True,
-    include_build=True
+# Add participants
+human_participant = decision_support.add_participant(
+    decision_id=decision.decision_id,
+    name="Project Manager",
+    role=DecisionParticipantRole.DECISION_MAKER,
+    is_ai=False
 )
 
-# Add staging and production deployment stages
-pipeline = gitlab_ci.add_deployment_stages(
-    pipeline=pipeline,
-    environments=["staging", "production"],
-    deployment_strategy="blue_green"
+ai_participant = decision_support.add_participant(
+    decision_id=decision.decision_id,
+    name="AI Architect",
+    role=DecisionParticipantRole.ADVISOR,
+    is_ai=True,
+    expertise=["software_architecture", "scalability", "security"]
 )
 
-# Save the pipeline configuration to the repository
-gitlab_ci.save_pipeline(
-    pipeline=pipeline,
-    path=".gitlab-ci.yml"
+# Add options and criteria
+option_a = decision_support.add_option(
+    decision_id=decision.decision_id,
+    name="Microservices Architecture",
+    description="Distributed architecture with independent services.",
+    proposed_by=ai_participant.participant_id
+)
+
+scalability = decision_support.add_criterion(
+    decision_id=decision.decision_id,
+    name="Scalability",
+    description="Ability to handle growing workloads.",
+    weight=0.8,
+    created_by=human_participant.participant_id
+)
+
+# Generate analysis and finalize decision
+analysis = decision_support.analyze_decision(decision.decision_id)
+decision_support.finalize_decision(
+    decision_id=decision.decision_id,
+    selected_option_id=option_a.option_id,
+    rationale="Selected for superior scalability and maintainability."
 )
 ```
 
-### Using Container Orchestration
+### Using Agent Performance Analytics
 
 ```python
-from app.container_orchestration.docker_integration import DockerManager
-from app.container_orchestration.kubernetes_orchestration import KubernetesManager
+from app.performance_monitoring.agent_performance_analytics import PerformanceAnalytics, MetricType, MetricUnit, AgentRole, TaskPriority
 
-# Initialize Docker manager
-docker_manager = DockerManager()
+# Initialize performance analytics system
+analytics = PerformanceAnalytics()
 
-# Generate a Dockerfile for a Python application
-dockerfile = docker_manager.generate_dockerfile(
-    base_image="python:3.9-slim",
-    app_type="flask",
-    requirements_file="requirements.txt",
-    entry_point="app.py",
-    expose_port=5000,
-    environment_variables={
-        "FLASK_ENV": "production",
-        "DATABASE_URL": "${DATABASE_URL}"
-    }
+# Create agent profiles
+developer_agent = analytics.create_agent_profile(
+    agent_id="dev_agent_1",
+    name="Developer Agent",
+    role=AgentRole.DEVELOPER,
+    capabilities=["python", "javascript", "api_development"]
 )
 
-# Save the Dockerfile
-docker_manager.save_dockerfile(
-    dockerfile=dockerfile,
-    path="Dockerfile"
+qa_agent = analytics.create_agent_profile(
+    agent_id="qa_agent_1",
+    name="QA Agent",
+    role=AgentRole.QA_TESTER,
+    capabilities=["testing", "bug_reporting", "test_automation"]
 )
 
-# Build and push the Docker image
-image = docker_manager.build_image(
-    context_path=".",
-    tag="your-registry/your-app:latest"
-)
-
-docker_manager.push_image(image)
-
-# Initialize Kubernetes manager
-k8s_manager = KubernetesManager(
-    kubeconfig_path="~/.kube/config"
-)
-
-# Generate Kubernetes manifests for the application
-manifests = k8s_manager.generate_manifests(
-    app_name="your-app",
-    image="your-registry/your-app:latest",
-    replicas=3,
-    port=5000,
-    environment_variables={
-        "DATABASE_URL": "postgres://user:password@db:5432/app"
-    },
-    resource_limits={
-        "cpu": "500m",
-        "memory": "512Mi"
-    },
-    health_checks=True
-)
-
-# Save the manifests
-k8s_manager.save_manifests(
-    manifests=manifests,
-    output_dir="kubernetes/"
-)
-
-# Deploy the application to Kubernetes
-deployment = k8s_manager.deploy(
-    manifests=manifests,
-    namespace="production"
-)
-
-# Set up horizontal pod autoscaling
-k8s_manager.create_horizontal_pod_autoscaler(
-    deployment_name="your-app",
-    namespace="production",
-    min_replicas=3,
-    max_replicas=10,
-    cpu_utilization_percentage=80
-)
-
-# Monitor the deployment
-status = k8s_manager.get_deployment_status(
-    deployment_name="your-app",
-    namespace="production"
-)
-
-print(f"Deployment status: {status}")
-```
-
-### Using IDE Extensions
-
-```python
-from app.ide_extensions.ide_extensions import VSCodeExtensionManager, JetBrainsPluginManager
-
-# Initialize VSCode extension manager
-vscode_manager = VSCodeExtensionManager()
-
-# Create a VSCode extension
-vscode_extension = vscode_manager.create_extension(
-    name="toronto-ai-assistant",
-    display_name="Toronto AI Assistant",
-    description="AI-powered coding assistant for VSCode",
-    version="1.0.0",
-    publisher="toronto-ai"
-)
-
-# Add features to the extension
-vscode_extension = vscode_manager.add_feature(
-    extension=vscode_extension,
-    feature_type="code_completion",
-    supported_languages=["python", "javascript", "typescript"]
-)
-
-vscode_extension = vscode_manager.add_feature(
-    extension=vscode_extension,
-    feature_type="code_explanation",
-    context_aware=True
-)
-
-vscode_extension = vscode_manager.add_feature(
-    extension=vscode_extension,
-    feature_type="chat",
-    persistent_history=True
-)
-
-# Generate the extension code
-vscode_manager.generate_extension_code(
-    extension=vscode_extension,
-    output_dir="vscode-extension/"
-)
-
-# Initialize JetBrains plugin manager
-jetbrains_manager = JetBrainsPluginManager()
-
-# Create a JetBrains plugin
-jetbrains_plugin = jetbrains_manager.create_plugin(
-    name="toronto-ai-assistant",
-    display_name="Toronto AI Assistant",
-    description="AI-powered coding assistant for JetBrains IDEs",
-    version="1.0.0",
-    vendor="toronto-ai"
-)
-
-# Add features to the plugin
-jetbrains_plugin = jetbrains_manager.add_feature(
-    plugin=jetbrains_plugin,
-    feature_type="code_completion",
-    supported_languages=["java", "kotlin", "python"]
-)
-
-jetbrains_plugin = jetbrains_manager.add_feature(
-    plugin=jetbrains_plugin,
-    feature_type="code_review",
-    include_quality_metrics=True
-)
-
-jetbrains_plugin = jetbrains_manager.add_feature(
-    plugin=jetbrains_plugin,
-    feature_type="refactoring_assistant",
-    supported_refactorings=["extract_method", "rename", "move"]
-)
-
-# Generate the plugin code
-jetbrains_manager.generate_plugin_code(
-    plugin=jetbrains_plugin,
-    output_dir="jetbrains-plugin/"
-)
-```
-
-### Using the Load Balancing System
-
-```python
-from app.load_balancing.load_balancing import (
-    LoadBalancingSystem, Agent, Task, AgentRole, 
-    TaskPriority, TaskStatus, LoadBalancingStrategy
-)
-
-# Initialize the load balancing system
-load_balancing_system = LoadBalancingSystem()
-load_balancing_system.set_strategy(LoadBalancingStrategy.CAPABILITY_BASED)
-
-# Register multiple developer agents
-for i in range(1, 6):
-    developer = Agent(
-        id=f"dev{i}",
-        name=f"Developer {i}",
-        role=AgentRole.DEVELOPER,
-        capabilities=["python", "javascript"] if i % 2 == 0 else ["java", "python"]
-    )
-    load_balancing_system.register_agent(developer)
-
-# Register project manager agents
-project_manager = Agent(
-    id="pm1",
-    name="Project Manager 1",
-    role=AgentRole.PROJECT_MANAGER,
-    capabilities=["planning", "coordination"]
-)
-load_balancing_system.register_agent(project_manager)
-
-# Create tasks with dependencies
-task1 = Task(
-    id="task1",
-    name="Setup Database",
-    description="Set up the database schema",
-    required_capabilities=["python"],
+# Create and assign tasks
+dev_task = analytics.create_task(
+    agent_id="dev_agent_1",
+    title="Implement Authentication API",
+    description="Create a secure authentication API endpoint.",
     priority=TaskPriority.HIGH,
-    estimated_duration=60  # minutes
+    estimated_duration=120.0  # minutes
 )
 
-task2 = Task(
-    id="task2",
-    name="Implement API",
-    description="Implement the REST API",
-    required_capabilities=["python"],
-    priority=TaskPriority.HIGH,
-    estimated_duration=120,  # minutes
-    dependencies=["task1"]  # This task depends on task1
+# Start tasks and record metrics
+analytics.start_task(dev_task.task_id)
+
+analytics.record_metric(
+    agent_id="dev_agent_1",
+    metric_type=MetricType.COMPLETION_TIME,
+    value=105.0,
+    unit=MetricUnit.MINUTES,
+    task_id=dev_task.task_id
 )
 
-task3 = Task(
-    id="task3",
-    name="Implement Frontend",
-    description="Implement the frontend UI",
-    required_capabilities=["javascript"],
-    priority=TaskPriority.MEDIUM,
-    estimated_duration=180,  # minutes
-    dependencies=["task2"]  # This task depends on task2
+analytics.record_metric(
+    agent_id="dev_agent_1",
+    metric_type=MetricType.QUALITY,
+    value=92.0,
+    unit=MetricUnit.PERCENTAGE,
+    task_id=dev_task.task_id
 )
 
-task4 = Task(
-    id="task4",
-    name="Create Project Plan",
-    description="Create a project plan for the next sprint",
-    required_capabilities=["planning"],
-    priority=TaskPriority.HIGH,
-    estimated_duration=60  # minutes
+# Complete tasks
+analytics.complete_task(dev_task.task_id)
+
+# Generate reports and visualizations
+agent_report = analytics.generate_agent_report("dev_agent_1")
+team_report = analytics.generate_team_report(["dev_agent_1", "qa_agent_1"])
+
+time_trend = analytics.create_visualization(
+    agent_id="dev_agent_1",
+    metric_type=MetricType.COMPLETION_TIME,
+    chart_type="line",
+    title="Completion Time Trend"
 )
-
-# Assign tasks
-assigned_agent1 = load_balancing_system.assign_task(task1)
-assigned_agent4 = load_balancing_system.assign_task(task4)
-
-print(f"Task 1 assigned to: {assigned_agent1.name}")
-print(f"Task 4 assigned to: {assigned_agent4.name}")
-
-# Complete task1
-load_balancing_system.complete_task(task1.id)
-
-# Now task2 can be assigned
-assigned_agent2 = load_balancing_system.assign_task(task2)
-print(f"Task 2 assigned to: {assigned_agent2.name}")
-
-# Get agent workload
-for agent in load_balancing_system.get_agents():
-    workload = load_balancing_system.get_agent_workload(agent.id)
-    print(f"Agent: {agent.name}")
-    print(f"  Active Tasks: {workload.active_tasks}")
-    print(f"  Completed Tasks: {workload.completed_tasks}")
-```
-
-### Using Security Features
-
-```python
-from app.security.security_scanning import (
-    SecurityScanningManager, SnykScanner, SonarQubeScanner, SemgrepScanner,
-    SecurityScannerType
-)
-from app.security.audit_trail import (
-    AuditTrailSystem, SQLiteAuditEventStorage, AuditEventType, AuditEventSeverity
-)
-
-# Initialize the security scanning manager
-security_scanning_manager = SecurityScanningManager()
-
-# Register scanners
-snyk_scanner = SnykScanner(api_token="your_snyk_api_token")
-sonarqube_scanner = SonarQubeScanner(
-    server_url="http://localhost:9000",
-    token="your_sonarqube_token"
-)
-semgrep_scanner = SemgrepScanner()
-
-security_scanning_manager.register_scanner(snyk_scanner)
-security_scanning_manager.register_scanner(sonarqube_scanner)
-security_scanning_manager.register_scanner(semgrep_scanner)
-
-# Scan a project with Snyk
-snyk_result = security_scanning_manager.scan(
-    target="/path/to/project",
-    scanner_type=SecurityScannerType.SNYK
-)
-
-# Print scan results
-print(f"Scan completed in {snyk_result.scan_duration:.2f} seconds")
-print(f"Found {len(snyk_result.vulnerabilities)} vulnerabilities:")
-print(f"  Critical: {snyk_result.critical_count}")
-print(f"  High: {snyk_result.high_count}")
-print(f"  Medium: {snyk_result.medium_count}")
-print(f"  Low: {snyk_result.low_count}")
-print(f"  Info: {snyk_result.info_count}")
-
-# Initialize the audit trail system
-audit_storage = SQLiteAuditEventStorage("/path/to/audit.db")
-audit_trail_system = AuditTrailSystem(audit_storage)
-
-# Log an agent action
-audit_trail_system.log_agent_action(
-    agent_id="agent1",
-    action="code_generation",
-    resource="project/file.py",
-    status="success",
-    severity=AuditEventSeverity.INFO,
-    details={"language": "python", "tokens": 150}
-)
-
-# Log a security event
-audit_trail_system.log_security_event(
-    actor="user2",
-    action="permission_change",
-    resource="project/sensitive.py",
-    status="success",
-    severity=AuditEventSeverity.HIGH,
-    details={"old_permissions": "rw-r--r--", "new_permissions": "rw-rw-r--"},
-    source_ip="192.168.1.2"
-)
-
-# Query security events
-security_events = audit_trail_system.query_events(
-    filters={"event_type": AuditEventType.SECURITY_EVENT.value}
-)
-
-print(f"Found {len(security_events)} security events")
 ```
 
 ## Documentation
 
-- [MaAS Integration Guide](docs/maas_integration_guide.md)
+For more detailed information, please refer to the following documentation:
+
+- [Installation Guide](docs/installation_guide.md)
+- [User Manual](docs/user_manual.md)
+- [API Documentation](docs/api_documentation.md)
 - [MaAS Implementation](docs/maas_implementation.md)
-- [Jira/Confluence Integration](docs/features/jira-confluence-integration.md)
-- [Slack Integration](docs/features/slack-integration.md)
+- [MaAS Integration Guide](docs/maas_integration_guide.md)
+- [A2A Technology](docs/mcp_a2a_technology.md)
+- [Multi-Agent System](docs/multi_agent_system.md)
 - [Grok 3 Integration Guide](docs/grok3_integration_guide.md)
 - [Context Window Extension](docs/context_window_extension.md)
 - [Project Management Features](docs/project_management_features.md)
@@ -1194,3 +797,9 @@ print(f"Found {len(security_events)} security events")
 - [IDE Extensions](docs/ide_extensions.md)
 - [Load Balancing](docs/load_balancing.md)
 - [Security Features](docs/security_features.md)
+- [Human-AI Collaboration](docs/human_ai_collaboration.md)
+- [Agent Performance Analytics](docs/agent_performance_analytics.md)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
