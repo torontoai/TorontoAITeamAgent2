@@ -8,6 +8,26 @@ The TORONTO AI TEAM AGENT is a comprehensive framework for creating and managing
 
 ## Key Features
 
+### Specialty Agent Roles
+
+The TORONTO AI TEAM AGENT system includes several specialized agent roles that work together as a cohesive team:
+
+- **Project Manager Agent**: Coordinates team activities, manages projects, creates project plans, makes multi-factor decisions, assigns team members to tasks, and conducts retrospectives for continuous improvement.
+
+- **Product Manager Agent**: Focuses on product vision, requirements gathering, feature prioritization, user story creation, market research, and stakeholder collaboration to ensure the product meets market needs.
+
+- **Developer Agent**: Implements code and technical solutions, focusing on quality, performance, and maintainability through code implementation, debugging, test writing, and refactoring.
+
+- **DevOps Engineer Agent**: Manages deployment pipelines, infrastructure as code, containerization, monitoring solutions, and deployment automation to ensure smooth delivery and operation.
+
+- **Business Analyst Role**: Bridges the gap between technical teams and non-technical stakeholders through requirements gathering, business process modeling, stakeholder analysis, and documentation.
+
+- **Data Scientist Role**: Handles data-intensive projects including data collection, statistical analysis, machine learning model development, data visualization, and predictive modeling.
+
+- **System Architect Agent**: Designs high-level system architecture, selects appropriate design patterns, makes technical decisions, creates component diagrams, and defines system interfaces.
+
+For detailed information about each role, see [Agent Roles Documentation](docs/agent_roles.md).
+
 ### Innovative AI Enhancements
 
 - **Multimodal Agent Cognition with Llama 4 Maverick**
@@ -272,704 +292,149 @@ The TORONTO AI TEAM AGENT system features a powerful integration between Multi-a
 1. **Task Analysis**: Analyze task requirements and complexity to determine needed capabilities
 2. **Architecture Sampling**: Sample an optimized architecture from the Agentic Supernet
 3. **Framework Conversion**: Convert the architecture to A2A or AutoGen configuration
-4. **Team Execution**: Execute the workflow using the selected framework
-5. **Performance Evaluation**: Evaluate the architecture's performance on the task
-6. **Feedback Loop**: Update the Agentic Supernet with performance feedback
-
-### Use Cases
-
-- **Complex Problem Solving**: Discover optimal team structures for solving complex problems
-- **Resource Optimization**: Minimize computational resources while maximizing task performance
-- **Domain Adaptation**: Adapt team structures to different task domains automatically
-- **Continuous Improvement**: Learn from past performance to improve future team formations
-- **Architecture Analysis**: Visualize and understand effective agent team structures
+4. **Team Execution**: Execute the workflow with the selected agent team
+5. **Performance Evaluation**: Evaluate team performance and provide feedback to the architecture search system
+6. **Continuous Improvement**: Update architecture selection based on performance feedback
 
 ## Grok 3 Integration
 
-The TORONTO AI TEAM AGENT system features a comprehensive integration with Grok 3 API, enabling advanced reasoning capabilities, large context processing, and secure code execution within the multi-agent framework.
+The TORONTO AI TEAM AGENT system features comprehensive integration with Grok 3, leveraging its advanced reasoning capabilities and code execution features to enhance the multi-agent system.
 
-### Grok 3 Core Capabilities
+### Key Integration Points
 
-- **Advanced Reasoning Modes**: Utilize "think" mode for step-by-step problem-solving and "big brain" mode for complex tasks
-- **Large Context Window**: Process up to 128,000 tokens of information in a single request
-- **Secure Code Execution**: Generate and execute code with sandbox protection across multiple programming languages
-- **OpenAI SDK Compatibility**: Leverage Grok 3's compatibility with the OpenAI SDK for easy integration
-- **Enterprise Features**: Access specialized capabilities for data extraction, coding, and text summarization
+- **Reasoning Mode Selection**: Dynamically select appropriate reasoning modes based on task requirements
+- **Context Window Optimization**: Efficiently utilize the 128,000-token context window for complex tasks
+- **Code Execution Integration**: Seamless execution of generated code with sandbox protection
+- **MaAS Integration**: Optimize agent architectures with Grok 3's reasoning capabilities
+- **A2A Protocol Support**: Enable Grok 3-powered agents to communicate using the A2A protocol
 
-### MaAS and A2A Integration
+### Reasoning Modes
 
-- **Grok 3-Powered Architectures**: Create and optimize agent architectures that leverage Grok 3's capabilities
-- **Dynamic Agent Teams**: Form teams of Grok 3-powered agents with specialized roles
-- **Inter-Agent Communication**: Enable Grok 3 agents to communicate and collaborate effectively
-- **Capability Sharing**: Allow agents to request reasoning and code execution from Grok 3-powered agents
-- **Architecture Optimization**: Use Grok 3's reasoning capabilities to improve architecture selection
+- **Default**: General-purpose reasoning for a wide range of tasks
+- **Technical**: Enhanced reasoning for technical and programming tasks
+- **Creative**: Optimized for creative writing and content generation
+- **Analytical**: Focused on data analysis and logical reasoning
+- **Collaborative**: Specialized for multi-agent collaboration scenarios
 
-### Integration Components
+### Code Execution Features
 
-- **Grok3Provider**: Core provider for authentication and communication with the Grok 3 API
-- **Grok3Adapter**: Unified interface for accessing Grok 3's capabilities
-- **ReasoningGrok3Adapter**: Specialized adapter for leveraging Grok 3's reasoning modes
-- **CodeExecutionGrok3Adapter**: Secure execution of code generated by Grok 3
-- **Grok3MaaSIntegration**: Integration with the Multi-agent Architecture Search framework
-- **Grok3A2AIntegration**: Integration with the Agent-to-Agent communication protocol
+- **Multi-language Support**: Execute code in Python, JavaScript, and other languages
+- **Sandbox Protection**: Secure execution environment with resource limitations
+- **State Persistence**: Maintain execution state across multiple code blocks
+- **Package Management**: Automatic installation of required dependencies
+- **Error Handling**: Comprehensive error detection and reporting
 
-### Use Cases
+### Integration with MaAS
 
-- **Complex Problem Solving**: Tackle complex problems with Grok 3's advanced reasoning capabilities
-- **Large Document Processing**: Process and analyze extensive documents with the large context window
-- **Code Generation and Execution**: Generate and execute high-quality code across multiple languages
-- **Multi-Agent Collaboration**: Enable effective collaboration between Grok 3-powered agents
-- **Architecture Optimization**: Discover optimal team structures using Grok 3's capabilities
+- **Architecture Optimization**: Leverage Grok 3's reasoning to optimize agent team architectures
+- **Role-Specific Configurations**: Customize Grok 3 settings based on agent roles
+- **Dynamic Capability Mapping**: Map Grok 3 capabilities to MaAS architecture components
+- **Performance Feedback**: Incorporate Grok 3 performance metrics into architecture evaluation
 
-## Context Window Extension System
+## Installation and Setup
 
-The TORONTO AI TEAM AGENT system features an innovative Context Window Extension System that provides an almost limitless context window, enabling the processing of extremely large projects, documents, and code repositories without context limitations.
+### Prerequisites
 
-### Core Components
+- Python 3.10 or higher
+- Node.js 16 or higher (for web interface)
+- Docker (optional, for containerized deployment)
+- API keys for integrated services (OpenAI, Claude, etc.)
 
-- **Vector Database Integration Layer**: Persistent storage of all content with semantic search capabilities
-- **Hierarchical Document Processing System**: Breaks down large documents into manageable hierarchical structures
-- **Recursive Summarization Pipeline**: Creates multi-level summaries to maintain high-level understanding
-- **Memory Management System**: Organizes information across different memory types
-- **Multi-Agent Context Distribution System**: Distributes context processing across specialized agents
+### Basic Installation
 
-### Key Capabilities
+```bash
+# Clone the repository
+git clone https://github.com/torontoai/TorontoAITeamAgent2.git
+cd TorontoAITeamAgent2
 
-- **Almost Limitless Context**: Process extremely large projects without token limitations
-- **Hierarchical Navigation**: Navigate complex document structures efficiently
-- **Multi-Level Summarization**: Access information at different levels of detail
-- **Persistent Memory**: Maintain context across sessions with sophisticated memory management
-- **Distributed Processing**: Leverage multiple agents for processing large contexts
-- **Semantic Search**: Find relevant information quickly regardless of context size
-- **Dynamic Retrieval**: Retrieve detailed information on demand based on current focus
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-### Use Cases
+# Install dependencies
+pip install -r requirements.txt
 
-- **Large Codebase Understanding**: Process and understand entire code repositories
-- **Comprehensive Document Analysis**: Analyze large documents or document collections
-- **Extended Conversations**: Maintain context in long-running conversations
-- **Complex Project Management**: Keep track of all aspects of large, complex projects
-- **Knowledge Integration**: Combine information from multiple large sources
+# Install web interface dependencies
+cd web
+npm install
+cd ..
 
-## Human-AI Collaboration Features
-
-The TORONTO AI TEAM AGENT system includes advanced Human-AI Collaboration features that enable personalized agent adaptation and structured collaborative decision-making.
-
-### Personalized Agent Adaptation
-
-The Personalized Agent Adaptation feature enables agents to learn from individual human team members' preferences and working styles, creating a more personalized and effective collaboration experience.
-
-#### Key Components
-
-- **UserPreferenceProfile**: Tracks user preferences across communication style, work style, decision-making approach, and feedback preferences
-- **PersonalizedAgentAdapter**: Modifies agent behavior based on user preferences for communication, task assignment, and decision support
-- **Preference Learning**: Automatically infers preferences from interaction history and explicit feedback
-- **Adaptation Metrics**: Tracks adaptation success rate and preference confidence levels
-
-#### Key Capabilities
-
-- **Communication Adaptation**: Adjusts message verbosity, formality, and technical level based on user preferences
-- **Task Assignment Adaptation**: Modifies task instructions, checkpoints, and deadlines to match user working style
-- **Decision Support Adaptation**: Tailors decision frameworks and information presentation to user preferences
-- **Feedback Adaptation**: Customizes feedback timing, format, and detail level based on user preferences
-- **Continuous Learning**: Improves adaptation over time through interaction analysis and feedback
-
-#### Use Cases
-
-- **Personalized Collaboration**: Create a tailored experience for each team member
-- **Improved Communication**: Reduce misunderstandings through adapted communication styles
-- **Enhanced Productivity**: Align agent behavior with individual working preferences
-- **Increased User Satisfaction**: Improve user experience through personalization
-- **Team Diversity Support**: Accommodate different working styles within the same team
-
-### Collaborative Decision Support
-
-The Collaborative Decision Support feature implements structured frameworks for human-AI joint decision-making, enabling more effective and transparent collaborative decisions.
-
-#### Key Components
-
-- **CollaborativeDecision**: Represents a decision process with participants, options, criteria, and evaluations
-- **DecisionFrameworks**: Multiple frameworks including Pros/Cons, Weighted Criteria, Decision Matrix, and more
-- **DecisionParticipant**: Represents human and AI participants with different roles in the decision process
-- **DecisionOption**: Represents options with pros, cons, attributes, and evaluations
-- **EvaluationCriterion**: Represents criteria for evaluating options with customizable weights
-
-#### Key Capabilities
-
-- **Structured Decision Process**: Provides clear frameworks for complex decisions
-- **Multi-Participant Collaboration**: Enables both humans and AI agents to contribute to decisions
-- **Transparent Evaluation**: Makes the evaluation process explicit and traceable
-- **Decision Analysis**: Generates insights and recommendations based on evaluations
-- **Decision Documentation**: Creates comprehensive records of decision processes and rationales
-
-#### Use Cases
-
-- **Complex Problem Solving**: Navigate complex decisions with multiple factors and stakeholders
-- **Transparent Decision-Making**: Make the decision process and rationale explicit and traceable
-- **Collaborative Intelligence**: Combine human expertise with AI capabilities for better decisions
-- **Bias Mitigation**: Use structured evaluation to reduce cognitive biases
-- **Knowledge Capture**: Document decision processes for future reference and learning
-
-## Agent Performance Analytics
-
-The TORONTO AI TEAM AGENT system includes comprehensive Agent Performance Analytics that enable detailed tracking, analysis, and visualization of agent performance across various dimensions.
-
-### Key Components
-
-- **PerformanceMetric**: Represents individual performance measurements across various metric types
-- **AgentTask**: Represents tasks assigned to agents with complete lifecycle tracking
-- **AgentProfile**: Maintains comprehensive profiles of agent performance history
-- **PerformanceAnalytics**: Provides the main interface for recording and analyzing metrics
-- **TeamPerformanceMonitor**: Focuses on team-level analytics and workload distribution
-- **PerformanceReport**: Generates structured reports on agent and team performance
-- **PerformanceVisualization**: Creates visual representations of performance data
-
-### Key Capabilities
-
-- **Comprehensive Metric Tracking**: Track time-based, quality, efficiency, satisfaction, and collaboration metrics
-- **Multi-Level Analysis**: Analyze performance at task, agent, role, team, and project levels
-- **Advanced Visualization**: Create rich visualizations of performance trends and patterns
-- **Actionable Insights**: Generate insights for optimizing agent deployment and task allocation
-- **Team Optimization**: Provide data-driven guidance for creating high-performing agent teams
-- **Performance Prediction**: Forecast future performance based on historical data
-
-### Use Cases
-
-- **Resource Optimization**: Data-driven assignment of agents to tasks based on performance profiles
-- **Continuous Improvement**: Identification of improvement opportunities through detailed analysis
-- **Enhanced Accountability**: Clear performance tracking and reporting for all agents
-- **Better Planning**: More accurate estimation of task completion times and resource requirements
-- **Team Composition**: Data-driven insights for creating optimal agent teams
-- **Performance Benchmarking**: Compare performance across different agents, roles, and teams
-
-## Code Examples
-
-### Creating a Team with Grok 3-Powered Agents
-
-```python
-from app.models.providers import Grok3Provider
-from app.models.adapters import Grok3Adapter
-from app.orchestration.maas import Grok3MaaSIntegration
-from app.orchestration.adapters import Grok3A2AIntegration
-
-# Initialize Grok 3 provider and adapter
-grok3_provider = Grok3Provider(api_key="your_api_key")
-grok3_adapter = Grok3Adapter(provider=grok3_provider)
-
-# Initialize MaAS integration
-maas_integration = Grok3MaaSIntegration(adapter=grok3_adapter)
-
-# Create an architecture template for a development team
-architecture = maas_integration.create_architecture_template(
-    name="development_team",
-    roles=["project_manager", "developer", "tester"],
-    communication_pattern="hierarchical"
-)
-
-# Optimize the architecture for a specific task
-optimized_architecture = maas_integration.optimize_architecture(
-    architecture=architecture,
-    task_description="Build a web application with user authentication",
-    optimization_criteria=["efficiency", "code_quality"]
-)
-
-# Initialize A2A integration
-a2a_integration = Grok3A2AIntegration(adapter=grok3_adapter)
-
-# Create a team of agents using the optimized architecture
-team = a2a_integration.create_team_from_architecture(
-    architecture=optimized_architecture,
-    team_name="Web Development Team",
-    reasoning_mode="think"  # Use Grok 3's "think" reasoning mode
-)
-
-# Execute a task with the team
-result = team.execute_task(
-    task="Design and implement a secure user authentication system",
-    context={
-        "framework": "Django",
-        "requirements": ["email verification", "password reset", "2FA"]
-    }
-)
-
-# Get the generated code
-code = result.get_artifact("code")
-print(code)
+# Configure API keys
+cp .env.example .env
+# Edit .env file with your API keys
 ```
 
-### Using the Context Window Extension System
+### Docker Installation
 
-```python
-from app.context_extension.context_window_manager import ContextWindowManager
-from app.context_extension.vector_db_manager import VectorDBManager
-from app.context_extension.hierarchical_processor import HierarchicalProcessor
-from app.context_extension.recursive_summarizer import RecursiveSummarizer
+```bash
+# Build and run with Docker Compose
+docker-compose up -d
 
-# Initialize the vector database manager
-vector_db = VectorDBManager(
-    db_type="chroma",
-    collection_name="project_context",
-    embedding_model="sentence-transformers/all-mpnet-base-v2"
-)
-
-# Initialize the hierarchical processor
-hierarchical_processor = HierarchicalProcessor()
-
-# Initialize the recursive summarizer
-summarizer = RecursiveSummarizer(
-    model_name="grok3",
-    compression_ratio=0.2
-)
-
-# Initialize the context window manager
-context_manager = ContextWindowManager(
-    vector_db=vector_db,
-    hierarchical_processor=hierarchical_processor,
-    summarizer=summarizer
-)
-
-# Process a large codebase
-context_manager.process_directory(
-    directory_path="/path/to/large/codebase",
-    file_types=[".py", ".js", ".html", ".css"],
-    max_chunk_size=1000
-)
-
-# Process a large document
-context_manager.process_document(
-    document_path="/path/to/large/document.pdf",
-    chunking_strategy="semantic"
-)
-
-# Query the context
-results = context_manager.query(
-    query="How does the authentication system work?",
-    max_results=5,
-    include_summaries=True
-)
-
-# Navigate the hierarchical structure
-auth_module = context_manager.navigate_to(
-    path="src/auth",
-    level="module"
-)
-
-# Get a multi-level summary
-summary = context_manager.get_summary(
-    entity=auth_module,
-    levels=3  # Get summaries at 3 different levels of detail
-)
-
-print(summary)
+# Or build and run manually
+docker build -t toronto-ai-team-agent .
+docker run -p 8000:8000 -p 3000:3000 --env-file .env toronto-ai-team-agent
 ```
 
-### Using the Project Management Features
+## Usage
+
+### Basic Usage
 
 ```python
-from app.project_management.gantt_chart import GanttChartGenerator
-from app.project_management.resource_allocation import ResourceAllocationOptimizer
-from app.project_management.progress_reporting import ProgressReportGenerator
-from datetime import datetime, timedelta
+from toronto_ai_team_agent import TeamAgent
 
-# Initialize the Gantt chart generator
-gantt_generator = GanttChartGenerator()
+# Initialize the team agent
+team_agent = TeamAgent()
 
-# Define tasks with dependencies
-tasks = [
-    {
-        "id": "task1",
-        "name": "Requirements Analysis",
-        "start_date": datetime.now(),
-        "duration": 5,  # days
-        "dependencies": []
-    },
-    {
-        "id": "task2",
-        "name": "Design",
-        "duration": 10,
-        "dependencies": ["task1"]
-    },
-    {
-        "id": "task3",
-        "name": "Implementation",
-        "duration": 15,
-        "dependencies": ["task2"]
-    },
-    {
-        "id": "task4",
-        "name": "Testing",
-        "duration": 7,
-        "dependencies": ["task3"]
-    },
-    {
-        "id": "task5",
-        "name": "Deployment",
-        "duration": 3,
-        "dependencies": ["task4"]
-    }
-]
-
-# Generate a Gantt chart
-gantt_chart = gantt_generator.generate_chart(
-    tasks=tasks,
-    project_name="Web Application Development",
-    show_critical_path=True
+# Create a project
+project = team_agent.create_project(
+    name="Example Project",
+    description="A sample project to demonstrate the TORONTO AI TEAM AGENT",
+    team_structure="hierarchical"  # or "mesh", "star", etc.
 )
 
-# Export the chart
-gantt_generator.export_chart(
-    chart=gantt_chart,
-    format="html",
-    output_path="project_gantt.html"
-)
+# Add team members
+project.add_team_member(role="project_manager", name="PM Agent")
+project.add_team_member(role="developer", name="Dev Agent 1")
+project.add_team_member(role="developer", name="Dev Agent 2")
+project.add_team_member(role="system_architect", name="Arch Agent")
 
-# Initialize the resource allocation optimizer
-resource_optimizer = ResourceAllocationOptimizer()
+# Start the project
+project.start()
 
-# Define team members
-team_members = [
-    {
-        "id": "dev1",
-        "name": "Developer 1",
-        "skills": ["python", "django", "react"],
-        "availability": 1.0  # 100% availability
-    },
-    {
-        "id": "dev2",
-        "name": "Developer 2",
-        "skills": ["python", "flask", "angular"],
-        "availability": 0.5  # 50% availability
-    },
-    {
-        "id": "designer1",
-        "name": "Designer 1",
-        "skills": ["ui", "ux", "figma"],
-        "availability": 0.8  # 80% availability
-    }
-]
+# Interact with the project
+response = project.process_input("Create a simple web application with a React frontend and Python FastAPI backend")
 
-# Define task requirements
-task_requirements = {
-    "task2": {
-        "skills": ["ui", "ux"],
-        "effort": 80  # hours
-    },
-    "task3": {
-        "skills": ["python", "django", "react"],
-        "effort": 120  # hours
-    }
-}
-
-# Optimize resource allocation
-allocation = resource_optimizer.optimize(
-    tasks=tasks,
-    team_members=team_members,
-    task_requirements=task_requirements,
-    optimization_goal="minimize_duration"
-)
-
-# Initialize the progress report generator
-report_generator = ProgressReportGenerator()
-
-# Generate a progress report
-report = report_generator.generate_report(
-    project_name="Web Application Development",
-    tasks=tasks,
-    progress_data=progress_data,
-    allocation=allocation,
-    audience="executive"
-)
+# Get project status
+status = project.get_status()
+print(status)
 ```
 
-### Using Human-AI Collaboration Features
+### Web Interface
 
-```python
-from app.human_ai_collaboration.personalized_agent_adaptation import UserPreferenceProfile, PersonalizedAgentAdapter
-from app.human_ai_collaboration.collaborative_decision_support import CollaborativeDecisionSupport, DecisionFramework, DecisionParticipantRole
+```bash
+# Start the web server
+python -m toronto_ai_team_agent.server
 
-# Create a user preference profile
-user_profile = UserPreferenceProfile(
-    user_id="user123",
-    name="John Doe"
-)
-
-# Update explicit preferences
-user_profile.update_preference(
-    category="communication_style",
-    preference="verbosity",
-    value=0.8  # Prefers detailed communication
-)
-
-user_profile.update_preference(
-    category="work_style",
-    preference="autonomy_level",
-    value=0.3  # Prefers more guidance
-)
-
-# Create personalized agent adapter
-base_agent = get_base_agent()  # Your agent implementation
-personalized_agent = PersonalizedAgentAdapter(
-    base_agent=base_agent,
-    user_profile=user_profile
-)
-
-# Generate adapted communication
-original_message = "Task completed."
-adapted_message = personalized_agent.adapt_communication(original_message)
-# Result: A more detailed message based on user's verbosity preference
-
-# Initialize decision support system
-decision_support = CollaborativeDecisionSupport()
-
-# Create a new decision
-decision = decision_support.create_decision(
-    title="Software Architecture Selection",
-    description="Select the best architecture for our new application.",
-    framework=DecisionFramework.WEIGHTED_CRITERIA,
-    created_by="user_1"
-)
-
-# Add participants
-human_participant = decision_support.add_participant(
-    decision_id=decision.decision_id,
-    name="Project Manager",
-    role=DecisionParticipantRole.DECISION_MAKER,
-    is_ai=False
-)
-
-ai_participant = decision_support.add_participant(
-    decision_id=decision.decision_id,
-    name="AI Architect",
-    role=DecisionParticipantRole.ADVISOR,
-    is_ai=True,
-    expertise=["software_architecture", "scalability", "security"]
-)
-
-# Add options and criteria
-option_a = decision_support.add_option(
-    decision_id=decision.decision_id,
-    name="Microservices Architecture",
-    description="Distributed architecture with independent services.",
-    proposed_by=ai_participant.participant_id
-)
-
-scalability = decision_support.add_criterion(
-    decision_id=decision.decision_id,
-    name="Scalability",
-    description="Ability to handle growing workloads.",
-    weight=0.8,
-    created_by=human_participant.participant_id
-)
-
-# Generate analysis and finalize decision
-analysis = decision_support.analyze_decision(decision.decision_id)
-decision_support.finalize_decision(
-    decision_id=decision.decision_id,
-    selected_option_id=option_a.option_id,
-    rationale="Selected for superior scalability and maintainability."
-)
+# In another terminal, start the web interface
+cd web
+npm start
 ```
 
-### Using Agent Performance Analytics
-
-```python
-from app.performance_monitoring.agent_performance_analytics import PerformanceAnalytics, MetricType, MetricUnit, AgentRole, TaskPriority
-
-# Initialize performance analytics system
-analytics = PerformanceAnalytics()
-
-# Create agent profiles
-developer_agent = analytics.create_agent_profile(
-    agent_id="dev_agent_1",
-    name="Developer Agent",
-    role=AgentRole.DEVELOPER,
-    capabilities=["python", "javascript", "api_development"]
-)
-
-qa_agent = analytics.create_agent_profile(
-    agent_id="qa_agent_1",
-    name="QA Agent",
-    role=AgentRole.QA_TESTER,
-    capabilities=["testing", "bug_reporting", "test_automation"]
-)
-
-# Create and assign tasks
-dev_task = analytics.create_task(
-    agent_id="dev_agent_1",
-    title="Implement Authentication API",
-    description="Create a secure authentication API endpoint.",
-    priority=TaskPriority.HIGH,
-    estimated_duration=120.0  # minutes
-)
-
-# Start tasks and record metrics
-analytics.start_task(dev_task.task_id)
-
-analytics.record_metric(
-    agent_id="dev_agent_1",
-    metric_type=MetricType.COMPLETION_TIME,
-    value=105.0,
-    unit=MetricUnit.MINUTES,
-    task_id=dev_task.task_id
-)
-
-analytics.record_metric(
-    agent_id="dev_agent_1",
-    metric_type=MetricType.QUALITY,
-    value=92.0,
-    unit=MetricUnit.PERCENTAGE,
-    task_id=dev_task.task_id
-)
-
-# Complete tasks
-analytics.complete_task(dev_task.task_id)
-
-# Generate reports and visualizations
-agent_report = analytics.generate_agent_report("dev_agent_1")
-team_report = analytics.generate_team_report(["dev_agent_1", "qa_agent_1"])
-
-time_trend = analytics.create_visualization(
-    agent_id="dev_agent_1",
-    metric_type=MetricType.COMPLETION_TIME,
-    chart_type="line",
-    title="Completion Time Trend"
-)
-```
-
-### Using Code Review Tools
-
-```python
-from app.tools.analysis.pylint import PylintTool
-from app.tools.formatting.black import BlackTool
-from app.tools.formatting.flake8 import Flake8Tool
-from app.tools.type_checking.mypy import MypyTool
-from app.tools.security.bandit import BanditTool
-
-# Initialize code review tools
-pylint = PylintTool()
-black = BlackTool()
-flake8 = Flake8Tool()
-mypy = MypyTool()
-bandit = BanditTool()
-
-# Path to the code to review
-code_path = "/path/to/your/code.py"
-
-# Run static analysis with Pylint
-pylint_result = pylint.analyze(code_path)
-print(f"Pylint score: {pylint_result.score}/10")
-print(f"Issues found: {len(pylint_result.issues)}")
-for issue in pylint_result.issues[:5]:  # Show first 5 issues
-    print(f"- {issue.code}: {issue.message} at line {issue.line}")
-
-# Format code with Black
-black_result = black.format(code_path)
-print(f"Code formatted: {black_result.formatted}")
-print(f"Changes made: {black_result.changes}")
-
-# Check style with Flake8
-flake8_result = flake8.check(code_path)
-print(f"Flake8 issues found: {len(flake8_result.issues)}")
-for issue in flake8_result.issues[:5]:  # Show first 5 issues
-    print(f"- {issue.code}: {issue.message} at line {issue.line}")
-
-# Check types with Mypy
-mypy_result = mypy.check(code_path)
-print(f"Type issues found: {len(mypy_result.issues)}")
-for issue in mypy_result.issues[:5]:  # Show first 5 issues
-    print(f"- {issue.message} at line {issue.line}")
-
-# Check security with Bandit
-bandit_result = bandit.scan(code_path)
-print(f"Security issues found: {len(bandit_result.issues)}")
-for issue in bandit_result.issues:
-    print(f"- {issue.severity} {issue.confidence}: {issue.message} at line {issue.line}")
-```
-
-### Using Multimodal Services
-
-```python
-from app.multimodal.services.image_generation import ImageGenerator
-from app.multimodal.services.speech_processing import SpeechProcessor
-from app.multimodal.services.transformers_client import TransformersClient
-
-# Initialize image generation service
-image_generator = ImageGenerator(provider="dall-e-3")
-
-# Generate an image
-image_result = image_generator.generate(
-    prompt="A futuristic city with flying cars and tall glass buildings",
-    size="1024x1024",
-    quality="standard"
-)
-
-# Save the generated image
-image_path = image_generator.save_image(
-    image_data=image_result.image_data,
-    file_path="/path/to/save/futuristic_city.png"
-)
-
-# Initialize speech processing service
-speech_processor = SpeechProcessor()
-
-# Convert text to speech
-audio_result = speech_processor.text_to_speech(
-    text="Welcome to the Toronto AI Team Agent system.",
-    voice="alloy",
-    speed=1.0
-)
-
-# Save the audio file
-audio_path = speech_processor.save_audio(
-    audio_data=audio_result.audio_data,
-    file_path="/path/to/save/welcome_message.mp3"
-)
-
-# Transcribe speech from audio file
-transcription = speech_processor.speech_to_text(
-    audio_file="/path/to/audio/recording.mp3",
-    language="en"
-)
-
-print(f"Transcription: {transcription.text}")
-
-# Initialize transformers client
-transformers = TransformersClient()
-
-# Perform image classification
-image_classification = transformers.classify_image(
-    image_path="/path/to/image.jpg",
-    model_name="google/vit-base-patch16-224"
-)
-
-print("Image classification results:")
-for label, score in image_classification.results:
-    print(f"- {label}: {score:.2f}")
-
-# Perform named entity recognition
-ner_results = transformers.extract_entities(
-    text="Apple Inc. is planning to open a new office in Toronto next year.",
-    model_name="dslim/bert-base-NER"
-)
-
-print("Named entities:")
-for entity in ner_results.entities:
-    print(f"- {entity.text} ({entity.label})")
-```
+Then open your browser to http://localhost:3000 to access the web interface.
 
 ## Documentation
 
-For more detailed information, please refer to the following documentation:
+For detailed documentation, see the following resources:
 
-- [Installation Guide](docs/installation_guide.md)
-- [User Manual](docs/user_manual.md)
-- [API Documentation](docs/api_documentation.md)
-- [MaAS Implementation](docs/maas_implementation.md)
-- [MaAS Integration Guide](docs/maas_integration_guide.md)
-- [A2A Technology](docs/mcp_a2a_technology.md)
-- [Multi-Agent System](docs/multi_agent_system.md)
+- [Agent Roles Documentation](docs/agent_roles.md)
+- [API Reference](docs/api_reference.md)
+- [Architecture Overview](docs/architecture_overview.md)
+- [MaAS Framework](docs/maas_framework.md)
+- [A2A Integration](docs/a2a_integration.md)
 - [Grok 3 Integration Guide](docs/grok3_integration_guide.md)
 - [Context Window Extension](docs/context_window_extension.md)
+- [Human-AI Collaboration Features](docs/human_ai_collaboration_features.md)
+- [Agent Performance Analytics](docs/agent_performance_analytics.md)
 - [Project Management Features](docs/project_management_features.md)
 - [AI Model Integrations](docs/ai_model_integrations.md)
 - [Task Estimation Framework](docs/task_estimation_framework.md)
@@ -978,15 +443,29 @@ For more detailed information, please refer to the following documentation:
 - [IDE Extensions](docs/ide_extensions.md)
 - [Load Balancing](docs/load_balancing.md)
 - [Security Features](docs/security_features.md)
-- [Human-AI Collaboration](docs/human_ai_collaboration.md)
-- [Agent Performance Analytics](docs/agent_performance_analytics.md)
 - [Code Review Tools](docs/code_review_tools.md)
 - [Multimodal Services](docs/multimodal_services.md)
 
+## Contributing
+
+We welcome contributions to the TORONTO AI TEAM AGENT project! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute.
+
 ## License
 
-This software is licensed under the TORONTO AI PROPRIETARY LICENSE. All rights reserved.
+TORONTO AI PROPRIETARY LICENSE
 
-This is proprietary software created by TORONTO AI. The software is provided "as is" without warranty of any kind. See the [LICENSE](LICENSE) file for the complete license terms.
+Copyright (c) 2025 TORONTO AI
+Creator: David Tadeusz Chudak
+All Rights Reserved
 
-This software is based on OpenManus, which is licensed under the MIT License, but has been substantially modified with proprietary enhancements.
+This software is based on OpenManus (Copyright (c) 2025 manna_and_poem),
+which is licensed under the MIT License. The original license is included
+in the LICENSE file in the root directory of this project.
+
+This software has been substantially modified with proprietary enhancements.
+
+Unauthorized copying, modification, distribution, or use of this software,
+via any medium, is strictly prohibited without express written permission
+from TORONTO AI.
+
+For licensing inquiries, please contact licensing@torontoai.com.
