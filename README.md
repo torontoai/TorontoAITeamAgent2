@@ -985,4 +985,8 @@ For more detailed information, please refer to the following documentation:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This software is licensed under the TORONTO AI PROPRIETARY LICENSE. All rights reserved.
+
+This is proprietary software created by TORONTO AI. The software is provided "as is" without warranty of any kind. See the [LICENSE](LICENSE) file for the complete license terms.
+
+This software is based on OpenManus, which is licensed under the MIT License, but has been substantially modified with proprietary enhancements.
