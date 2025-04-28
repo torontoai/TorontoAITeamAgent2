@@ -1,235 +1,303 @@
 # Specialty Agent Roles in TORONTO AI TEAM AGENT
 
-This document outlines the specialized agent roles available in the TORONTO AI TEAM AGENT system, their functions, capabilities, and responsibilities. These specialized agents work together as a cohesive team to tackle complex projects, with each agent focusing on their area of expertise.
+The TORONTO AI TEAM AGENT system features 13 specialized agent roles, each designed to excel in specific aspects of software development, project management, and technical implementation. These specialized agents work together as a cohesive team, combining their unique capabilities to deliver comprehensive solutions.
 
 ## Project Manager Agent
 
-The Project Manager Agent serves as the team leader, coordinating activities, managing projects, and ensuring successful delivery.
+**Primary Function**: Coordinates team activities and manages project execution from inception to completion.
 
-### Key Responsibilities
-- Coordinating the team and managing projects
-- Creating and maintaining project plans
-- Making multi-factor decisions
-- Assigning team members to tasks
-- Conducting retrospectives for continuous improvement
-- Communicating with stakeholders
+**Key Responsibilities**:
+- Project planning and timeline management
+- Task coordination and resource allocation
+- Risk management and mitigation
+- Stakeholder communication and reporting
+- Team coordination and performance monitoring
+- Decision-making and problem-solving
+- Retrospective analysis for continuous improvement
 
-### Core Capabilities
-- Multi-factor decision making
-- Proactive task planning and estimation
-- Team coordination and conflict resolution
-- Stakeholder management and expectation setting
-- Continuous improvement through retrospectives
-
-### Key Functions
-- `create_project()`: Creates a new project with defined parameters
-- `update_project()`: Updates an existing project's details
-- `assign_team_members()`: Assigns team members to a project
-- `create_task()`: Creates a new task within a project
-- `update_task()`: Updates the status and details of a task
-- `make_decision()`: Makes project-related decisions using multi-factor analysis
-- `create_project_plan()`: Creates a comprehensive project plan
-- `conduct_retrospective()`: Conducts a project retrospective to identify improvements
+**Core Capabilities**:
+- Creates comprehensive project plans with realistic timelines
+- Assigns tasks to appropriate team members based on expertise
+- Identifies and mitigates project risks proactively
+- Facilitates communication between team members and stakeholders
+- Tracks project progress and adjusts plans as needed
+- Makes data-driven decisions to resolve project challenges
+- Conducts retrospectives to improve future project execution
 
 ## Product Manager Agent
 
-The Product Manager Agent focuses on product vision, requirements gathering, and feature prioritization to ensure the product meets market needs.
+**Primary Function**: Focuses on product vision, market fit, and feature prioritization to ensure the product meets user needs.
 
-### Key Responsibilities
-- Gathering and analyzing requirements
-- Defining product vision and roadmap
-- Prioritizing features based on business value
-- Creating user stories and acceptance criteria
-- Conducting market research and competitive analysis
-- Collaborating with stakeholders to refine product requirements
-
-### Core Capabilities
+**Key Responsibilities**:
 - Requirements gathering and analysis
-- Product vision and roadmap creation
-- Feature prioritization
-- User story creation
+- Feature prioritization and roadmap planning
+- User story creation and refinement
 - Market research and competitive analysis
-- Stakeholder collaboration
+- Stakeholder collaboration and alignment
+- Product strategy development
+- User experience oversight
 
-### Key Functions
-- `gather_requirements()`: Gathers and analyzes requirements for a project
-- `create_user_stories()`: Creates user stories based on requirements
-- `prioritize_features()`: Prioritizes features based on business value
-- `create_product_roadmap()`: Creates a product roadmap based on prioritized features
-- `analyze_market()`: Conducts market research and competitive analysis
+**Core Capabilities**:
+- Translates business and user needs into clear technical requirements
+- Prioritizes features based on value, effort, and strategic alignment
+- Creates detailed user stories with acceptance criteria
+- Analyzes market trends and competitive landscape
+- Aligns stakeholders around product vision and priorities
+- Develops product strategies that balance user needs and business goals
+- Ensures consistent and intuitive user experience
 
 ## Developer Agent
 
-The Developer Agent implements code and technical solutions, focusing on quality, performance, and maintainability.
+**Primary Function**: Implements code and technical solutions with a focus on quality, performance, and maintainability.
 
-### Key Responsibilities
-- Implementing code based on specifications
-- Debugging and fixing issues in code
-- Optimizing code for performance
-- Writing unit tests and integration tests
-- Refactoring code for maintainability
-- Integrating with external systems and APIs
-
-### Core Capabilities
-- Code implementation
-- Debugging and issue resolution
+**Key Responsibilities**:
+- Code implementation and integration
+- Algorithm design and optimization
+- Debugging and troubleshooting
+- Code review and refactoring
+- Technical documentation
+- Unit test creation
 - Performance optimization
-- Test writing
-- Code refactoring
-- External system integration
 
-### Key Functions
-- `implement_code()`: Implements code based on specifications
-- `write_tests()`: Writes tests for implemented code
-- `analyze_code_quality()`: Analyzes code quality using linting and static analysis tools
-- `refactor_code()`: Refactors code for maintainability
-
-### Preferred Tools
-- OpenAI for code generation
-- Aider and Cursor for agentic coding
-- Pytest for testing
-- Black for code formatting
-- Flake8 and Pylint for style checking and code analysis
-- Mypy and Pyright for type checking
-- Bandit for security scanning
+**Core Capabilities**:
+- Writes clean, efficient, and maintainable code
+- Designs and implements algorithms to solve complex problems
+- Identifies and resolves bugs and technical issues
+- Reviews code for quality, security, and performance
+- Creates comprehensive technical documentation
+- Develops thorough unit tests to ensure code reliability
+- Optimizes code for performance and resource efficiency
 
 ## DevOps Engineer Agent
 
-The DevOps Engineer Agent manages deployment pipelines, infrastructure, and operational concerns to ensure smooth delivery and operation.
+**Primary Function**: Manages deployment pipelines, infrastructure, and operational aspects of software delivery.
 
-### Key Responsibilities
-- Setting up CI/CD pipelines
-- Configuring infrastructure as code
-- Managing containerization and orchestration
-- Implementing monitoring and logging solutions
-- Automating deployment processes
-- Ensuring system reliability and scalability
-
-### Core Capabilities
-- CI/CD pipeline setup
-- Infrastructure as code configuration
+**Key Responsibilities**:
+- CI/CD pipeline design and implementation
+- Infrastructure as code development
 - Containerization and orchestration
-- Monitoring and logging implementation
+- Monitoring and alerting setup
 - Deployment automation
-- System reliability and scalability
+- Environment configuration
+- Security implementation in operations
 
-### Key Functions
-- `setup_pipeline()`: Sets up CI/CD pipeline for a project
-- `configure_infrastructure()`: Configures infrastructure as code for a project
-- `deploy_application()`: Deploys application to specified environment
-- `setup_monitoring()`: Sets up monitoring and logging solutions
+**Core Capabilities**:
+- Designs and implements efficient CI/CD pipelines
+- Creates infrastructure as code for consistent environments
+- Implements containerization for application deployment
+- Sets up comprehensive monitoring and alerting systems
+- Automates deployment processes to minimize errors
+- Configures development, testing, and production environments
+- Integrates security best practices into operational processes
 
-### Supported Infrastructure Types
-- Docker containerization
-- Kubernetes orchestration
-- Terraform infrastructure as code
+## Business Analyst Agent
 
-## Business Analyst Role
+**Primary Function**: Bridges the gap between technical teams and non-technical stakeholders through requirements analysis and business process modeling.
 
-The Business Analyst role bridges the gap between technical teams and non-technical stakeholders, ensuring requirements are well-understood and communicated.
+**Key Responsibilities**:
+- Requirements gathering and documentation
+- Business process modeling and analysis
+- Stakeholder interviews and workshops
+- Gap analysis and solution recommendation
+- Use case and user story development
+- Business rule documentation
+- Requirements traceability
 
-### Key Responsibilities
-- Requirements gathering and analysis
-- Business process modeling
-- Stakeholder analysis and communication
-- Data analysis for business insights
-- Documentation of business requirements
-- Gap analysis between current and future states
-- Facilitation of workshops and meetings
-- Creation of business cases
+**Core Capabilities**:
+- Elicits and documents clear business requirements
+- Models business processes to identify improvement opportunities
+- Conducts effective stakeholder interviews and workshops
+- Analyzes gaps between current and desired states
+- Develops comprehensive use cases and user stories
+- Documents business rules and decision logic
+- Maintains traceability between requirements and implementation
 
-### Core Capabilities
-- Requirements engineering
-- Process modeling
-- Stakeholder management
-- Data analysis
-- Documentation
-- Problem solving
+## Data Scientist Agent
 
-### Key Techniques
-- SWOT Analysis
-- PESTLE Analysis
-- MoSCoW Prioritization
-- Use Case Modeling
-- Requirements gathering (interviews, workshops, surveys, observation)
-- Business process improvement
+**Primary Function**: Analyzes data, creates models, and extracts insights to support data-driven decision making.
 
-## Data Scientist Role
-
-The Data Scientist role handles data-intensive projects, including machine learning, statistical analysis, data visualization, and predictive modeling.
-
-### Key Responsibilities
-- Data collection and preprocessing
-- Statistical analysis and hypothesis testing
+**Key Responsibilities**:
+- Data analysis and exploration
+- Statistical modeling and hypothesis testing
 - Machine learning model development
-- Data visualization and interpretation
-- Predictive modeling and forecasting
-- Feature engineering and selection
+- Data visualization and reporting
+- Feature engineering
 - Model evaluation and validation
-- Communication of insights to stakeholders
+- Data pipeline design
 
-### Core Capabilities
-- Statistics and probability
-- Machine learning
-- Programming (Python, R)
-- Data visualization
-- SQL and database knowledge
-- Big data technologies
-- Domain knowledge
-- Communication
-
-### Key Areas of Expertise
-- Supervised learning (classification, regression)
-- Unsupervised learning (clustering, dimensionality reduction)
-- Reinforcement learning
-- Deep learning
-- Data visualization
-- Big data technologies
-- Model evaluation and validation
+**Core Capabilities**:
+- Analyzes complex datasets to identify patterns and trends
+- Develops statistical models to test hypotheses
+- Creates machine learning models for prediction and classification
+- Designs clear and informative data visualizations
+- Engineers features to improve model performance
+- Evaluates and validates models using appropriate metrics
+- Designs efficient data processing pipelines
 
 ## System Architect Agent
 
-The System Architect Agent designs high-level system architecture, patterns, and technical decisions to ensure a solid foundation for the project.
+**Primary Function**: Designs high-level system architecture, selects technologies, and ensures scalability and performance.
 
-### Key Responsibilities
-- Designing system architecture
-- Selecting appropriate design patterns
-- Making technical decisions
-- Creating component diagrams
-- Defining system interfaces
-- Ensuring scalability and maintainability
+**Key Responsibilities**:
+- Architecture design and documentation
+- Technology selection and evaluation
+- Scalability and performance planning
+- Integration strategy development
+- Technical standards definition
+- Architecture governance
+- System modeling
 
-### Core Capabilities
-- Architecture design
-- Design pattern selection
-- Technical decision making
-- Component diagram creation
-- Interface definition
-- Scalability and maintainability planning
+**Core Capabilities**:
+- Designs robust system architectures with appropriate separation of concerns
+- Evaluates and selects appropriate technologies for specific requirements
+- Plans for scalability and performance under various load conditions
+- Develops strategies for system integration and interoperability
+- Defines technical standards and best practices
+- Ensures architectural compliance across implementation
+- Creates system models to communicate architecture effectively
 
-### Key Functions
-- `design_architecture()`: Designs system architecture based on requirements
-- `make_technical_decisions()`: Makes technical decisions based on requirements and constraints
-- `create_component_diagram()`: Creates component diagram for system architecture
-- `define_interfaces()`: Defines interfaces between system components
+## QA Testing Specialist Agent
 
-### Preferred Tools
-- OpenAI for advanced reasoning
-- DeepSeek for complex architecture design
-- Claude for technical decision making
+**Primary Function**: Ensures software quality through comprehensive testing, defect identification, and quality assurance processes.
+
+**Key Responsibilities**:
+- Test planning and strategy development
+- Test case design and implementation
+- Test automation framework development
+- Defect reporting and tracking
+- Regression testing
+- Performance and load testing
+- User acceptance testing support
+
+**Core Capabilities**:
+- Develops comprehensive test plans and strategies
+- Creates detailed test cases covering functional and non-functional requirements
+- Implements test automation for efficient regression testing
+- Reports defects with clear reproduction steps and severity assessment
+- Conducts thorough regression testing to prevent regressions
+- Performs performance and load testing to identify bottlenecks
+- Supports user acceptance testing with test scenarios and execution
+
+## Security Engineer Agent
+
+**Primary Function**: Specializes in security best practices, threat modeling, and vulnerability assessment to ensure system security.
+
+**Key Responsibilities**:
+- Security assessment and penetration testing
+- Vulnerability management
+- Security architecture design
+- Threat modeling
+- Security testing and validation
+- Compliance verification
+- Incident response planning
+
+**Core Capabilities**:
+- Conducts thorough security assessments and penetration tests
+- Identifies and manages vulnerabilities throughout the system
+- Designs secure architecture with defense-in-depth principles
+- Performs threat modeling to identify potential attack vectors
+- Implements and validates security controls
+- Ensures compliance with relevant security standards
+- Develops incident response plans for security breaches
+
+## Database Engineer Agent
+
+**Primary Function**: Focuses on database design, optimization, and data management to ensure efficient data storage and retrieval.
+
+**Key Responsibilities**:
+- Database schema design
+- Query optimization
+- Data modeling
+- Database performance tuning
+- Data migration planning
+- Database security implementation
+- Data integrity maintenance
+
+**Core Capabilities**:
+- Designs efficient and normalized database schemas
+- Optimizes queries for performance and resource utilization
+- Creates comprehensive data models with appropriate relationships
+- Tunes database performance for specific workloads
+- Plans and executes data migrations with minimal disruption
+- Implements database security controls and access restrictions
+- Ensures data integrity through constraints and validation
+
+## UI/UX Designer Agent
+
+**Primary Function**: Creates user interfaces and experiences that are intuitive, accessible, and visually appealing.
+
+**Key Responsibilities**:
+- User research and persona development
+- Interface design and wireframing
+- Usability testing
+- Interaction design
+- Visual design and branding
+- Prototype creation
+- Design system management
+
+**Core Capabilities**:
+- Conducts user research to understand user needs and behaviors
+- Designs intuitive interfaces with clear information hierarchy
+- Performs usability testing to validate design decisions
+- Creates effective interaction patterns for optimal user experience
+- Develops visually appealing designs aligned with brand guidelines
+- Builds interactive prototypes to demonstrate functionality
+- Maintains consistent design systems for scalable implementation
+
+## Documentation Specialist Agent
+
+**Primary Function**: Creates comprehensive technical documentation, user guides, and knowledge base content.
+
+**Key Responsibilities**:
+- Technical writing and documentation
+- User guide creation
+- API documentation
+- Knowledge base management
+- Documentation review and maintenance
+- Information architecture
+- Documentation planning
+
+**Core Capabilities**:
+- Writes clear, concise technical documentation for various audiences
+- Creates comprehensive user guides with step-by-step instructions
+- Develops detailed API documentation with examples and use cases
+- Manages knowledge base content for easy information retrieval
+- Reviews and maintains documentation for accuracy and completeness
+- Designs effective information architecture for documentation
+- Plans documentation strategy aligned with product development
+
+## Performance Engineer Agent
+
+**Primary Function**: Optimizes system performance, identifies bottlenecks, and ensures efficient resource utilization.
+
+**Key Responsibilities**:
+- Performance analysis and profiling
+- Bottleneck identification
+- Optimization implementation
+- Performance testing
+- Capacity planning
+- Benchmark development
+- Performance monitoring
+
+**Core Capabilities**:
+- Analyzes system performance to identify inefficiencies
+- Identifies performance bottlenecks through systematic profiling
+- Implements targeted optimizations to improve performance
+- Designs and executes comprehensive performance tests
+- Plans for capacity needs based on projected growth
+- Develops benchmarks to measure performance improvements
+- Sets up monitoring to track performance metrics over time
 
 ## Team Collaboration
 
-These specialized agents work together as a cohesive team, with each agent focusing on their area of expertise while collaborating to achieve project goals. The collaboration workflow typically follows this pattern:
+These specialized agents work together as a cohesive team, with each agent contributing their unique expertise to the project. The collaboration is coordinated by the Project Manager Agent, who ensures that all agents are working effectively toward common goals.
 
-1. **Project Initiation**: The Project Manager Agent creates a project and assigns team members.
-2. **Requirements Gathering**: The Product Manager Agent and Business Analyst Role gather and analyze requirements.
-3. **Architecture Design**: The System Architect Agent designs the system architecture and makes technical decisions.
-4. **Development Planning**: The Project Manager Agent creates a project plan and assigns tasks.
-5. **Implementation**: The Developer Agent implements code based on specifications.
-6. **Infrastructure Setup**: The DevOps Engineer Agent sets up CI/CD pipelines and configures infrastructure.
-7. **Data Analysis**: The Data Scientist Role performs data analysis and develops models if needed.
-8. **Deployment**: The DevOps Engineer Agent deploys the application to the specified environment.
-9. **Retrospective**: The Project Manager Agent conducts a retrospective to identify improvements.
+Key collaboration patterns include:
 
-This collaborative approach ensures that all aspects of the project are handled by specialists in their respective domains, leading to higher quality outcomes and more efficient project execution.
+1. **Requirements Flow**: Business Analyst → Product Manager → System Architect → Developer
+2. **Quality Assurance**: Developer → QA Testing Specialist → Security Engineer → Performance Engineer
+3. **User Experience**: Product Manager → UI/UX Designer → Developer → Documentation Specialist
+4. **Infrastructure**: System Architect → DevOps Engineer → Database Engineer → Performance Engineer
+5. **Data Pipeline**: Data Scientist → Database Engineer → Developer → Performance Engineer
+
+This multi-agent team approach enables the TORONTO AI TEAM AGENT system to tackle complex projects with specialized expertise at each stage of the development lifecycle.

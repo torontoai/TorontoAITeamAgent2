@@ -10,7 +10,7 @@ The TORONTO AI TEAM AGENT is a comprehensive framework for creating and managing
 
 ### Specialty Agent Roles
 
-The TORONTO AI TEAM AGENT system includes several specialized agent roles that work together as a cohesive team:
+The TORONTO AI TEAM AGENT system includes 13 specialized agent roles that work together as a cohesive team:
 
 - **Project Manager Agent**: Coordinates team activities, manages projects, creates project plans, makes multi-factor decisions, assigns team members to tasks, and conducts retrospectives for continuous improvement.
 
@@ -20,11 +20,23 @@ The TORONTO AI TEAM AGENT system includes several specialized agent roles that w
 
 - **DevOps Engineer Agent**: Manages deployment pipelines, infrastructure as code, containerization, monitoring solutions, and deployment automation to ensure smooth delivery and operation.
 
-- **Business Analyst Role**: Bridges the gap between technical teams and non-technical stakeholders through requirements gathering, business process modeling, stakeholder analysis, and documentation.
+- **Business Analyst Agent**: Bridges the gap between technical teams and non-technical stakeholders through requirements gathering, business process modeling, stakeholder analysis, and documentation.
 
-- **Data Scientist Role**: Handles data-intensive projects including data collection, statistical analysis, machine learning model development, data visualization, and predictive modeling.
+- **Data Scientist Agent**: Handles data-intensive projects including data collection, statistical analysis, machine learning model development, data visualization, and predictive modeling.
 
 - **System Architect Agent**: Designs high-level system architecture, selects appropriate design patterns, makes technical decisions, creates component diagrams, and defines system interfaces.
+
+- **QA Testing Specialist Agent**: Ensures software quality through comprehensive testing, test case development, test automation, defect reporting, and quality assurance processes.
+
+- **Security Engineer Agent**: Specializes in security best practices, threat modeling, vulnerability assessment, security architecture design, and compliance verification.
+
+- **Database Engineer Agent**: Focuses on database design, optimization, data modeling, query performance tuning, data migration, and ensuring data integrity.
+
+- **UI/UX Designer Agent**: Creates user interfaces and experiences that are intuitive, accessible, and visually appealing through wireframing, interaction design, and usability testing.
+
+- **Documentation Specialist Agent**: Creates comprehensive technical documentation, user guides, API documentation, and knowledge base content with clear information architecture.
+
+- **Performance Engineer Agent**: Optimizes system performance, identifies bottlenecks, implements targeted optimizations, and ensures efficient resource utilization.
 
 For detailed information about each role, see [Agent Roles Documentation](docs/agent_roles.md).
 
@@ -269,62 +281,7 @@ For detailed information about each role, see [Agent Roles Documentation](docs/a
 
 ## MaAS and A2A Integration
 
-The TORONTO AI TEAM AGENT system features a powerful integration between Multi-agent Architecture Search (MaAS) and industry-standard agent communication protocols (A2A and AutoGen), enabling dynamic team formation with optimized architectures.
-
-### MaAS Core Components
-
-- **Agentic Supernet**: Neural architecture search inspired approach to sampling and optimizing agent architectures
-- **Architecture Templates**: Predefined patterns (hierarchical, mesh, star, pipeline, hybrid) for different task domains
-- **Architecture Sampler**: Dynamic sampling of architectures based on task requirements and complexity
-- **Evaluation System**: Comprehensive metrics and fitness functions for comparing architecture performance
-- **Visualization Tools**: Interactive and static visualizations for understanding agent architectures
-
-### A2A and AutoGen Integration
-
-- **Bidirectional Adapters**: Seamless conversion between MaAS architectures and A2A/AutoGen configurations
-- **Framework-Agnostic Interface**: Unified API for working with both A2A and AutoGen frameworks
-- **Dynamic Team Formation**: Create agent teams with optimized architectures for specific tasks
-- **Continuous Learning**: Performance feedback loop for improving architecture selection over time
-- **Capability Mapping**: Intelligent mapping of agent capabilities to framework-specific configurations
-
-### Integration Workflow
-
-1. **Task Analysis**: Analyze task requirements and complexity to determine needed capabilities
-2. **Architecture Sampling**: Sample an optimized architecture from the Agentic Supernet
-3. **Framework Conversion**: Convert the architecture to A2A or AutoGen configuration
-4. **Team Execution**: Execute the workflow with the selected agent team
-5. **Performance Evaluation**: Evaluate team performance and provide feedback to the architecture search system
-6. **Continuous Improvement**: Update architecture selection based on performance feedback
-
-## Grok 3 Integration
-
-The TORONTO AI TEAM AGENT system features comprehensive integration with Grok 3, leveraging its advanced reasoning capabilities and code execution features to enhance the multi-agent system.
-
-### Key Integration Points
-
-- **Reasoning Mode Selection**: Dynamically select appropriate reasoning modes based on task requirements
-- **Context Window Optimization**: Efficiently utilize the 128,000-token context window for complex tasks
-- **Code Execution Integration**: Seamless execution of generated code with sandbox protection
-- **MaAS Integration**: Optimize agent architectures with Grok 3's reasoning capabilities
-- **A2A Protocol Support**: Enable Grok 3-powered agents to communicate using the A2A protocol
-
-### Reasoning Modes
-
-- **Default**: General-purpose reasoning for a wide range of tasks
-- **Technical**: Enhanced reasoning for technical and programming tasks
-- **Creative**: Optimized for creative writing and content generation
-- **Analytical**: Focused on data analysis and logical reasoning
-- **Collaborative**: Specialized for multi-agent collaboration scenarios
-
-### Code Execution Features
-
-- **Multi-language Support**: Execute code in Python, JavaScript, and other languages
-- **Sandbox Protection**: Secure execution environment with resource limitations
-- **State Persistence**: Maintain execution state across multiple code blocks
-- **Package Management**: Automatic installation of required dependencies
-- **Error Handling**: Comprehensive error detection and reporting
-
-### Integration with MaAS
+The TORONTO AI TEAM AGENT system features a powerful integration between Multi-agent Architecture Search (MaAS) and Agent-to-Agent (A2A) communication protocols, enabling:
 
 - **Architecture Optimization**: Leverage Grok 3's reasoning to optimize agent team architectures
 - **Role-Specific Configurations**: Customize Grok 3 settings based on agent roles
@@ -336,7 +293,7 @@ The TORONTO AI TEAM AGENT system features comprehensive integration with Grok 3,
 ### Prerequisites
 
 - Python 3.10 or higher
-- Node.js 16 or higher (for web interface)
+- Node.js 18 or higher
 - Docker (optional, for containerized deployment)
 - API keys for integrated services (OpenAI, Claude, etc.)
 
@@ -353,102 +310,84 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Install web interface dependencies
-cd web
-npm install
-cd ..
-
-# Configure API keys
-cp .env.example .env
-# Edit .env file with your API keys
+npm install  # For frontend components
 ```
 
-### Docker Installation
+### Configuration
 
-```bash
-# Build and run with Docker Compose
-docker-compose up -d
+Create a `.env` file in the root directory with your API keys and configuration:
 
-# Or build and run manually
-docker build -t toronto-ai-team-agent .
-docker run -p 8000:8000 -p 3000:3000 --env-file .env toronto-ai-team-agent
+```
+OPENAI_API_KEY=your_openai_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+GOOGLE_API_KEY=your_google_api_key
+XEBIA_API_KEY=your_xebia_api_key
+DEEPSEEK_API_KEY=your_deepseek_api_key
+VECTOR_DB_CONNECTION=your_vector_db_connection_string
 ```
 
 ## Usage
 
-### Basic Usage
-
-```python
-from toronto_ai_team_agent import TeamAgent
-
-# Initialize the team agent
-team_agent = TeamAgent()
-
-# Create a project
-project = team_agent.create_project(
-    name="Example Project",
-    description="A sample project to demonstrate the TORONTO AI TEAM AGENT",
-    team_structure="hierarchical"  # or "mesh", "star", etc.
-)
-
-# Add team members
-project.add_team_member(role="project_manager", name="PM Agent")
-project.add_team_member(role="developer", name="Dev Agent 1")
-project.add_team_member(role="developer", name="Dev Agent 2")
-project.add_team_member(role="system_architect", name="Arch Agent")
-
-# Start the project
-project.start()
-
-# Interact with the project
-response = project.process_input("Create a simple web application with a React frontend and Python FastAPI backend")
-
-# Get project status
-status = project.get_status()
-print(status)
-```
-
-### Web Interface
+### Starting the System
 
 ```bash
-# Start the web server
-python -m toronto_ai_team_agent.server
+# Start the backend server
+python -m app.server
 
-# In another terminal, start the web interface
-cd web
-npm start
+# In a separate terminal, start the frontend
+cd frontend
+npm run dev
 ```
 
-Then open your browser to http://localhost:3000 to access the web interface.
+### Creating a Multi-Agent Team
+
+```python
+from app.agent import ProjectManager, Developer, ProductManager
+from app.orchestration import TeamOrchestrator
+
+# Create specialized agents
+project_manager = ProjectManager()
+product_manager = ProductManager()
+developers = [Developer() for _ in range(3)]
+
+# Create team orchestrator
+team = TeamOrchestrator(
+    project_manager=project_manager,
+    product_manager=product_manager,
+    developers=developers
+)
+
+# Start a project
+team.start_project(
+    name="E-commerce Platform",
+    description="Build a scalable e-commerce platform with user authentication, product catalog, and payment processing.",
+    deadline="2023-12-31"
+)
+```
 
 ## Documentation
 
-For detailed documentation, see the following resources:
+For detailed documentation on all features and components, see the [docs](docs/) directory:
 
 - [Agent Roles Documentation](docs/agent_roles.md)
-- [API Reference](docs/api_reference.md)
-- [Architecture Overview](docs/architecture_overview.md)
-- [MaAS Framework](docs/maas_framework.md)
-- [A2A Integration](docs/a2a_integration.md)
-- [Grok 3 Integration Guide](docs/grok3_integration_guide.md)
 - [Context Window Extension](docs/context_window_extension.md)
-- [Human-AI Collaboration Features](docs/human_ai_collaboration_features.md)
-- [Agent Performance Analytics](docs/agent_performance_analytics.md)
-- [Project Management Features](docs/project_management_features.md)
 - [AI Model Integrations](docs/ai_model_integrations.md)
+- [Project Management Features](docs/project_management_features.md)
 - [Task Estimation Framework](docs/task_estimation_framework.md)
 - [CI/CD Integration](docs/cicd_integration.md)
 - [Container Orchestration](docs/container_orchestration.md)
 - [IDE Extensions](docs/ide_extensions.md)
 - [Load Balancing](docs/load_balancing.md)
 - [Security Features](docs/security_features.md)
+- [Human-AI Collaboration](docs/human_ai_collaboration.md)
+- [Agent Performance Analytics](docs/agent_performance_analytics.md)
 - [Code Review Tools](docs/code_review_tools.md)
 - [Multimodal Services](docs/multimodal_services.md)
+- [Future Integration Opportunities](docs/future_integration_opportunities.md)
 
 ## Contributing
 
-We welcome contributions to the TORONTO AI TEAM AGENT project! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
@@ -463,9 +402,3 @@ which is licensed under the MIT License. The original license is included
 in the LICENSE file in the root directory of this project.
 
 This software has been substantially modified with proprietary enhancements.
-
-Unauthorized copying, modification, distribution, or use of this software,
-via any medium, is strictly prohibited without express written permission
-from TORONTO AI.
-
-For licensing inquiries, please contact licensing@torontoai.com.
